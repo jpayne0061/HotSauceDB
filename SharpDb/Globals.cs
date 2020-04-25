@@ -6,19 +6,22 @@ namespace SharpDb
 {
     public static class Globals
     {
-        public static string FILE_NAME = "data.txt";
+        public static string FILE_NAME = "data2.txt";
         public static byte INDEX_PAGE_HEADER_LENGTH = 32;
         public static short TABLE_DEF_LENGTH = 530;
+        public static int PageSize = 8000;
+        public const long NextPointerAddress = 7992;
         //24 bytes each column, 20 columns max = 480. + 41 bytes for name (string length 20)
         //plus 8 bytes for data location
 
         public static char EndTableDefinition = '|';
 
-        public static short BooleanByteLength = 1;
-        public static short CharByteLength = 2;
-        public static short DecimalByteLength = 16;
-        public static short Int32ByteLength = 4;
-        public static short Int64ByteLength = 8;
+        public const short BooleanByteLength = 1;
+        public const short CharByteLength = 2;
+        public const short DecimalByteLength = 16;
+        public const short Int16ByteLength = 2;
+        public const short Int32ByteLength = 4;
+        public const short Int64ByteLength = 8;
 
         public static byte BooleanType = 0;
         public static byte CharType = 1;

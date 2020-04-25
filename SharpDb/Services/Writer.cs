@@ -1,4 +1,6 @@
-﻿using SharpDb.Models;
+﻿using SharpDb.Cache;
+using SharpDb.Helpers;
+using SharpDb.Models;
 using System;
 using System.IO;
 using System.Linq;
@@ -9,10 +11,17 @@ namespace SharpDb.Services
     {
         public void WriteRow(object[] row, long diskLocation, TableDefinition tableDefinition)
         {
+            long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes());
+
+            //if first row, write pointer as zero
+            if((addressToWriteTo - 2) % 8000 == 0)
+            {
+                WriteZeroPointerForFirstRow(addressToWriteTo);
+            }
 
             using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
             {
-                fileStream.Position = diskLocation;
+                fileStream.Position = addressToWriteTo;
 
                 using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                 {
@@ -20,6 +29,26 @@ namespace SharpDb.Services
                     {
                         WriteColumnData(binaryWriter, row[i], tableDefinition.ColumnDefinitions[i]);
                     }
+                }
+            }
+        }
+
+        public void WriteZeroPointerForFirstRow(long currentAddress)
+        {
+            if((currentAddress - 2) % 8000 != 0)
+            {
+                throw new Exception("Invalid address for first row: " + currentAddress);
+            }
+
+            long zeroPointerAddress = currentAddress + (Globals.NextPointerAddress - 2);
+
+            using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
+            {
+                fileStream.Position = zeroPointerAddress;
+
+                using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
+                {
+                    binaryWriter.Write((long)0);
                 }
             }
         }
@@ -79,6 +108,9 @@ namespace SharpDb.Services
                     //binaryWriter.BaseStream.Position = newDefinitionAddress + 529;
 
                     binaryWriter.Write(Globals.EndTableDefinition);
+
+                    stream.Position = nextFreeDataPage;
+                    binaryWriter.Write((short)0);
                 }
             }
         }
@@ -101,14 +133,10 @@ namespace SharpDb.Services
             }
         }
 
-        private long GetNextUnclaimedDataPage()
+        private long GetNextUnclaimedDataPage(IndexPage indexPage)
         {
-            Reader reader = new Reader();
-
-            var indexPage = reader.GetIndexPage();
-
             long headAddress = indexPage.TableDefinitions.Count == 0 ? 8000 :
-                                indexPage.TableDefinitions.Max(x => x.DataAddress) + 8000;
+                                indexPage.TableDefinitions.Max(x => x.DataAddress);
 
             long nextFreeAddress = headAddress;
 
@@ -129,37 +157,101 @@ namespace SharpDb.Services
 
         }
 
-        public long GetFirstAvailableAddress()
+        private long GetNextUnclaimedDataPage()
         {
-            //use table map
+            var reader = new Reader();
 
-            return 8000;
-        }
-
-        public BinaryWriter GetBinaryWriter()
-        {
-            using (FileStream stream = File.OpenWrite(Globals.FILE_NAME))
-            {
-                using (BinaryWriter binaryWriter = new BinaryWriter(stream))
-                {
-                    return binaryWriter;
-                }
-            }
-        }
-
-        public void WriteRow(string tableName, object[] row)
-        {
-            DataPage dataPage = new DataPage();
-
-            Reader reader = new Reader();
             var indexPage = reader.GetIndexPage();
+
+            return GetNextUnclaimedDataPage(indexPage);
+        }
+
+        public void WriteRow(string tableName, object[] row, IndexPage indexPage)
+        {
+            var writer = new Writer();
+
+            var reader = new Reader();
 
             long addressToWrite = reader.GetFirstAvailableDataAddressOfTableByName(tableName, indexPage.TableDefinitions);
 
             TableDefinition tableDefinition = indexPage.TableDefinitions
                 .Where(x => x.TableName == tableName).FirstOrDefault();
 
-            dataPage.WriteRow(row, addressToWrite, tableDefinition);
+            writer.WriteRow(row, addressToWrite, tableDefinition);
+
+            writer.UpdateRowCount(addressToWrite);
+        }
+
+        private void UpdateRowCount(long currentAddress)
+        {
+            long addressOfCount = currentAddress - (currentAddress % Globals.PageSize);
+
+            short numRows = 0;
+
+            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
+            {
+                using (BinaryReader reader = new BinaryReader(fileStream))
+                {
+                    reader.BaseStream.Position = addressOfCount;
+
+                    numRows = reader.ReadInt16();
+                }
+            }
+
+            using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
+            {
+                using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
+                {
+                    binaryWriter.BaseStream.Position = addressOfCount;
+
+                    binaryWriter.Write(numRows + 1);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks if current page is full. If so, writes a pointer to the end of the page and 
+        /// returns next available writeable address. 
+        /// Otherwise, return current address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        private long EndOfPageCheck(long address, int rowSize)
+        {
+            long nextPageAddress = PageLocationHelper.GetNextDivisbleNumber(address, Globals.PageSize);
+
+            if(address + (rowSize * 2) > nextPageAddress - 8)
+            {
+                long nextPagePointer = GetNextUnclaimedDataPage();
+
+                using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
+                {
+                    using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
+                    {
+                        binaryWriter.BaseStream.Position = nextPageAddress - 8; 
+
+                        binaryWriter.Write(nextPagePointer);
+
+                        binaryWriter.BaseStream.Position = nextPagePointer;
+
+                        binaryWriter.Write((short)0);
+
+                        //where is zero count recorded?
+                        //need to write zero row count for here
+
+                        return binaryWriter.BaseStream.Position;
+                    }
+                }
+            }
+            else
+            {
+                return address;
+            }
+        }
+
+        public void GetPointerAddress()
+        {
+
         }
 
     }
