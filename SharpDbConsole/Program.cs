@@ -18,6 +18,8 @@ namespace SharpDbConsole
 
             try
             {
+                RunFullTest();
+
                 SelectWithPredicates();
 
             }
