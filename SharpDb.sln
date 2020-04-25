@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29001.49
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpDb", "SharpDb\SharpDb.csproj", "{C691F5CF-971A-4770-9A31-EB821214E3F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDb", "SharpDb\SharpDb.csproj", "{C691F5CF-971A-4770-9A31-EB821214E3F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpDbConsole", "SharpDbConsole\SharpDbConsole.csproj", "{0EB724F7-D12D-4EB9-B28F-49E7398409ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDbConsole", "SharpDbConsole\SharpDbConsole.csproj", "{0EB724F7-D12D-4EB9-B28F-49E7398409ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpDbUnitTests", "SharpDbUnitTests\SharpDbUnitTests.csproj", "{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{0EB724F7-D12D-4EB9-B28F-49E7398409ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EB724F7-D12D-4EB9-B28F-49E7398409ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0EB724F7-D12D-4EB9-B28F-49E7398409ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

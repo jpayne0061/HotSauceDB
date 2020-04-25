@@ -9,56 +9,6 @@ namespace SharpDb.Services
 {
     public class Reader
     {
-
-        //public TableDefinition GetTableDefinition(long diskLocation)
-        //{
-        //    TableDefinition tableDefinition = new TableDefinition();
-        //    tableDefinition.ColumnDefinitions = new List<ColumnDefinition>();
-
-        //    using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
-        //    {
-        //        fileStream.Position = diskLocation;
-
-        //        using (BinaryReader binaryReader = new BinaryReader(fileStream))
-        //        {
-        //            for (int i = 0; i < NumColumnDefinitions; i++)
-        //            {
-        //                var c = new ColumnDefinition();
-        //                c.Index = binaryReader.ReadByte();
-        //                c.Type = binaryReader.ReadByte();
-        //                c.ByteSize = binaryReader.ReadInt16();
-        //                c.ColumnName = binaryReader.ReadString();
-
-        //                tableDefinition.ColumnDefinitions.Add(c);
-        //            }
-        //        }
-        //    }
-
-        //    return tableDefinition;
-        //}
-
-        //public List<TableDefinition> GetAllTableDefinitions()
-        //{
-        //    using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
-        //    {
-        //        fileStream.Position = 0;
-
-        //        using (BinaryReader binaryReader = new BinaryReader(fileStream))
-        //        {
-        //            for (int i = 0; i < NumColumnDefinitions; i++)
-        //            {
-        //                var c = new ColumnDefinition();
-        //                c.Index = binaryReader.ReadByte();
-        //                c.Type = binaryReader.ReadByte();
-        //                c.ByteSize = binaryReader.ReadInt16();
-        //                c.ColumnName = binaryReader.ReadString();
-
-        //                tableDefinition.ColumnDefinitions.Add(c);
-        //            }
-        //        }
-        //    }
-        //}
-
         public IndexPage GetIndexPage()
         {
             IndexPage indexPage = new IndexPage();
@@ -108,13 +58,13 @@ namespace SharpDb.Services
             return currentPosition;
         }
 
-        public List<List<object>> GetAllRows(string tableName)
+        public List<List<IComparable>> GetAllRows(string tableName)
         {
             var indexPage = GetIndexPage();
 
             var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
-            var rows = new List<List<object>>();
+            var rows = new List<List<IComparable>>();
 
             using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open))
             {
@@ -124,7 +74,7 @@ namespace SharpDb.Services
                 {
                     while(binaryReader.PeekChar() != -1 && binaryReader.PeekChar() != 0)
                     {
-                        List<object> row = new List<object>();
+                        List<IComparable> row = new List<IComparable>();
 
                         for (int j = 0; j < tableDefinition.ColumnDefinitions.Count; j++)
                         {
@@ -139,7 +89,7 @@ namespace SharpDb.Services
             return rows;
         }
 
-        public object ReadColumn(ColumnDefinition columnDefintion, BinaryReader binaryReader)
+        public IComparable ReadColumn(ColumnDefinition columnDefintion, BinaryReader binaryReader)
         {
             switch (columnDefintion.Type)
             {
@@ -181,6 +131,75 @@ namespace SharpDb.Services
 
                     return fileStream.Position;
                 }
+            }
+        }
+
+        public List<List<IComparable>> GetRowsWithPredicate(string tableName, List<PredicateOperation> predicateOperations)
+        {
+            var indexPage = GetIndexPage();
+
+            var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
+
+            var rows = new List<List<IComparable>>();
+
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open))
+            {
+                fileStream.Position = tableDefinition.DataAddress;
+
+                using (BinaryReader binaryReader = new BinaryReader(fileStream))
+                {
+                    while (binaryReader.PeekChar() != -1 && binaryReader.PeekChar() != 0)
+                    {
+                        List<IComparable> row = new List<IComparable>();
+
+                        for (int j = 0; j < tableDefinition.ColumnDefinitions.Count; j++)
+                        {
+                            row.Add(ReadColumn(tableDefinition.ColumnDefinitions[j], binaryReader));
+                        }
+
+                        bool addRow = EvaluateRow(predicateOperations, row);
+
+                        if(addRow)
+                            rows.Add(row);
+                    }
+                }
+            }
+
+            return rows;
+        }
+
+        public bool EvaluateRow(List<PredicateOperation> predicateOperations, List<IComparable> row)
+        {
+            bool addRow = false;
+
+            for (int i = 0; i < predicateOperations.Count(); i++)
+            {
+                bool delegateResult = predicateOperations[i].Delegate(row[predicateOperations[i].ColumnIndex], predicateOperations[i].Value);
+
+                if (i == 0)
+                {
+                    addRow = delegateResult;
+                    continue;
+                }
+                else
+                {
+                    addRow = EvaluateOperator(predicateOperations[i].Operator, delegateResult, addRow);
+                }
+            }
+
+            return addRow;
+        }
+
+        private bool EvaluateOperator(string operation, bool delgateResult, bool willAddRow)
+        {
+            switch (operation)
+            {
+                case "and":
+                    return willAddRow && delgateResult;
+                case "or":
+                    return willAddRow || delgateResult;
+                default:
+                    throw new Exception("Invalid operator: " + operation);
             }
         }
 

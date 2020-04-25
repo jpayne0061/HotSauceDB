@@ -1,9 +1,7 @@
 ﻿using SharpDb.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace SharpDb.Services
 {
@@ -16,15 +14,12 @@ namespace SharpDb.Services
             {
                 fileStream.Position = diskLocation;
 
-                //var rowsSizeInBytes = NumberOfRows * tableDefinition.GetRowSizeInBytes();
-
                 using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                 {
                     for (var i = 0; i < row.Length; i++)
                     {
                         WriteColumnData(binaryWriter, row[i], tableDefinition.ColumnDefinitions[i]);
                     }
-                    //NumberOfRows += 1;
                 }
             }
         }
@@ -41,7 +36,7 @@ namespace SharpDb.Services
             }
             else if (data is decimal)
             {
-                binaryWriter.Write((bool)data);
+                binaryWriter.Write((decimal)data);
             }
             else if (data is Int32)
             {

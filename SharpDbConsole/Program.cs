@@ -1,10 +1,13 @@
 ﻿using SharpDb;
 using SharpDb.Models;
 using SharpDb.Services;
+using SharpDb.Services.Parsers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpDbConsole
 {
@@ -12,51 +15,10 @@ namespace SharpDbConsole
     {
         static void Main(string[] args)
         {
-            //add person table
 
             try
             {
-
-                //IndexPage indexPage = new IndexPage();
-
-                var p = BuildPersonTable();
-                var t = BuildToolsTable();
-                var f = BuildFamilyTable();
-
-                var writer = new Writer();
-
-                writer.WriteTableDefinition(p);
-                writer.WriteTableDefinition(t);
-                writer.WriteTableDefinition(f);
-
-                WriteFamilyRows();
-
-                //Reader reader = new Reader();
-
-                //var indexPage = reader.GetIndexPage();
-
-                //object[] row = new object[3];
-
-                //row[0] = 33;
-                //row[1] = "Evan";
-                //row[2] = true;
-
-                //writer.WriteRow("Person", row);
-
-                //addressToWrite += table.GetRowSizeInBytes();
-
-                //object[] row2 = new object[3];
-
-                //row2[0] = 9;
-                //row2[1] = "Anna";
-                //row2[2] = false;
-
-                //dataPage.WriteRow(row2, addressToWrite, table);
-
-
-                var reader = new Reader();
-
-                var allRows = reader.GetAllRows("Person");
+                SelectWithPredicates();
 
             }
             catch (Exception ex)
@@ -64,9 +26,6 @@ namespace SharpDbConsole
                 File.Delete("data.txt");
                 throw;
             }
-
-
-
         }
 
         private static TableDefinition BuildToolsTable()
@@ -115,7 +74,7 @@ namespace SharpDbConsole
             return table;
         }
 
-        private static void WriteFamilyRows()
+        private static void WritePersonRows()
         {
             var writer = new Writer();
 
@@ -174,24 +133,54 @@ namespace SharpDbConsole
 
             object[] row3 = new object[3];
 
-            row3[0] = "Anna";
-            row3[1] = 9;
-            row3[2] = false;
+            row3[0] = "Screwdriver";
+            row3[1] = 2.34m;
+            row3[2] = 55;
 
             writer.WriteRow("Tools", row3);
 
             object[] row4 = new object[3];
 
-            row4[0] = "Emmy";
-            row4[1] = 5;
-            row4[2] = false;
+            row4[0] = "Drill";
+            row4[1] = 45.99m;
+            row4[2] = 12;
 
             writer.WriteRow("Tools", row4);
         }
 
-        private static void ReadTableDefinitionsTest()
+        private static void RunFullTest()
         {
+            var p = BuildPersonTable();
+            var t = BuildToolsTable();
+            var f = BuildFamilyTable();
 
+            var writer = new Writer();
+
+            writer.WriteTableDefinition(p);
+            writer.WriteTableDefinition(t);
+            writer.WriteTableDefinition(f);
+
+            WritePersonRows();
+            WriteToolRows();
+
+            //var reader = new Reader();
+
+            //var allPersonRows = reader.GetAllRows("Person");
+
+            //var allToolRows = reader.GetAllRows("Tools");
         }
+
+        public static void SelectWithPredicates()
+        {
+            var parser = new SelectParser();
+
+            var interpreter = new Interpreter(parser);
+
+            string query = "select * from Tools WHERE Price > 10.00 or ToolName = 'Hammer' and NumInStock > 3";
+
+            var rows = interpreter.RunQuery(query);
+        }
+
+
     }
 }
