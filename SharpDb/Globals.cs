@@ -9,7 +9,7 @@ namespace SharpDb
         public static string FILE_NAME = "data2.txt";
         public static byte INDEX_PAGE_HEADER_LENGTH = 32;
         public static short TABLE_DEF_LENGTH = 530;
-        public static int PageSize = 8000;
+        public const int PageSize = 8000;
         public const long NextPointerAddress = 7992;
         //24 bytes each column, 20 columns max = 480. + 41 bytes for name (string length 20)
         //plus 8 bytes for data location

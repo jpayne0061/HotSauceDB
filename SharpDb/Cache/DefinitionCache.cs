@@ -19,6 +19,8 @@ namespace SharpDb.Cache
                 Reader reader = new Reader();
                 var indexPage = reader.GetIndexPage();
 
+                _indexPage = indexPage;
+
                 return indexPage;
             }
             else

@@ -59,7 +59,7 @@ namespace SharpDb.Services
             return currentPosition;
         }
 
-        public List<List<IComparable>> GetAllRows(string tableName)
+        public List<List<IComparable>> GetRows(string tableName, List<PredicateOperation> predicateOperations)
         {
             var indexPage = GetIndexPage();
 
@@ -67,14 +67,9 @@ namespace SharpDb.Services
 
             var rows = new List<List<IComparable>>();
 
-            short rowCount = 0;
+            short rowCount = GetRowCount(tableDefinition.DataAddress);
 
-            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
-            {
-                rowCount = GetRowCount(tableDefinition, fileStream);
-            }
-
-            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 using (BinaryReader binaryReader = new BinaryReader(fileStream))
                 {
@@ -93,10 +88,13 @@ namespace SharpDb.Services
                                 row.Add(ReadColumn(tableDefinition.ColumnDefinitions[j], binaryReader));
                             }
 
-                            rows.Add(row);
+                            bool addRow = EvaluateRow(predicateOperations, row);
+
+                            if (addRow)
+                                rows.Add(row);
                         }
 
-                        long nextPagePointer = GetPointerToNextPage(fileStream.Position, fileStream);
+                        long nextPagePointer = GetPointerToNextPage(fileStream.Position);
 
                         if (nextPagePointer == 0m)
                         {
@@ -104,7 +102,9 @@ namespace SharpDb.Services
                         }
                         else
                         {
-                            fileStream.Position = nextPagePointer;
+                            rowCount = GetRowCount(nextPagePointer);
+
+                            fileStream.Position = nextPagePointer + Globals.Int16ByteLength;
                         }
                     }
                 }
@@ -113,30 +113,36 @@ namespace SharpDb.Services
             return rows;
         }
 
-        public long GetPointerToNextPage(long pageAddress, FileStream fileStream)
+        public long GetPointerToNextPage(long pageAddress)
         {
             long pointerToNextPage = PageLocationHelper.GetNextDivisbleNumber(pageAddress, Globals.PageSize)
                                         - Globals.Int64ByteLength;
 
-            using (BinaryReader binaryReader = new BinaryReader(fileStream))
+            using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                binaryReader.BaseStream.Position = pointerToNextPage;
+                using (BinaryReader binaryReader = new BinaryReader(fs))
+                {
+                    binaryReader.BaseStream.Position = pointerToNextPage;
 
-                long nextPageAddress = binaryReader.ReadInt64();
+                    long nextPageAddress = binaryReader.ReadInt64();
 
-                return nextPageAddress;
+                    return nextPageAddress;
+                }
             }
         }
 
-        public short GetRowCount(TableDefinition tableDefinition, FileStream fileStream)
+        public short GetRowCount(long rowCountPointer)
         {
-            fileStream.Position = tableDefinition.DataAddress;
-
-            using (BinaryReader binaryReader = new BinaryReader(fileStream))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                short rowCount = binaryReader.ReadInt16();
+                fileStream.Position = rowCountPointer;
 
-                return rowCount;
+                using (BinaryReader binaryReader = new BinaryReader(fileStream))
+                {
+                    short rowCount = binaryReader.ReadInt16();
+
+                    return rowCount;
+                }
             }
         }
 
@@ -147,8 +153,6 @@ namespace SharpDb.Services
             var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
             var rows = new List<List<IComparable>>();
-
-            //yield return
 
             return rows;
         }
@@ -174,10 +178,8 @@ namespace SharpDb.Services
             }
         }
 
-        public long GetFirstAvailableDataAddressOfTableByName(string tableName, IEnumerable<TableDefinition> tableDefinitions)
+        public long GetFirstAvailableDataAddressOfTableByName(TableDefinition tableDef)
         {
-            TableDefinition tableDef = tableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
-
             long address = tableDef.DataAddress;
 
             while(IsPageFull(address, tableDef))

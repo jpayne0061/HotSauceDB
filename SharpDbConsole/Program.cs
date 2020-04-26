@@ -20,9 +20,11 @@ namespace SharpDbConsole
             {
                 FillRows();
 
-                var reader = new Reader();
+                //var reader = new Reader();
+                SelectWithPredicates();
+                //var allToolRows = reader.GetAllRows("Tools");
 
-                var allToolRows = reader.GetAllRows("Tools");
+
 
                 //FillRows();
             }
@@ -178,9 +180,12 @@ namespace SharpDbConsole
         {
             var t = BuildToolsTable();
 
+            var p = BuildPersonTable();
+
             var writer = new Writer();
 
             writer.WriteTableDefinition(t);
+            writer.WriteTableDefinition(p);
 
             Random rd = new Random();
 
@@ -188,7 +193,9 @@ namespace SharpDbConsole
 
             var indexPage = reader.GetIndexPage();
 
-            for (int i = 0; i < 20000; i++)
+            var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Tools").FirstOrDefault();
+
+            for (int i = 0; i < 160; i++)
             {
                 object[] row = new object[3];
 
@@ -196,8 +203,58 @@ namespace SharpDbConsole
                 row[1] = (decimal)rd.NextDouble();
                 row[2] = rd.Next();
 
-                writer.WriteRow("Tools", row, indexPage);
+                writer.WriteRow(row, tableDef);
             }
+
+            object[] rowx = new object[3];
+
+            rowx[0] = "Drill";
+            rowx[1] = 33.78m;
+            rowx[2] = 89;
+
+            writer.WriteRow(rowx, tableDef);
+
+            var personTableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Person").FirstOrDefault();
+
+
+            for (int i = 0; i < 120; i++)
+            {
+                object[] row = new object[3];
+
+                row[0] = CreateString(10);
+                row[1] = rd.Next();
+                row[2] = DateTime.Now.Ticks % 2 == 0 ? true : false;
+
+                writer.WriteRow(row, personTableDef);
+            }
+
+            for (int i = 0; i < 180; i++)
+            {
+                object[] row = new object[3];
+
+                row[0] = CreateString(20);
+                row[1] = (decimal)rd.NextDouble();
+                row[2] = rd.Next();
+
+                writer.WriteRow(row, tableDef);
+            }
+
+            object[] rowz = new object[3];
+
+            rowz[0] = "Drill";
+            rowz[1] = 678.99m;
+            rowz[2] = 89;
+
+            writer.WriteRow(rowz, tableDef);
+
+            object[] rowz2 = new object[3];
+
+            rowz2[0] = "Drill";
+            rowz2[1] = 22.21m;
+            rowz2[2] = 4;
+
+            writer.WriteRow(rowz2, tableDef);
+
         }
 
         internal static string CreateString(int stringLength)
@@ -223,7 +280,7 @@ namespace SharpDbConsole
 
             var interpreter = new Interpreter(parser);
 
-            string query = "select * from Tools WHERE Price > 10.00 or ToolName = 'Hammer' and NumInStock > 3";
+            string query = "select * from Tools WHERE Price > 10.00 or ToolName = 'Drill' and Price > 25.00";
 
             var rows = interpreter.RunQuery(query);
         }

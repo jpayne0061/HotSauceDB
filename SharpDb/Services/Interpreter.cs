@@ -24,7 +24,7 @@ namespace SharpDb.Services
 
             var predicateOperations = _selectParser.BuildDelagatesFromPredicates(tableName, predicates);
 
-            return reader.GetRowsWithPredicate(tableName, predicateOperations);
+            return reader.GetRows(tableName, predicateOperations);
         }
 
     }

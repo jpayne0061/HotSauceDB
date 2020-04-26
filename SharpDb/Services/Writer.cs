@@ -14,7 +14,7 @@ namespace SharpDb.Services
             long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes());
 
             //if first row, write pointer as zero
-            if((addressToWriteTo - 2) % 8000 == 0)
+            if((addressToWriteTo - 2) % Globals.PageSize == 0)
             {
                 WriteZeroPointerForFirstRow(addressToWriteTo);
             }
@@ -35,7 +35,7 @@ namespace SharpDb.Services
 
         public void WriteZeroPointerForFirstRow(long currentAddress)
         {
-            if((currentAddress - 2) % 8000 != 0)
+            if((currentAddress - 2) % Globals.PageSize != 0)
             {
                 throw new Exception("Invalid address for first row: " + currentAddress);
             }
@@ -105,8 +105,6 @@ namespace SharpDb.Services
                         binaryWriter.Write(col.ByteSize);
                     }
 
-                    //binaryWriter.BaseStream.Position = newDefinitionAddress + 529;
-
                     binaryWriter.Write(Globals.EndTableDefinition);
 
                     stream.Position = nextFreeDataPage;
@@ -166,18 +164,15 @@ namespace SharpDb.Services
             return GetNextUnclaimedDataPage(indexPage);
         }
 
-        public void WriteRow(string tableName, object[] row, IndexPage indexPage)
+        public void WriteRow(object[] row, TableDefinition tableDef)
         {
             var writer = new Writer();
 
             var reader = new Reader();
 
-            long addressToWrite = reader.GetFirstAvailableDataAddressOfTableByName(tableName, indexPage.TableDefinitions);
+            long addressToWrite = reader.GetFirstAvailableDataAddressOfTableByName(tableDef);
 
-            TableDefinition tableDefinition = indexPage.TableDefinitions
-                .Where(x => x.TableName == tableName).FirstOrDefault();
-
-            writer.WriteRow(row, addressToWrite, tableDefinition);
+            writer.WriteRow(row, addressToWrite, tableDef);
 
             writer.UpdateRowCount(addressToWrite);
         }
@@ -188,7 +183,7 @@ namespace SharpDb.Services
 
             short numRows = 0;
 
-            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
             {
                 using (BinaryReader reader = new BinaryReader(fileStream))
                 {
@@ -198,15 +193,18 @@ namespace SharpDb.Services
                 }
             }
 
-            using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.Write))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                 {
                     binaryWriter.BaseStream.Position = addressOfCount;
 
-                    binaryWriter.Write(numRows + 1);
+                    numRows += 1;
+
+                    binaryWriter.Write(numRows);
                 }
             }
+
         }
 
         /// <summary>
