@@ -1,4 +1,5 @@
-﻿using SharpDb.Helpers;
+﻿using SharpDb.Enums;
+using SharpDb.Helpers;
 using SharpDb.Models;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace SharpDb.Services
                             var columnDefinition = new ColumnDefinition();
                             columnDefinition.ColumnName = reader.ReadString();
                             columnDefinition.Index = reader.ReadByte();
-                            columnDefinition.Type = reader.ReadByte();
+                            columnDefinition.Type = (TypeEnums)reader.ReadByte();
                             columnDefinition.ByteSize = reader.ReadInt16();
                             tableDefinition.ColumnDefinitions.Add(columnDefinition);
                         }
@@ -161,17 +162,17 @@ namespace SharpDb.Services
         {
             switch (columnDefintion.Type)
             {
-                case 0:
+                case TypeEnums.Boolean:
                     return binaryReader.ReadBoolean();
-                case 1:
+                case TypeEnums.Char:
                     return binaryReader.ReadChar();
-                case 2:
+                case TypeEnums.Decimal:
                     return binaryReader.ReadDecimal();
-                case 3:
+                case TypeEnums.Int32:
                     return binaryReader.ReadInt32();
-                case 4:
+                case TypeEnums.Int64:
                     return binaryReader.ReadInt64();
-                case 5:
+                case TypeEnums.String:
                     return binaryReader.ReadString();
                 default:
                     throw new Exception("invalid column definition type");

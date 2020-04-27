@@ -31,7 +31,7 @@ namespace SharpDb.Services.Parsers
 
         public string GetTableName(string query)
         {
-            int startIndex = query.IndexOf("from") + 4;
+            int startIndex = query.ToLower().IndexOf("from") + 4;
 
             query = query.Substring(startIndex);
 
@@ -58,7 +58,7 @@ namespace SharpDb.Services.Parsers
             int tableNameIndex = queryParts.IndexOf(tableName);
 
             if(queryParts.Count() > tableNameIndex + 1
-                && queryParts[tableNameIndex + 1] == "where")
+                && queryParts[tableNameIndex + 1].ToLower() == "where")
             {
                 return tableNameIndex + 1;
             }
@@ -68,14 +68,15 @@ namespace SharpDb.Services.Parsers
 
         public List<string> ParsePredicates(string query)
         {
-            query = query.ToLower();
-
             var predicates = new List<string>();
 
-            //need to rewrite ignore spaces in strings
-            var queryParts = query.Split(' ')
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Select(x => x.Replace("\r\n", "")).ToList();
+            //https://stackoverflow.com/questions/14655023/split-a-string-that-has-white-spaces-unless-they-are-enclosed-within-quotes
+            //https://stackoverflow.com/users/1284526/c%c3%a9dric-bignon
+            var queryParts = query.Split("'")
+             .Select((element, index) => index % 2 == 0  // If even index
+                                   ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
+                                   : new string[] { "'" + element + "'" })  // Keep the entire item
+             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).ToList();
 
             var whereClauseIndex = IndexOfWhereClause(query, GetTableName(query));
 
@@ -101,128 +102,6 @@ namespace SharpDb.Services.Parsers
             }
 
             return predicates;
-        }
-
-        public List<PredicateOperation> BuildDelagatesFromPredicates(string tableName, List<string> predicates)
-        {
-            var reader = new Reader();
-
-            var indexPage = reader.GetIndexPage();
-
-            var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
-
-            var predicateOperations = new List<PredicateOperation>();
-
-            for(int i = 0; i < predicates.Count(); i++)
-            {
-                string[] predicateParts = predicates[i].Split(' ');
-
-                var colDef = tableDefinition.ColumnDefinitions
-                    .Where(x => x.ColumnName.ToLower() == predicateParts[1].ToLower()).FirstOrDefault();
-
-                switch(predicateParts[2])
-                {
-                    case ">":
-                        predicateOperations.Add(new PredicateOperation {
-                            Delegate = ConditionExecutor.IsMoreThan,
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
-                            Value = ConvertToType(colDef, predicateParts[3]),
-                            Operator = predicateParts[0],
-                            ColumnIndex = colDef.Index
-                        });
-                        break;
-                    case "<":
-                        predicateOperations.Add(new PredicateOperation
-                        {
-                            Delegate = ConditionExecutor.IsLessThan,
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
-                            Value = ConvertToType(colDef, predicateParts[3]),
-                            Operator = predicateParts[0],
-                            ColumnIndex = colDef.Index
-                        });
-                        break;
-                    case "=":
-                        predicateOperations.Add(new PredicateOperation
-                        {
-                            Delegate = ConditionExecutor.IsEqualTo,
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
-                            Value = ConvertToType(colDef, predicateParts[3]),
-                            Operator = predicateParts[0],
-                            ColumnIndex = colDef.Index
-                        });
-                        break;
-                    case ">=":
-                        predicateOperations.Add(new PredicateOperation
-                        {
-                            Delegate = ConditionExecutor.MoreThanOrEqualTo,
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
-                            Value = ConvertToType(colDef, predicateParts[3]),
-                            Operator = predicateParts[0],
-                            ColumnIndex = colDef.Index
-                        });
-                        break;
-                    case "<=":
-                        predicateOperations.Add(new PredicateOperation
-                        {
-                            Delegate = ConditionExecutor.LessThanOrEqualTo,
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
-                            Value = ConvertToType(colDef, predicateParts[3]),
-                            Operator = predicateParts[0],
-                            ColumnIndex = colDef.Index
-                        });
-                        break;
-                    case "!=":
-                        predicateOperations.Add(new PredicateOperation
-                        {
-                            Delegate = ConditionExecutor.NotEqualTo,
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
-                            Value = ConvertToType(colDef, predicateParts[3]),
-                            Operator = predicateParts[0],
-                            ColumnIndex = colDef.Index
-                        });
-                        break;
-                }
-            }
-
-            return predicateOperations;
-        }
-
-        public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)
-        {
-            IComparable convertedVal;
-
-            switch (columnDefinition.Type)
-            {
-                case 0:
-                    convertedVal = Convert.ToBoolean(val);
-                    break;
-                case 1:
-                    convertedVal = Convert.ToChar(val);
-                    break;
-                case 2:
-                    convertedVal = Convert.ToDecimal(val);
-                    break;
-                case 3:
-                    convertedVal = Convert.ToInt32(val);
-                    break;
-                case 4:
-                    convertedVal = Convert.ToInt64(val);
-                    break;
-                case 5:
-                    convertedVal = val.TrimStart('\'').TrimEnd('\'');
-                    break;
-                default:
-                    convertedVal = null;
-                    break;
-            }
-
-            return convertedVal;
         }
 
     }

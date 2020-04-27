@@ -101,7 +101,7 @@ namespace SharpDb.Services
                     {
                         binaryWriter.Write(col.ColumnName);
                         binaryWriter.Write(col.Index);
-                        binaryWriter.Write(col.Type);
+                        binaryWriter.Write((byte)col.Type);
                         binaryWriter.Write(col.ByteSize);
                     }
 

@@ -6,11 +6,11 @@ namespace SharpDb.Enums
 {
     public enum TypeEnums
     {
-        BooleanType,
-        CharType,
+        Boolean,
+        Char,
         Decimal,
-        Int32Type,
-        Int64Type,
-        StringType
+        Int32,
+        Int64,
+        String
     }
 }

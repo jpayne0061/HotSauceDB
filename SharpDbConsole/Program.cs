@@ -1,4 +1,5 @@
 ﻿using SharpDb;
+using SharpDb.Enums;
 using SharpDb.Models;
 using SharpDb.Services;
 using SharpDb.Services.Parsers;
@@ -18,15 +19,46 @@ namespace SharpDbConsole
 
             try
             {
-                FillRows();
+                var reader = new Reader();
 
-                //var reader = new Reader();
-                SelectWithPredicates();
-                //var allToolRows = reader.GetAllRows("Tools");
+                var indexPage = reader.GetIndexPage();
+
+                var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Tools").FirstOrDefault();
+
+                var writer = new Writer();
+
+                object[] rowz = new object[3];
+
+                rowz[0] = " A very cool Drill ";
+                rowz[1] = 678.99m;
+                rowz[2] = 89;
+
+                writer.WriteRow(rowz, tableDef);
+
+                //object[] rowz3 = new object[3];
+
+                //rowz3[0] = " A very cool Drill ";
+                //rowz3[1] = 56.99m;
+                //rowz3[2] = 256;
+
+                //writer.WriteRow(rowz3, tableDef);
 
 
+                //object[] rowz2 = new object[3];
+
+                //rowz2[0] = "A big hammer  ";
+                //rowz2[1] = 678.99m;
+                //rowz2[2] = 89;
+
+                //writer.WriteRow(rowz2, tableDef);
+
+                //var stream = File.Create("data.txt");
+
+                //stream.Close();
 
                 //FillRows();
+
+                SelectWithPredicates();
             }
             catch (Exception ex)
             {
@@ -41,11 +73,11 @@ namespace SharpDbConsole
 
             table.ColumnDefinitions = new List<ColumnDefinition>();
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = Globals.StringType, ByteSize = 41, ColumnName = "ToolName" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnums.String, ByteSize = 41, ColumnName = "ToolName" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = Globals.DecimalType, ByteSize = Globals.DecimalByteLength, ColumnName = "Price" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnums.Decimal, ByteSize = Globals.DecimalByteLength, ColumnName = "Price" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = Globals.Int32Type, ByteSize = Globals.Int32ByteLength, ColumnName = "NumInStock" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = TypeEnums.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "NumInStock" });
 
             return table;
         }
@@ -57,11 +89,11 @@ namespace SharpDbConsole
 
             table.ColumnDefinitions = new List<ColumnDefinition>();
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = Globals.StringType, ByteSize = 21, ColumnName = "Name" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnums.String, ByteSize = 21, ColumnName = "Name" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = Globals.Int32Type, ByteSize = Globals.Int32ByteLength, ColumnName = "Age" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnums.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "Age" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = Globals.BooleanType, ByteSize = Globals.BooleanByteLength, ColumnName = "IsAdult" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = TypeEnums.Boolean, ByteSize = Globals.BooleanByteLength, ColumnName = "IsAdult" });
 
             return table;
         }
@@ -73,108 +105,12 @@ namespace SharpDbConsole
 
             table.ColumnDefinitions = new List<ColumnDefinition>();
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = Globals.StringType, ByteSize = 21, ColumnName = "FamilyName" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnums.String, ByteSize = 21, ColumnName = "FamilyName" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = Globals.Int32Type, ByteSize = Globals.Int32ByteLength, ColumnName = "NumberMembers" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnums.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "NumberMembers" });
 
             return table;
         }
-
-        //private static void WritePersonRows()
-        //{
-        //    var writer = new Writer();
-
-        //    object[] row = new object[3];
-
-        //    row[0] = "Evan";
-        //    row[1] = 33;
-        //    row[2] = true;
-
-        //    writer.WriteRow("Person", row);
-
-        //    object[] row2 = new object[3];
-
-        //    row2[0] = "Jess";
-        //    row2[1] = 33;
-        //    row2[2] = true;
-
-        //    writer.WriteRow("Person", row2);
-
-        //    object[] row3 = new object[3];
-
-        //    row3[0] = "Anna";
-        //    row3[1] = 9;
-        //    row3[2] = false;
-
-        //    writer.WriteRow("Person", row3);
-
-        //    object[] row4 = new object[3];
-
-        //    row4[0] = "Emmy";
-        //    row4[1] = 5;
-        //    row4[2] = false;
-
-        //    writer.WriteRow("Person", row4);
-        //}
-
-        //private static void WriteToolRows()
-        //{
-        //    var writer = new Writer();
-
-        //    object[] row = new object[3];
-
-        //    row[0] = "Sawzall";
-        //    row[1] = 33.34m;
-        //    row[2] = 2;
-
-        //    writer.WriteRow("Tools", row);
-
-        //    object[] row2 = new object[3];
-
-        //    row2[0] = "Hammer";
-        //    row2[1] = 12.67m;
-        //    row2[2] = 45;
-
-        //    writer.WriteRow("Tools", row2);
-
-        //    object[] row3 = new object[3];
-
-        //    row3[0] = "Screwdriver";
-        //    row3[1] = 2.34m;
-        //    row3[2] = 55;
-
-        //    writer.WriteRow("Tools", row3);
-
-        //    object[] row4 = new object[3];
-
-        //    row4[0] = "Drill";
-        //    row4[1] = 45.99m;
-        //    row4[2] = 12;
-
-        //    writer.WriteRow("Tools", row4);
-        //}
-
-        //private static void RunFullTest()
-        //{
-        //    var p = BuildPersonTable();
-        //    var t = BuildToolsTable();
-        //    var f = BuildFamilyTable();
-
-        //    var writer = new Writer();
-
-        //    writer.WriteTableDefinition(p);
-        //    writer.WriteTableDefinition(t);
-        //    writer.WriteTableDefinition(f);
-
-        //    WritePersonRows();
-        //    WriteToolRows();
-
-        //    //var reader = new Reader();
-
-        //    //var allPersonRows = reader.GetAllRows("Person");
-
-        //    //var allToolRows = reader.GetAllRows("Tools");
-        //}
 
         public static void FillRows()
         {
@@ -195,7 +131,9 @@ namespace SharpDbConsole
 
             var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Tools").FirstOrDefault();
 
-            for (int i = 0; i < 160; i++)
+
+            //fill first data page, and partially fill second
+            for (int i = 0; i < 1000; i++)
             {
                 object[] row = new object[3];
 
@@ -216,8 +154,8 @@ namespace SharpDbConsole
 
             var personTableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Person").FirstOrDefault();
 
-
-            for (int i = 0; i < 120; i++)
+            //write rows for second table
+            for (int i = 0; i < 12000; i++)
             {
                 object[] row = new object[3];
 
@@ -228,7 +166,8 @@ namespace SharpDbConsole
                 writer.WriteRow(row, personTableDef);
             }
 
-            for (int i = 0; i < 180; i++)
+            //continue writing writing rows for first table
+            for (int i = 0; i < 1800; i++)
             {
                 object[] row = new object[3];
 
@@ -276,11 +215,13 @@ namespace SharpDbConsole
 
         public static void SelectWithPredicates()
         {
-            var parser = new SelectParser();
+            var interpreter = new Interpreter(new SelectParser());
 
-            var interpreter = new Interpreter(parser);
+            string query = "select * from Tools WHERE ToolName = ' A very cool Drill                      '";
 
-            string query = "select * from Tools WHERE Price > 10.00 or ToolName = 'Drill' and Price > 25.00";
+            //string query = "select * from Tools WHERE price > 500";
+
+            //string query = "select * from Person WHERE IsAdult = false";
 
             var rows = interpreter.RunQuery(query);
         }
