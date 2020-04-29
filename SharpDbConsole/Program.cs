@@ -233,7 +233,13 @@ namespace SharpDbConsole
             var interpreter = new Interpreter(new SelectParser());
 
             string query = @"select ToolName, Price
-                               From tools where NumInStock = (select NumInStock FROM tools where ToolName = 'hammerTime')";
+                               From tools where NumInStock = (
+                                        select NumInStock FROM tools 
+                                        where ToolName = 
+                                                    (
+                                                        Select * from tools where price = 678.99
+                                                    )
+                                        )";
 
             //string query = "select * from Tools WHERE price > 500";
 

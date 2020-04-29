@@ -11,7 +11,7 @@ namespace SharpDb.Services.Parsers
     {
         public IList<string> GetColumns(string query)
         {
-            query = query.ToLower();
+            query = query.ToLower().Trim();
 
             int startIndex = 6;
 

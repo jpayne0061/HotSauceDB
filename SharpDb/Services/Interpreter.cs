@@ -19,15 +19,6 @@ namespace SharpDb.Services
 
         public List<List<IComparable>> RunQuery(string query)
         {
-            //get first inner most select
-
-
-            //get value
-
-            //replace original query with value
-
-            //if string, wrap in quotes
-
             var reader = new Reader();
 
             var tableName = _selectParser.GetTableName(query);
@@ -57,7 +48,6 @@ namespace SharpDb.Services
 
         public List<List<IComparable>> RunQueryWithSubQueries(string query)
         {
-
             var reader = new Reader();
 
             var indexPage = reader.GetIndexPage();
@@ -66,7 +56,7 @@ namespace SharpDb.Services
 
             var hasSubquery = subQuery != null;
 
-            while(hasSubquery)
+            if(hasSubquery)
             {
                 var tableName = _selectParser.GetTableName(subQuery.Query);
 
@@ -75,38 +65,21 @@ namespace SharpDb.Services
                 var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
                 //only support for scalar subqueries, currently
-                var subQueryColumn = tableDef.ColumnDefinitions.Where(x => x.ColumnName == subQueryColumns[0].ToLower()).First();
+                var subQueryColumn = tableDef.ColumnDefinitions
+                    .Where(x => x.ColumnName == subQueryColumns[0].ToLower() || subQueryColumns[0] == "*").First();
+
 
                 var subQueryScalar = RunQuery(subQuery.Query)[0][0];
 
                 query = ReplaceSubqueryWithValue(query, subQuery, subQueryScalar.ToString(), subQueryColumn.Type);
 
-                subQuery = _selectParser.GetFirstMostInnerSelectStatement(query);
-
-                hasSubquery = subQuery != null;
+               return RunQueryWithSubQueries(query);
             }
-
-            var tableNameFinalSelect = _selectParser.GetTableName(query);
-
-            var tableDefFinalSelect = indexPage.TableDefinitions.Where(x => x.TableName == tableNameFinalSelect).FirstOrDefault();
-
-            HashSet<string> columns = _selectParser.GetColumns(query).Select(x => x.ToLower()).ToHashSet();
-
-            IEnumerable<SelectColumnDto> selects = tableDefFinalSelect.ColumnDefinitions.Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
-
-            foreach (var select in selects)
+            else
             {
-                if (columns.Contains(select.ColumnName) || columns.First() == "*")
-                {
-                    select.IsInSelect = true;
-                }
+                return RunQuery(query);
             }
 
-            var predicates = _selectParser.ParsePredicates(query);
-
-            var predicateOperations = BuildDelagatesFromPredicates(tableNameFinalSelect, predicates);
-
-            return reader.GetRows(tableDefFinalSelect, selects, predicateOperations);
         }
 
         public string ReplaceSubqueryWithValue(string query, Subquery subquery, string value, TypeEnums type)
