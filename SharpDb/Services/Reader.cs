@@ -60,11 +60,8 @@ namespace SharpDb.Services
             return currentPosition;
         }
 
-        public List<List<IComparable>> GetRows(string tableName, List<PredicateOperation> predicateOperations)
+        public List<List<IComparable>> GetRows(TableDefinition tableDefinition, IEnumerable<SelectColumnDto> selects, List<PredicateOperation> predicateOperations)
         {
-            var indexPage = GetIndexPage();
-
-            var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
             var rows = new List<List<IComparable>>();
 
@@ -84,12 +81,21 @@ namespace SharpDb.Services
                         {
                             List<IComparable> row = new List<IComparable>();
 
-                            for (int j = 0; j < tableDefinition.ColumnDefinitions.Count; j++)
+                            List<IComparable> rowToEvaluate = new List<IComparable>();
+
+                            foreach (SelectColumnDto select in selects)
                             {
-                                row.Add(ReadColumn(tableDefinition.ColumnDefinitions[j], binaryReader));
+                                IComparable val = ReadColumn(select, binaryReader);
+
+                                rowToEvaluate.Add(val);
+
+                                if (select.IsInSelect)
+                                {
+                                    row.Add(val);
+                                }
                             }
 
-                            bool addRow = EvaluateRow(predicateOperations, row);
+                            bool addRow = EvaluateRow(predicateOperations, rowToEvaluate);
 
                             if (addRow)
                                 rows.Add(row);
@@ -282,7 +288,7 @@ namespace SharpDb.Services
 
         private bool EvaluateOperator(string operation, bool delgateResult, bool willAddRow)
         {
-            switch (operation)
+            switch (operation.ToLower())
             {
                 case "and":
                     return willAddRow && delgateResult;

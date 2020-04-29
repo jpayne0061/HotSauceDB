@@ -11,6 +11,8 @@ namespace SharpDb.Services.Parsers
     {
         public IList<string> GetColumns(string query)
         {
+            query = query.ToLower();
+
             int startIndex = 6;
 
             int endIndex = query.IndexOf("from") - 1;
@@ -47,11 +49,13 @@ namespace SharpDb.Services.Parsers
                 tableName += query[i];
             }
 
-            return tableName;
+            return tableName.ToLower();
         }
 
         public int IndexOfWhereClause(string query, string tableName)
         {
+            query = query.ToLower();
+
             List<string> queryParts = query.Split(' ')
                 .Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
 
@@ -76,7 +80,8 @@ namespace SharpDb.Services.Parsers
              .Select((element, index) => index % 2 == 0  // If even index
                                    ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
                                    : new string[] { "'" + element + "'" })  // Keep the entire item
-             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).ToList();
+             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
+             Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
 
             var whereClauseIndex = IndexOfWhereClause(query, GetTableName(query));
 
@@ -102,6 +107,41 @@ namespace SharpDb.Services.Parsers
             }
 
             return predicates;
+        }
+
+        public Subquery GetFirstMostInnerSelectStatement(string query)
+        {
+
+            int? indexOfLastOpeningParantheses = null;
+            int? indexOfClosingParantheses = null;
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                if(query[i] == '(')
+                {
+                    indexOfLastOpeningParantheses = i;
+                }
+
+                if(query[i] == ')' && indexOfLastOpeningParantheses != null)
+                {
+                    indexOfClosingParantheses = i;
+                    break;
+                }
+            }
+
+            if(!indexOfLastOpeningParantheses.HasValue)
+            {
+                return null;
+            }
+
+
+            string subQuery = query.Substring((int)indexOfLastOpeningParantheses + 1, (int)(indexOfClosingParantheses - indexOfLastOpeningParantheses - 1));
+
+            return new Subquery {
+                Query = subQuery,
+                StartIndexOfOpenParantheses = (int)indexOfLastOpeningParantheses,
+                EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
+            };
         }
 
     }

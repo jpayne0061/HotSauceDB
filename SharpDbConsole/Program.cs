@@ -19,21 +19,23 @@ namespace SharpDbConsole
 
             try
             {
-                var reader = new Reader();
+                //SelectWithPredicates();
+                SelectWithSubQueries();
+                //    var reader = new Reader();
 
-                var indexPage = reader.GetIndexPage();
+                //    var indexPage = reader.GetIndexPage();
 
-                var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Tools").FirstOrDefault();
+                //    var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Tools").FirstOrDefault();
 
-                var writer = new Writer();
+                //    var writer = new Writer();
 
-                object[] rowz = new object[3];
+                //    object[] rowz = new object[3];
 
-                rowz[0] = " A very cool Drill ";
-                rowz[1] = 678.99m;
-                rowz[2] = 89;
+                //    rowz[0] = "hammerTime";
+                //    rowz[1] = 44.99m;
+                //    rowz[2] = 29;
 
-                writer.WriteRow(rowz, tableDef);
+                //    writer.WriteRow(rowz, tableDef);
 
                 //object[] rowz3 = new object[3];
 
@@ -58,7 +60,7 @@ namespace SharpDbConsole
 
                 //FillRows();
 
-                SelectWithPredicates();
+                //SelectWithPredicates();
             }
             catch (Exception ex)
             {
@@ -217,13 +219,27 @@ namespace SharpDbConsole
         {
             var interpreter = new Interpreter(new SelectParser());
 
-            string query = "select * from Tools WHERE ToolName = ' A very cool Drill                      '";
+            string query = "select ToolName, Price from Tools WHERE ToolName = 'A very cool Drill' AND Price > 250.00 OR NumInStock = 23";
 
             //string query = "select * from Tools WHERE price > 500";
 
             //string query = "select * from Person WHERE IsAdult = false";
 
             var rows = interpreter.RunQuery(query);
+        }
+
+        public static void SelectWithSubQueries()
+        {
+            var interpreter = new Interpreter(new SelectParser());
+
+            string query = @"select ToolName, Price
+                               From tools where NumInStock = (select NumInStock FROM tools where ToolName = 'hammerTime')";
+
+            //string query = "select * from Tools WHERE price > 500";
+
+            //string query = "select * from Person WHERE IsAdult = false";
+
+            var rows = interpreter.RunQueryWithSubQueries(query);
         }
 
 
