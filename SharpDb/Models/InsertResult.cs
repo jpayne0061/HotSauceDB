@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpDb.Services
+namespace SharpDb.Models
 {
-    public class QueryParser
+    public class InsertResult : OperationResult
     {
-
-
-        
 
     }
 }

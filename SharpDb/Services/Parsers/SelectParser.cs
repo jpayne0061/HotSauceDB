@@ -109,40 +109,5 @@ namespace SharpDb.Services.Parsers
             return predicates;
         }
 
-        public Subquery GetFirstMostInnerSelectStatement(string query)
-        {
-
-            int? indexOfLastOpeningParantheses = null;
-            int? indexOfClosingParantheses = null;
-
-            for (int i = 0; i < query.Length; i++)
-            {
-                if(query[i] == '(')
-                {
-                    indexOfLastOpeningParantheses = i;
-                }
-
-                if(query[i] == ')' && indexOfLastOpeningParantheses != null)
-                {
-                    indexOfClosingParantheses = i;
-                    break;
-                }
-            }
-
-            if(!indexOfLastOpeningParantheses.HasValue)
-            {
-                return null;
-            }
-
-
-            string subQuery = query.Substring((int)indexOfLastOpeningParantheses + 1, (int)(indexOfClosingParantheses - indexOfLastOpeningParantheses - 1));
-
-            return new Subquery {
-                Query = subQuery,
-                StartIndexOfOpenParantheses = (int)indexOfLastOpeningParantheses,
-                EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
-            };
-        }
-
     }
 }

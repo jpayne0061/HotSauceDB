@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpDb.Services
 {
-    public class ConditionExecutor
+    public class CompareDelegates
     {
         public static bool IsMoreThan(IComparable data, IComparable queryValue)
         {

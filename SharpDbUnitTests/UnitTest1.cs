@@ -44,7 +44,7 @@ namespace SharpDbUnitTests
             string tableName = selectParser.GetTableName(query);
 
             //assert
-            Assert.AreEqual(tableName, "someTable");
+            Assert.AreEqual(tableName, "sometable");
         }
 
         [TestMethod]
@@ -56,10 +56,10 @@ namespace SharpDbUnitTests
             SelectParser selectParser = new SelectParser();
 
             //act
-            int idx = selectParser.IndexOfWhereClause(query, "someTable");
+            int idx = selectParser.IndexOfWhereClause(query, "sometable");
 
             //assert
-            Assert.AreEqual(-7, idx);
+            Assert.AreEqual(7, idx);
         }
 
         [TestMethod]
@@ -108,8 +108,8 @@ namespace SharpDbUnitTests
 
             //assert
             Assert.AreEqual("where origin > 8", predicates[0]);
-            Assert.AreEqual("and truck = 'ford'", predicates[1]);
-            Assert.AreEqual("or space = 98", predicates[2]);
+            Assert.AreEqual("AND truck = 'ford'", predicates[1]);
+            Assert.AreEqual("OR space = 98", predicates[2]);
         }
 
         [TestMethod]
@@ -145,7 +145,7 @@ namespace SharpDbUnitTests
 
 
             //act
-            Subquery subquery = selectParser.GetFirstMostInnerSelectStatement(query);
+            InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
             //assert
             Assert.AreEqual("select truck from someTruckTable", subquery.Query);
@@ -167,7 +167,7 @@ namespace SharpDbUnitTests
 
 
             //act
-            Subquery subquery = selectParser.GetFirstMostInnerSelectStatement(query);
+            InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
             //assert
             Assert.AreEqual("   select truck from someTruckTable   ", subquery.Query);
@@ -186,9 +186,15 @@ namespace SharpDbUnitTests
                             AND truck = (   select truck from someTruckTable   ) 
                             OR space = 98";
 
-            Subquery subquery = selectParser.GetFirstMostInnerSelectStatement(query);
+            InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
-            var interpreter = new Interpreter(selectParser);
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser());
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -216,9 +222,15 @@ namespace SharpDbUnitTests
                                         ) 
                             OR space = 98";
 
-            Subquery subquery = selectParser.GetFirstMostInnerSelectStatement(query);
+            InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
-            var interpreter = new Interpreter(selectParser);
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser());
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -231,6 +243,30 @@ namespace SharpDbUnitTests
 
             //assert
             Assert.AreEqual(expected, newQuery);
+        }
+
+        [TestMethod]
+        public void InsertParser_ParseTableName()
+        {
+            //arrange
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser());
+
+            var insertParser = new InsertParser(new SchemaFetcher());
+
+            string dml = "insert into myTable VALUES ('one', 'two', 'three')";
+            string expected = "mytable";
+
+            //act
+            string tableName = insertParser.ParseTableName(dml);
+
+            //assert
+            Assert.AreEqual(expected, tableName);
         }
 
 

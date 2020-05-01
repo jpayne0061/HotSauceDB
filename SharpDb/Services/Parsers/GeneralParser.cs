@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpDb.Models;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,7 +7,7 @@ namespace SharpDb.Services.Parsers
 {
     public class GeneralParser
     {
-        private string PrepareQuery(string query)
+        public string ToLowerAndTrim(string query)
         {
             query = query.Trim();
 
@@ -15,9 +16,9 @@ namespace SharpDb.Services.Parsers
             return query;
         }
 
-        private string GetQueryType(string query)
+        public string GetSqlStatementType(string query)
         {
-            query = PrepareQuery(query);
+            query = ToLowerAndTrim(query);
 
             return TruncateLongString(query, 6);
         }
@@ -29,6 +30,42 @@ namespace SharpDb.Services.Parsers
             if (string.IsNullOrEmpty(str))
                 return str;
             return str.Substring(0, Math.Min(str.Length, maxLength));
+        }
+
+        public InnerStatement GetFirstMostInnerParantheses(string query)
+        {
+
+            int? indexOfLastOpeningParantheses = null;
+            int? indexOfClosingParantheses = null;
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                if (query[i] == '(')
+                {
+                    indexOfLastOpeningParantheses = i;
+                }
+
+                if (query[i] == ')' && indexOfLastOpeningParantheses != null)
+                {
+                    indexOfClosingParantheses = i;
+                    break;
+                }
+            }
+
+            if (!indexOfLastOpeningParantheses.HasValue)
+            {
+                return null;
+            }
+
+
+            string subQuery = query.Substring((int)indexOfLastOpeningParantheses + 1, (int)(indexOfClosingParantheses - indexOfLastOpeningParantheses - 1));
+
+            return new InnerStatement
+            {
+                Query = subQuery,
+                StartIndexOfOpenParantheses = (int)indexOfLastOpeningParantheses,
+                EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
+            };
         }
     }
 }

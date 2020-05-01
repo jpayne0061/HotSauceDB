@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpDb.Models
 {
-    public class Subquery
+    public class InnerStatement
     {
         public string Query { get; set; }
         public int StartIndexOfOpenParantheses { get; set; }

@@ -11,21 +11,48 @@ namespace SharpDb.Services
     public class Interpreter
     {
         private SelectParser _selectParser;
+        private InsertParser _insertParser;
+        private Reader _reader;
+        private Writer _writer;
+        private SchemaFetcher _schemaFetcher;
+        private GeneralParser _generalParser;
 
-        public Interpreter(SelectParser selectParser)
+        public Interpreter(SelectParser selectParser, 
+                            InsertParser insertParser, 
+                            Reader reader, 
+                            Writer writer, 
+                            SchemaFetcher schemaFetcher,
+                            GeneralParser generalParser)
         {
             _selectParser = selectParser;
+            _insertParser = insertParser;
+            _reader = reader;
+            _writer = writer;
+            _schemaFetcher = schemaFetcher;
+            _generalParser = generalParser;
+        }
+
+        public object ProcessStatement(string sql)
+        {
+            string sqlStatementType = _generalParser.GetSqlStatementType(sql);
+
+            if(sqlStatementType == "select")
+            {
+                return RunQueryAndSubqueries(sql);
+            }
+            else if(sqlStatementType == "insert")
+            {
+                return RunInsertStatement(sql);
+            }
+
+            throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
         }
 
         public List<List<IComparable>> RunQuery(string query)
         {
-            var reader = new Reader();
-
             var tableName = _selectParser.GetTableName(query);
 
-            var indexPage = reader.GetIndexPage();
-
-            var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
+            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
 
             HashSet<string> columns = _selectParser.GetColumns(query).Select(x => x.ToLower()).ToHashSet();
 
@@ -43,20 +70,18 @@ namespace SharpDb.Services
 
             var predicateOperations = BuildDelagatesFromPredicates(tableName, predicates);
 
-            return reader.GetRows(tableDef, selects, predicateOperations);
+            return _reader.GetRows(tableDef, selects, predicateOperations);
         }
 
-        public List<List<IComparable>> RunQueryWithSubQueries(string query)
+        public List<List<IComparable>> RunQueryAndSubqueries(string query)
         {
             var reader = new Reader();
 
             var indexPage = reader.GetIndexPage();
 
-            var subQuery = _selectParser.GetFirstMostInnerSelectStatement(query);
+            var subQuery = _selectParser.GetFirstMostInnerParantheses(query);
 
-            var hasSubquery = subQuery != null;
-
-            if(hasSubquery)
+            if(subQuery != null)
             {
                 var tableName = _selectParser.GetTableName(subQuery.Query);
 
@@ -68,12 +93,11 @@ namespace SharpDb.Services
                 var subQueryColumn = tableDef.ColumnDefinitions
                     .Where(x => x.ColumnName == subQueryColumns[0].ToLower() || subQueryColumns[0] == "*").First();
 
-
                 var subQueryScalar = RunQuery(subQuery.Query)[0][0];
 
                 query = ReplaceSubqueryWithValue(query, subQuery, subQueryScalar.ToString(), subQueryColumn.Type);
 
-               return RunQueryWithSubQueries(query);
+               return RunQueryAndSubqueries(query);
             }
             else
             {
@@ -82,7 +106,7 @@ namespace SharpDb.Services
 
         }
 
-        public string ReplaceSubqueryWithValue(string query, Subquery subquery, string value, TypeEnums type)
+        public string ReplaceSubqueryWithValue(string query, InnerStatement subquery, string value, TypeEnums type)
         {
             string subQueryWithParantheses = query.Substring(subquery.StartIndexOfOpenParantheses,
                 subquery.EndIndexOfCloseParantheses - subquery.StartIndexOfOpenParantheses + 1);
@@ -118,12 +142,12 @@ namespace SharpDb.Services
 
                 var operatorToDelegate = new Dictionary<string, Func<IComparable, IComparable, bool>>
                 {
-                    { ">",   ConditionExecutor.IsMoreThan },
-                    { "<",   ConditionExecutor.IsLessThan},
-                    { "=",   ConditionExecutor.IsEqualTo},
-                    { ">=",  ConditionExecutor.MoreThanOrEqualTo},
-                    { "<=",  ConditionExecutor.LessThanOrEqualTo},
-                    { "!=",  ConditionExecutor.NotEqualTo},
+                    { ">",   CompareDelegates.IsMoreThan },
+                    { "<",   CompareDelegates.IsLessThan},
+                    { "=",   CompareDelegates.IsEqualTo},
+                    { ">=",  CompareDelegates.MoreThanOrEqualTo},
+                    { "<=",  CompareDelegates.LessThanOrEqualTo},
+                    { "!=",  CompareDelegates.NotEqualTo},
                 };
 
                 predicateOperations.Add(new PredicateOperation
@@ -138,6 +162,25 @@ namespace SharpDb.Services
             }
 
             return predicateOperations;
+        }
+
+        public InsertResult RunInsertStatement(string dml)
+        {
+            IComparable[] row = _insertParser.GetRow(dml);
+
+            string tableName = _insertParser.ParseTableName(dml);
+
+            try
+            {
+                _writer.WriteRow(row, _schemaFetcher.GetTableDefinition(tableName));
+            }
+            catch(Exception ex)
+            {
+
+                return new InsertResult { Successful = false, ErrorMessage = ex.Message };
+            }
+
+            return new InsertResult { Successful = true };
         }
 
         public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)

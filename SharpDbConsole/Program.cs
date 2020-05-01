@@ -19,8 +19,10 @@ namespace SharpDbConsole
 
             try
             {
-                //SelectWithPredicates();
+                InsertRows();
                 SelectWithSubQueries();
+                //SelectWithPredicates();
+                //SelectWithSubQueries();
                 //    var reader = new Reader();
 
                 //    var indexPage = reader.GetIndexPage();
@@ -137,7 +139,7 @@ namespace SharpDbConsole
             //fill first data page, and partially fill second
             for (int i = 0; i < 1000; i++)
             {
-                object[] row = new object[3];
+                IComparable[] row = new IComparable[3];
 
                 row[0] = CreateString(20);
                 row[1] = (decimal)rd.NextDouble();
@@ -146,7 +148,7 @@ namespace SharpDbConsole
                 writer.WriteRow(row, tableDef);
             }
 
-            object[] rowx = new object[3];
+            IComparable[] rowx = new IComparable[3];
 
             rowx[0] = "Drill";
             rowx[1] = 33.78m;
@@ -159,7 +161,7 @@ namespace SharpDbConsole
             //write rows for second table
             for (int i = 0; i < 12000; i++)
             {
-                object[] row = new object[3];
+                IComparable[] row = new IComparable[3];
 
                 row[0] = CreateString(10);
                 row[1] = rd.Next();
@@ -171,7 +173,7 @@ namespace SharpDbConsole
             //continue writing writing rows for first table
             for (int i = 0; i < 1800; i++)
             {
-                object[] row = new object[3];
+                IComparable[] row = new IComparable[3];
 
                 row[0] = CreateString(20);
                 row[1] = (decimal)rd.NextDouble();
@@ -180,7 +182,7 @@ namespace SharpDbConsole
                 writer.WriteRow(row, tableDef);
             }
 
-            object[] rowz = new object[3];
+            IComparable[] rowz = new IComparable[3];
 
             rowz[0] = "Drill";
             rowz[1] = 678.99m;
@@ -188,14 +190,13 @@ namespace SharpDbConsole
 
             writer.WriteRow(rowz, tableDef);
 
-            object[] rowz2 = new object[3];
+            IComparable[] rowz2 = new IComparable[3];
 
             rowz2[0] = "Drill";
             rowz2[1] = 22.21m;
             rowz2[2] = 4;
 
             writer.WriteRow(rowz2, tableDef);
-
         }
 
         internal static string CreateString(int stringLength)
@@ -217,7 +218,13 @@ namespace SharpDbConsole
 
         public static void SelectWithPredicates()
         {
-            var interpreter = new Interpreter(new SelectParser());
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser());
 
             string query = "select ToolName, Price from Tools WHERE ToolName = 'A very cool Drill' AND Price > 250.00 OR NumInStock = 23";
 
@@ -230,14 +237,20 @@ namespace SharpDbConsole
 
         public static void SelectWithSubQueries()
         {
-            var interpreter = new Interpreter(new SelectParser());
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser());
 
             string query = @"select ToolName, Price
                                From tools where NumInStock = (
                                         select NumInStock FROM tools 
                                         where ToolName = 
                                                     (
-                                                        Select * from tools where price = 678.99
+                                                        Select * from tools where ToolName = 'nail puller 2'
                                                     )
                                         )";
 
@@ -245,9 +258,25 @@ namespace SharpDbConsole
 
             //string query = "select * from Person WHERE IsAdult = false";
 
-            var rows = interpreter.RunQueryWithSubQueries(query);
+            var rows = interpreter.ProcessStatement(query);
         }
 
+        static void InsertRows()
+        {
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser());
+
+            var insertParser = new InsertParser(new SchemaFetcher());
+
+            string dml = "insert into tools VALUES ('nail puller 2', 15.99, 34)";
+
+            interpreter.ProcessStatement(dml);
+        }
 
     }
 }

@@ -9,7 +9,7 @@ namespace SharpDb.Services
 {
     public class Writer
     {
-        public void WriteRow(object[] row, long diskLocation, TableDefinition tableDefinition)
+        public void WriteRow(IComparable[] row, long diskLocation, TableDefinition tableDefinition)
         {
             long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes());
 
@@ -53,7 +53,7 @@ namespace SharpDb.Services
             }
         }
 
-        public void WriteColumnData(BinaryWriter binaryWriter, object data, ColumnDefinition columnDefinition)
+        public void WriteColumnData(BinaryWriter binaryWriter, IComparable data, ColumnDefinition columnDefinition)
         {
             if (data is bool)
             {
@@ -164,7 +164,7 @@ namespace SharpDb.Services
             return GetNextUnclaimedDataPage(indexPage);
         }
 
-        public void WriteRow(object[] row, TableDefinition tableDef)
+        public void WriteRow(IComparable[] row, TableDefinition tableDef)
         {
             var writer = new Writer();
 
