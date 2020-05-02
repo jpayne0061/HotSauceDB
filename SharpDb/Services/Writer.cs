@@ -9,9 +9,21 @@ namespace SharpDb.Services
 {
     public class Writer
     {
+        public void WriteRow(IComparable[] row, TableDefinition tableDef)
+        {
+            var writer = new Writer();
+
+            var reader = new Reader();
+
+            long addressToWrite = reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
+
+            writer.WriteRow(row, addressToWrite, tableDef);
+
+            writer.UpdateObjectCount(addressToWrite);
+        }
         public void WriteRow(IComparable[] row, long diskLocation, TableDefinition tableDefinition)
         {
-            long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes());
+            long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes(), isRow: true);
 
             //if first row, write pointer as zero
             if((addressToWriteTo - 2) % Globals.PageSize == 0)
@@ -84,9 +96,38 @@ namespace SharpDb.Services
 
         public void WriteTableDefinition(TableDefinition tableDefinition)
         {
-            var newDefinitionAddress = FindSpotForNewTableDefinition();
+            //gte first free spot to write table def
+
+            bool isFirstTable = IsFirstTable();
+
+            if(isFirstTable)
+            {
+                WriteZero(0); //record count as zero
+                //var pointerToNextIndexRecord = GetNextUnclaimedDataPage();
+                //WriteLong(Globals.NextPointerAddress, pointerToNextIndexRecord);
+            }
+
+            var reader = new Reader();
+
+            //need to pass in address of current page, not zero
+            long addressToWrite = reader.GetFirstAvailableDataAddress(0, Globals.TABLE_DEF_LENGTH);
+
+
+            //just added t
+            if((addressToWrite - 2) % Globals.PageSize == 0)
+            {
+                var pointerToNextIndexRecord = GetNextUnclaimedDataPage();
+                WriteLong((addressToWrite - 2) + Globals.NextPointerAddress, pointerToNextIndexRecord);
+                WriteZero(pointerToNextIndexRecord);
+            }
+
+            //this should return current next page, instead of the first page address
+            //first page isn't really full
+            var newDefinitionAddress = EndOfPageCheck(addressToWrite, Globals.TABLE_DEF_LENGTH);
 
             var nextFreeDataPage = GetNextUnclaimedDataPage();
+
+            long tableDefEnd = 0;
 
             using (FileStream stream = File.OpenWrite(Globals.FILE_NAME))
             {
@@ -94,7 +135,7 @@ namespace SharpDb.Services
                 {
                     binaryWriter.BaseStream.Position = newDefinitionAddress;// lastTableDefAddress;
 
-                    binaryWriter.Write(nextFreeDataPage); //need address of table defintion - where will it live?
+                    binaryWriter.Write(nextFreeDataPage);
                     binaryWriter.Write(tableDefinition.TableName);
 
                     foreach (var col in tableDefinition.ColumnDefinitions)
@@ -105,10 +146,53 @@ namespace SharpDb.Services
                         binaryWriter.Write(col.ByteSize);
                     }
 
+                    tableDefEnd = stream.Position;
+
                     binaryWriter.Write(Globals.EndTableDefinition);
 
                     stream.Position = nextFreeDataPage;
                     binaryWriter.Write((short)0);
+                }
+            }
+
+            UpdateObjectCount(tableDefEnd);
+        }
+
+        void WriteZero(long address)
+        {
+            using (FileStream stream = File.OpenWrite(Globals.FILE_NAME))
+            {
+                using (BinaryWriter binaryWriter = new BinaryWriter(stream))
+                {
+                    binaryWriter.BaseStream.Position = address;
+
+                    binaryWriter.Write((short)0);
+                }
+            }
+        }
+
+        void WriteLong(long address, long num)
+        {
+            using (FileStream stream = File.OpenWrite(Globals.FILE_NAME))
+            {
+                using (BinaryWriter binaryWriter = new BinaryWriter(stream))
+                {
+                    binaryWriter.BaseStream.Position = address;
+
+                    binaryWriter.Write((long)num);
+                }
+            }
+        }
+
+        private bool IsFirstTable()
+        {
+            using (FileStream stream = File.OpenRead(Globals.FILE_NAME))
+            {
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    reader.BaseStream.Position = 0;
+
+                    return reader.PeekChar() == -1;
                 }
             }
         }
@@ -119,7 +203,7 @@ namespace SharpDb.Services
             {
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
-                    reader.BaseStream.Position = 0;
+                    reader.BaseStream.Position = 2;
 
                     while (reader.PeekChar() != -1 && reader.PeekChar() != 0)
                     {
@@ -164,20 +248,7 @@ namespace SharpDb.Services
             return GetNextUnclaimedDataPage(indexPage);
         }
 
-        public void WriteRow(IComparable[] row, TableDefinition tableDef)
-        {
-            var writer = new Writer();
-
-            var reader = new Reader();
-
-            long addressToWrite = reader.GetFirstAvailableDataAddressOfTableByName(tableDef);
-
-            writer.WriteRow(row, addressToWrite, tableDef);
-
-            writer.UpdateRowCount(addressToWrite);
-        }
-
-        private void UpdateRowCount(long currentAddress)
+        private void UpdateObjectCount(long currentAddress)
         {
             long addressOfCount = currentAddress - (currentAddress % Globals.PageSize);
 
@@ -214,11 +285,18 @@ namespace SharpDb.Services
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
-        private long EndOfPageCheck(long address, int rowSize)
+        private long EndOfPageCheck(long address, int objectSize, bool isRow = false)
         {
             long nextPageAddress = PageLocationHelper.GetNextDivisbleNumber(address, Globals.PageSize);
 
-            if(address + (rowSize * 2) > nextPageAddress - 8)
+            long load = address + (objectSize + Globals.Int64ByteLength);
+
+            if(isRow)
+            {
+                load += objectSize;
+            }
+
+            if ( load > nextPageAddress - 8)
             {
                 long nextPagePointer = GetNextUnclaimedDataPage();
 
@@ -233,9 +311,6 @@ namespace SharpDb.Services
                         binaryWriter.BaseStream.Position = nextPagePointer;
 
                         binaryWriter.Write((short)0);
-
-                        //where is zero count recorded?
-                        //need to write zero row count for here
 
                         return binaryWriter.BaseStream.Position;
                     }

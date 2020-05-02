@@ -19,8 +19,32 @@ namespace SharpDbConsole
 
             try
             {
-                InsertRows();
-                SelectWithSubQueries();
+                SelectWithPredicates();
+
+                //InsertRows();
+
+                //WriteTablesAndFillRows();
+
+                //for (int i = 0; i < 20; i++)
+                //{
+                //    var t = BuildToolsTable();
+
+                //    var p = BuildPersonTable();
+
+                //    var writer = new Writer();
+
+                //    writer.WriteTableDefinition(t);
+                //    writer.WriteTableDefinition(p);
+                //}
+
+                //var reader = new Reader();
+
+                //var indexPage = reader.GetIndexPage();
+
+                //WriteTablesAndFillRows();
+
+                //InsertRows();
+                //SelectWithSubQueries();
                 //SelectWithPredicates();
                 //SelectWithSubQueries();
                 //    var reader = new Reader();
@@ -116,7 +140,7 @@ namespace SharpDbConsole
             return table;
         }
 
-        public static void FillRows()
+        public static void WriteTablesAndFillRows()
         {
             var t = BuildToolsTable();
 
@@ -133,11 +157,11 @@ namespace SharpDbConsole
 
             var indexPage = reader.GetIndexPage();
 
-            var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Tools").FirstOrDefault();
+            var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "tools").FirstOrDefault();
 
 
             //fill first data page, and partially fill second
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 100; i++)
             {
                 IComparable[] row = new IComparable[3];
 
@@ -156,10 +180,10 @@ namespace SharpDbConsole
 
             writer.WriteRow(rowx, tableDef);
 
-            var personTableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Person").FirstOrDefault();
+            var personTableDef = indexPage.TableDefinitions.Where(x => x.TableName == "person").FirstOrDefault();
 
             //write rows for second table
-            for (int i = 0; i < 12000; i++)
+            for (int i = 0; i < 1200; i++)
             {
                 IComparable[] row = new IComparable[3];
 
@@ -226,7 +250,10 @@ namespace SharpDbConsole
                 new SchemaFetcher(),
                 new GeneralParser());
 
-            string query = "select ToolName, Price from Tools WHERE ToolName = 'A very cool Drill' AND Price > 250.00 OR NumInStock = 23";
+
+            string query = "select ToolName, Price from tools where NumInStock = 4";
+
+            //string query = "select ToolName, Price from Tools WHERE ToolName = 'A very cool Drill' AND Price > 250.00 OR NumInStock = 23";
 
             //string query = "select * from Tools WHERE price > 500";
 

@@ -1,7 +1,5 @@
 ﻿using SharpDb.Models;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SharpDb.Services.Parsers
 {
@@ -23,8 +21,6 @@ namespace SharpDb.Services.Parsers
             return TruncateLongString(query, 6);
         }
 
-
-        //https://stackoverflow.com/questions/3566830/what-method-in-the-string-class-returns-only-the-first-n-characters
         public string TruncateLongString(string str, int maxLength)
         {
             if (string.IsNullOrEmpty(str))
@@ -34,7 +30,6 @@ namespace SharpDb.Services.Parsers
 
         public InnerStatement GetFirstMostInnerParantheses(string query)
         {
-
             int? indexOfLastOpeningParantheses = null;
             int? indexOfClosingParantheses = null;
 
