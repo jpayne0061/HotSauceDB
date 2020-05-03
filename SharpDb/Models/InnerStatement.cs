@@ -6,7 +6,7 @@ namespace SharpDb.Models
 {
     public class InnerStatement
     {
-        public string Query { get; set; }
+        public string Statement { get; set; }
         public int StartIndexOfOpenParantheses { get; set; }
         public int EndIndexOfCloseParantheses { get; set; }
     }

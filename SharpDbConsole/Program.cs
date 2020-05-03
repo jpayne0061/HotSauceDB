@@ -5,6 +5,7 @@ using SharpDb.Services;
 using SharpDb.Services.Parsers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -19,7 +20,13 @@ namespace SharpDbConsole
 
             try
             {
-                SelectWithPredicates();
+
+                //WriteTablesAndFillRows();
+
+                ProcessCreateTableStatement();
+
+
+                //SelectWithPredicates();
 
                 //InsertRows();
 
@@ -37,9 +44,11 @@ namespace SharpDbConsole
                 //    writer.WriteTableDefinition(p);
                 //}
 
-                //var reader = new Reader();
+                var reader = new Reader();
 
-                //var indexPage = reader.GetIndexPage();
+                var indexPage = reader.GetIndexPage();
+
+                var x = 0;
 
                 //WriteTablesAndFillRows();
 
@@ -248,7 +257,8 @@ namespace SharpDbConsole
                 new Reader(),
                 new Writer(),
                 new SchemaFetcher(),
-                new GeneralParser());
+                new GeneralParser(),
+                new CreateParser());
 
 
             string query = "select ToolName, Price from tools where NumInStock = 4";
@@ -270,7 +280,8 @@ namespace SharpDbConsole
                 new Reader(),
                 new Writer(),
                 new SchemaFetcher(),
-                new GeneralParser());
+                new GeneralParser(),
+                new CreateParser());
 
             string query = @"select ToolName, Price
                                From tools where NumInStock = (
@@ -296,13 +307,47 @@ namespace SharpDbConsole
                 new Reader(),
                 new Writer(),
                 new SchemaFetcher(),
-                new GeneralParser());
+                new GeneralParser(),
+                new CreateParser());
 
             var insertParser = new InsertParser(new SchemaFetcher());
 
             string dml = "insert into tools VALUES ('nail puller 2', 15.99, 34)";
 
             interpreter.ProcessStatement(dml);
+        }
+
+        static void ProcessCreateTableStatement()
+        {
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser(),
+                new CreateParser());
+
+            string dml = @"create table Houses(
+                                Address varchar(100),
+                                Price decimal,
+                                IsListed bool,
+                                SquareFeet bigint,
+                                NumBedRooms int
+                            )";
+
+            interpreter.ProcessStatement(dml);
+
+            string insert = "insert into houses values ('123 abc street', 341000, true, 2300, 3)";
+
+            interpreter.ProcessStatement(insert);
+
+            string select = "select * from houses where address = '123 abc street' AND price = 341000";
+
+            List<List<IComparable>> rows = (List<List<IComparable>>)interpreter.ProcessStatement(select);
+
+            var x = 0;
+
         }
 
     }

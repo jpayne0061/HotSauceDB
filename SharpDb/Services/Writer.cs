@@ -87,6 +87,10 @@ namespace SharpDb.Services
             {
                 binaryWriter.Write((Int64)data);
             }
+            else if (columnDefinition.Type == Enums.TypeEnums.DateTime)
+            {
+                binaryWriter.Write((string)data);
+            }
             else if (data is string)
             {
                 var x = ((string)data).PadRight(columnDefinition.ByteSize - 1, ' ');
@@ -94,7 +98,7 @@ namespace SharpDb.Services
             }
         }
 
-        public void WriteTableDefinition(TableDefinition tableDefinition)
+        public ResultMessage WriteTableDefinition(TableDefinition tableDefinition)
         {
             //gte first free spot to write table def
 
@@ -156,6 +160,8 @@ namespace SharpDb.Services
             }
 
             UpdateObjectCount(tableDefEnd);
+
+            return new ResultMessage { Message = $"table {tableDefinition.TableName} has been added successfully" };
         }
 
         void WriteZero(long address)

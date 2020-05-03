@@ -57,8 +57,47 @@ namespace SharpDb.Services.Parsers
 
             return new InnerStatement
             {
-                Query = subQuery,
+                Statement = subQuery,
                 StartIndexOfOpenParantheses = (int)indexOfLastOpeningParantheses,
+                EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
+            };
+        }
+
+        public InnerStatement GetOuterMostParantheses(string query)
+        {
+            int? indexFirstParantheses = null;
+            int? indexOfClosingParantheses = null;
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                if (query[i] == '(')
+                {
+                    indexFirstParantheses = i;
+                    break;
+                }
+            }
+
+            for (int i = query.Length - 1; i >= 0; i--)
+            {
+                if (query[i] == ')')
+                {
+                    indexOfClosingParantheses = i;
+                    break;
+                }
+            }
+
+            if (!indexFirstParantheses.HasValue)
+            {
+                return null;
+            }
+
+
+            string subQuery = query.Substring((int)indexFirstParantheses + 1, (int)(indexOfClosingParantheses - indexFirstParantheses - 1));
+
+            return new InnerStatement
+            {
+                Statement = subQuery,
+                StartIndexOfOpenParantheses = (int)indexFirstParantheses,
                 EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
             };
         }

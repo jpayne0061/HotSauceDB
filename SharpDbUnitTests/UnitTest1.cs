@@ -148,7 +148,7 @@ namespace SharpDbUnitTests
             InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
             //assert
-            Assert.AreEqual("select truck from someTruckTable", subquery.Query);
+            Assert.AreEqual("select truck from someTruckTable", subquery.Statement);
             Assert.AreEqual(130, subquery.StartIndexOfOpenParantheses);
             Assert.AreEqual(163, subquery.EndIndexOfCloseParantheses);
         }
@@ -170,7 +170,7 @@ namespace SharpDbUnitTests
             InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
             //assert
-            Assert.AreEqual("   select truck from someTruckTable   ", subquery.Query);
+            Assert.AreEqual("   select truck from someTruckTable   ", subquery.Statement);
             Assert.AreEqual(130, subquery.StartIndexOfOpenParantheses);
             Assert.AreEqual(169, subquery.EndIndexOfCloseParantheses);
         }
@@ -269,6 +269,28 @@ namespace SharpDbUnitTests
             Assert.AreEqual(expected, tableName);
         }
 
+        [TestMethod]
+        public void GetOuterMostParantheses()
+        {
+            //arrange
+            var genParser = new GeneralParser();
+
+            string dml = @"create table houses(
+                                Address varchar(100),
+                                Price decimal
+                            )";
+
+            string expected = @"
+                                Address varchar(100),
+                                Price decimal
+                            ";
+
+            //act
+            string statement = genParser.GetOuterMostParantheses(dml).Statement;
+
+            //assert
+            Assert.AreEqual(expected, statement);
+        }
 
     }
 }

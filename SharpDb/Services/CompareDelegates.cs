@@ -37,5 +37,10 @@ namespace SharpDb.Services
             return data.CompareTo(queryValue) == -1 || data.CompareTo(queryValue) == 0;
         }
 
+        public static bool Contains(IComparable data, HashSet<IComparable> queryValue)
+        {
+            return queryValue.Contains(data);
+        }
+
     }
 }

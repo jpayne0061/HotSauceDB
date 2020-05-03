@@ -11,6 +11,7 @@ namespace SharpDb.Enums
         Decimal,
         Int32,
         Int64,
-        String
+        String,
+        DateTime
     }
 }

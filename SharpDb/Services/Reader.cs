@@ -78,7 +78,12 @@ namespace SharpDb.Services
 
         public long GetNextTableDefinitionStartAddress(long currentPosition)
         {
-            return Globals.TABLE_DEF_LENGTH - (currentPosition % Globals.PageSize) + currentPosition + 2;
+            while ((currentPosition - 2) % Globals.TABLE_DEF_LENGTH != 0)
+            {
+                currentPosition += 1;
+            }
+
+            return currentPosition;
         }
 
 
@@ -204,6 +209,8 @@ namespace SharpDb.Services
                     return binaryReader.ReadInt64();
                 case TypeEnums.String:
                     return binaryReader.ReadString();
+                case TypeEnums.DateTime:
+                    return Convert.ToDateTime(binaryReader.ReadString());
                 default:
                     throw new Exception("invalid column definition type");
             }

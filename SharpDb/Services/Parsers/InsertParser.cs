@@ -60,7 +60,7 @@ namespace SharpDb.Services.Parsers
 
             InnerStatement innerStatementValues = GetFirstMostInnerParantheses(dml);
 
-            IComparable[] comparables = GetRow(innerStatementValues.Query, tableDefinition);
+            IComparable[] comparables = GetRow(innerStatementValues.Statement, tableDefinition);
 
             return comparables;
         }

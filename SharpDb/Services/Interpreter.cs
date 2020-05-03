@@ -16,13 +16,15 @@ namespace SharpDb.Services
         private Writer _writer;
         private SchemaFetcher _schemaFetcher;
         private GeneralParser _generalParser;
+        private CreateParser _createParser;
 
         public Interpreter(SelectParser selectParser, 
                             InsertParser insertParser, 
                             Reader reader, 
                             Writer writer, 
                             SchemaFetcher schemaFetcher,
-                            GeneralParser generalParser)
+                            GeneralParser generalParser,
+                            CreateParser createParser)
         {
             _selectParser = selectParser;
             _insertParser = insertParser;
@@ -30,6 +32,7 @@ namespace SharpDb.Services
             _writer = writer;
             _schemaFetcher = schemaFetcher;
             _generalParser = generalParser;
+            _createParser = createParser;
         }
 
         public object ProcessStatement(string sql)
@@ -43,6 +46,10 @@ namespace SharpDb.Services
             else if(sqlStatementType == "insert")
             {
                 return RunInsertStatement(sql);
+            }
+            else if (sqlStatementType == "create")
+            {
+                return RunCreateTableStatement(sql);
             }
 
             throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
@@ -83,9 +90,9 @@ namespace SharpDb.Services
 
             if(subQuery != null)
             {
-                var tableName = _selectParser.GetTableName(subQuery.Query);
+                var tableName = _selectParser.GetTableName(subQuery.Statement);
 
-                IList<string> subQueryColumns = _selectParser.GetColumns(subQuery.Query);
+                IList<string> subQueryColumns = _selectParser.GetColumns(subQuery.Statement);
 
                 var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
@@ -93,9 +100,9 @@ namespace SharpDb.Services
                 var subQueryColumn = tableDef.ColumnDefinitions
                     .Where(x => x.ColumnName == subQueryColumns[0].ToLower() || subQueryColumns[0] == "*").First();
 
-                var subQueryScalar = RunQuery(subQuery.Query)[0][0];
+                var subQueryValue = string.Join(",", RunQuery(subQuery.Statement).Select(x => x[0]));
 
-                query = ReplaceSubqueryWithValue(query, subQuery, subQueryScalar.ToString(), subQueryColumn.Type);
+                query = ReplaceSubqueryWithValue(query, subQuery, subQueryValue, subQueryColumn.Type);
 
                return RunQueryAndSubqueries(query);
             }
@@ -148,6 +155,7 @@ namespace SharpDb.Services
                     { ">=",  CompareDelegates.MoreThanOrEqualTo},
                     { "<=",  CompareDelegates.LessThanOrEqualTo},
                     { "!=",  CompareDelegates.NotEqualTo},
+                    { "in",  CompareDelegates.NotEqualTo},
                 };
 
                 predicateOperations.Add(new PredicateOperation
@@ -183,6 +191,16 @@ namespace SharpDb.Services
             return new InsertResult { Successful = true };
         }
 
+        public ResultMessage RunCreateTableStatement(string dml)
+        {
+            TableDefinition tableDef = new TableDefinition();
+
+            tableDef.TableName = _createParser.GetTableName(dml);
+            tableDef.ColumnDefinitions = _createParser.GetColumnDefintions(dml);
+
+            return _writer.WriteTableDefinition(tableDef);
+        }
+
         public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)
         {
             IComparable convertedVal;
@@ -206,6 +224,9 @@ namespace SharpDb.Services
                     break;
                 case TypeEnums.String:
                     convertedVal = val.TrimStart('\'').TrimEnd('\'').PadRight(columnDefinition.ByteSize - 1, ' ');
+                    break;
+                case TypeEnums.DateTime:
+                    convertedVal = Convert.ToDateTime(val);
                     break;
                 default:
                     convertedVal = null;
