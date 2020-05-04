@@ -194,7 +194,8 @@ namespace SharpDbUnitTests
                 new Reader(),
                 new Writer(),
                 new SchemaFetcher(),
-                new GeneralParser());
+                new GeneralParser(),
+                new CreateParser());
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -230,7 +231,8 @@ namespace SharpDbUnitTests
                 new Reader(),
                 new Writer(),
                 new SchemaFetcher(),
-                new GeneralParser());
+                new GeneralParser(),
+                new CreateParser());
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -255,7 +257,8 @@ namespace SharpDbUnitTests
                 new Reader(),
                 new Writer(),
                 new SchemaFetcher(),
-                new GeneralParser());
+                new GeneralParser(),
+                new CreateParser());
 
             var insertParser = new InsertParser(new SchemaFetcher());
 
@@ -290,6 +293,45 @@ namespace SharpDbUnitTests
 
             //assert
             Assert.AreEqual(expected, statement);
+        }
+
+        [TestMethod]
+        public void GetInnerMostSelectStatement()
+        {
+            //arrange
+            string select = @"select * from somTable WHERE col IN (3,4,5) and colz = (select * from blag)";
+
+            var parser = new SelectParser();
+
+            //act
+
+            string result = parser.GetInnerMostSelectStatement(select).Statement;
+
+            Assert.AreEqual("select * from blag", result);
+        }
+
+        [TestMethod]
+        public void GetInnerMostSelectStatement_WithNewLines()
+        {
+            //arrange
+            string select = @"select * from somTable WHERE col IN (3,4,5) and colz = (
+                                    select * from blag
+
+)";
+
+
+            var parser = new SelectParser();
+
+            var expected = @"
+                                    select * from blag
+
+";
+
+            //act
+
+            string result = parser.GetInnerMostSelectStatement(select).Statement;
+
+            Assert.AreEqual(expected, result);
         }
 
     }

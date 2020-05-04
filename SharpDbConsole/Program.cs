@@ -21,9 +21,11 @@ namespace SharpDbConsole
             try
             {
 
+                RunInStatement();
+                //RunInStatement();
                 //WriteTablesAndFillRows();
 
-                ProcessCreateTableStatement();
+                //ProcessCreateTableStatement();
 
 
                 //SelectWithPredicates();
@@ -348,6 +350,63 @@ namespace SharpDbConsole
 
             var x = 0;
 
+        }
+
+        static void RunInStatement()
+        {
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser(),
+                new CreateParser());
+
+            //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
+
+            //interpreter.ProcessStatement(insert);
+
+            //string insert2 = "insert into houses values ('123 abc street', 360000, true, 2300, 3)";
+
+            //interpreter.ProcessStatement(insert2);
+
+            string select = @"select price, address from houses where price in (341000, 365000)
+                                or Address = '123 abc street'";
+
+            var rows = interpreter.ProcessStatement(select);
+        }
+
+        static void RunInStatementWithSubqueries()
+        {
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser(),
+                new CreateParser());
+
+            //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
+
+            //interpreter.ProcessStatement(insert);
+
+            //string insert2 = "insert into houses values ('4500 Cool street', 389000, true, 2300, 3)";
+
+            //interpreter.ProcessStatement(insert2);
+
+            //string insert3 = "insert into houses values ('4500 Cool street', 389000, true, 2300, 5)";
+
+            //interpreter.ProcessStatement(insert3);
+
+            string select = @"select * from houses where price in (341000, 365000)
+                    and Address = (select address from houses where price = 389000)
+                        or NumBedrooms = 5";
+             
+
+
+            var rows = interpreter.ProcessStatement(select);
         }
 
     }

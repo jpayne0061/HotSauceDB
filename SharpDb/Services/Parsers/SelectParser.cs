@@ -83,23 +83,60 @@ namespace SharpDb.Services.Parsers
              .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
              Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
 
+            //need to add parts in parantheses back together
+
+            string valuesInParantheses = "";
+
+            //rewrite without shitty temp list
+            var queryPartsWithP = new List<string>();
+
+            bool startParantheses = false;
+
+            foreach (var part in queryParts)
+            {
+                if(part.Contains(")"))
+                {
+                    startParantheses = false;
+                    valuesInParantheses += part;
+                    queryPartsWithP.Add(valuesInParantheses);
+                    continue;
+                }
+
+                if(startParantheses)
+                {
+                    valuesInParantheses += part;
+                }
+
+                if(part.Contains("("))
+                {
+                    startParantheses = true;
+                    valuesInParantheses += part;
+                }
+                else
+                {
+                    queryPartsWithP.Add(part);
+                }
+
+            }
+
+
             var whereClauseIndex = IndexOfWhereClause(query, GetTableName(query));
 
-            string firstPredicate = queryParts[whereClauseIndex + 0] + " " + 
-                                    queryParts[whereClauseIndex + 1] + " " +
-                                    queryParts[whereClauseIndex + 2] + " " +
-                                    queryParts[whereClauseIndex + 3];
+            string firstPredicate = queryPartsWithP[whereClauseIndex + 0] + " " + 
+                                    queryPartsWithP[whereClauseIndex + 1] + " " +
+                                    queryPartsWithP[whereClauseIndex + 2] + " " +
+                                    queryPartsWithP[whereClauseIndex + 3];
 
             predicates.Add(firstPredicate);
 
             int operatorIndex = whereClauseIndex + 4;
 
-            while (operatorIndex < queryParts.Count())
+            while (operatorIndex < queryPartsWithP.Count())
             {
-                string currentPredicate = queryParts[operatorIndex + 0] + " " +
-                                          queryParts[operatorIndex + 1] + " " +
-                                          queryParts[operatorIndex + 2] + " " +
-                                          queryParts[operatorIndex + 3];
+                string currentPredicate = queryPartsWithP[operatorIndex + 0] + " " +
+                                          queryPartsWithP[operatorIndex + 1] + " " +
+                                          queryPartsWithP[operatorIndex + 2] + " " +
+                                          queryPartsWithP[operatorIndex + 3];
 
                 predicates.Add(currentPredicate);
 
@@ -107,6 +144,67 @@ namespace SharpDb.Services.Parsers
             }
 
             return predicates;
+        }
+
+        public InnerStatement GetInnerMostSelectStatement(string query)
+        {
+            int? indexOfLastOpeningParantheses = null;
+            int? indexOfClosingParantheses = null;
+
+            int endParanthesesToSkip = 0;
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                if (query[i] == '(')
+                {
+                    //succeeded by select?
+                    if(SucceededBySelect(query, i))
+                    {
+                        indexOfLastOpeningParantheses = i;
+                    }
+                    else
+                    {
+                        endParanthesesToSkip += 1;
+                    }
+                   
+                }
+
+                if (query[i] == ')')
+                {
+                    if(endParanthesesToSkip == 0)
+                    {
+                        indexOfClosingParantheses = i;
+                        break;
+                    }
+
+                    endParanthesesToSkip -= 1;
+                }
+
+            }
+
+            if (!indexOfLastOpeningParantheses.HasValue)
+            {
+                return null;
+            }
+
+
+            string subQuery = query.Substring((int)indexOfLastOpeningParantheses + 1, (int)(indexOfClosingParantheses - indexOfLastOpeningParantheses - 1));
+
+            return new InnerStatement
+            {
+                Statement = subQuery,
+                StartIndexOfOpenParantheses = (int)indexOfLastOpeningParantheses,
+                EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
+            };
+        }
+
+        public bool SucceededBySelect(string str, int idx)
+        {
+            var sub = str.Substring(idx);
+
+            sub = sub.Replace(" ", "").Replace("\r\n", "");
+
+            return sub.Length > 7 && sub.Substring(0, 7) == "(select";
         }
 
     }

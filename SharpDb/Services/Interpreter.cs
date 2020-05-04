@@ -86,7 +86,13 @@ namespace SharpDb.Services
 
             var indexPage = reader.GetIndexPage();
 
-            var subQuery = _selectParser.GetFirstMostInnerParantheses(query);
+            var subQuery = _selectParser.GetInnerMostSelectStatement(query);
+
+            //there may still be subqueries, this could catch an 'in' statemnent
+            //if(_generalParser.GetSqlStatementType(subQuery.Statement.Trim().ToLower()) != "select")
+            //{
+            //    subQuery = null;
+            //}
 
             if(subQuery != null)
             {
@@ -147,7 +153,7 @@ namespace SharpDb.Services
                 var colDef = tableDefinition.ColumnDefinitions
                     .Where(x => x.ColumnName == predicateParts[1].ToLower()).FirstOrDefault();
 
-                var operatorToDelegate = new Dictionary<string, Func<IComparable, IComparable, bool>>
+                var operatorToDelegate = new Dictionary<string, Func<IComparable, object, bool>>
                 {
                     { ">",   CompareDelegates.IsMoreThan },
                     { "<",   CompareDelegates.IsLessThan},
@@ -155,18 +161,41 @@ namespace SharpDb.Services
                     { ">=",  CompareDelegates.MoreThanOrEqualTo},
                     { "<=",  CompareDelegates.LessThanOrEqualTo},
                     { "!=",  CompareDelegates.NotEqualTo},
-                    { "in",  CompareDelegates.NotEqualTo},
+                    { "in",  CompareDelegates.Contains},
                 };
 
-                predicateOperations.Add(new PredicateOperation
+                if(predicateParts[2] == "in")
                 {
-                    Delegate = operatorToDelegate[predicateParts[2]],
-                    Predicate = predicates[i],
-                    ColumnName = predicateParts[1],
-                    Value = ConvertToType(colDef, predicateParts[3]),
-                    Operator = predicateParts[0],
-                    ColumnIndex = colDef.Index
-                });
+                    string innerValue = predicateParts[3].Trim('(').Trim(')');
+
+                    var list = new List<string>(innerValue.Split(','));
+
+                    var targetList = list
+                              .Select(x => ConvertToType(colDef, x))
+                              .ToHashSet();
+
+                    predicateOperations.Add(new PredicateOperation
+                    {
+                        Delegate = operatorToDelegate[predicateParts[2]],
+                        Predicate = predicates[i],
+                        ColumnName = predicateParts[1],
+                        Value = targetList,
+                        Operator = predicateParts[0],
+                        ColumnIndex = colDef.Index
+                    });
+                }
+                else
+                {
+                    predicateOperations.Add(new PredicateOperation
+                    {
+                        Delegate = operatorToDelegate[predicateParts[2]],
+                        Predicate = predicates[i],
+                        ColumnName = predicateParts[1],
+                        Value = ConvertToType(colDef, predicateParts[3]),
+                        Operator = predicateParts[0],
+                        ColumnIndex = colDef.Index
+                    });
+                }
             }
 
             return predicateOperations;
