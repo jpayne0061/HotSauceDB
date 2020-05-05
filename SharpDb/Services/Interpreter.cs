@@ -2,6 +2,7 @@
 using SharpDb.Models;
 using SharpDb.Services.Parsers;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,8 @@ namespace SharpDb.Services
 {
     public class Interpreter
     {
+        private ConcurrentQueue<string> _queue = new ConcurrentQueue<string>();
+
         private SelectParser _selectParser;
         private InsertParser _insertParser;
         private Reader _reader;
@@ -37,6 +40,19 @@ namespace SharpDb.Services
 
         public object ProcessStatement(string sql)
         {
+            //_queue.Enqueue(sql);
+
+            //while()
+            //{
+
+            //}
+
+            //if(!_queue.IsEmpty)
+            //{
+
+            //}
+            
+
             string sqlStatementType = _generalParser.GetSqlStatementType(sql);
 
             if(sqlStatementType == "select")
@@ -53,6 +69,25 @@ namespace SharpDb.Services
             }
 
             throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
+        }
+
+        private List<List<IComparable>> ProcessPostPredicateClauses(string query, PredicateStep predicateStep)
+        {
+            if(predicateStep.PredicateTrailer[0] == "order")
+            {
+
+            }
+
+            //get index of column from column defintion
+
+            //create dictionary/hashset based on index
+
+
+            List<List<IComparable>> r = new List<List<IComparable>> { new List<IComparable> { 2, 3, 4 }, new List<IComparable> { 6, 9, 0 } };
+
+            r.OrderBy(x => x[2]);
+
+            return new List<List<IComparable>>();
         }
 
         public List<List<IComparable>> RunQuery(string query)
@@ -73,11 +108,18 @@ namespace SharpDb.Services
                 }
             }
 
-            var predicates = _selectParser.ParsePredicates(query);
+            var predicateStep = _selectParser.ParsePredicates(query);
 
-            var predicateOperations = BuildDelagatesFromPredicates(tableName, predicates);
+            var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
 
-            return _reader.GetRows(tableDef, selects, predicateOperations);
+            List<List<IComparable>> rows =  _reader.GetRows(tableDef, selects, predicateOperations);
+
+            if(predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
+            {
+                rows = ProcessPostPredicateClauses(query, predicateStep);
+            }
+
+            return rows;
         }
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
@@ -128,6 +170,11 @@ namespace SharpDb.Services
 
         public List<PredicateOperation> BuildDelagatesFromPredicates(string tableName, List<string> predicates)
         {
+            if(predicates == null || !predicates.Any())
+            {
+                return new List<PredicateOperation>();
+            }
+
             var reader = new Reader();
 
             var indexPage = reader.GetIndexPage();

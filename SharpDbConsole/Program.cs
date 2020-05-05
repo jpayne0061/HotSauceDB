@@ -4,6 +4,7 @@ using SharpDb.Models;
 using SharpDb.Services;
 using SharpDb.Services.Parsers;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -20,6 +21,22 @@ namespace SharpDbConsole
 
             try
             {
+                //ConcurrentStack<char> stack = new ConcurrentStack<char>();
+
+                //Parallel.For(0, 30,
+                //         index => {
+                //             using (FileStream fs = new FileStream("test.txt", FileMode.Open, FileAccess.Read, FileShare.Read))
+                //             {
+                //                 using (BinaryReader binaryReader = new BinaryReader(fs))
+                //                 {
+                //                     binaryReader.BaseStream.Position = 0;
+
+                //                     var x = binaryReader.ReadChar();
+                //                     stack.Push(x);
+                //                 }
+                //             }
+                //         });
+
                 FullIntegration();
                 //RunInStatement();
                 //RunInStatement();
@@ -404,7 +421,12 @@ namespace SharpDbConsole
             var rows = interpreter.ProcessStatement(select);
         }
 
-
+        static void TestParsingGroupBy()
+        {
+            string select = @"select * from houses where price in (341000, 365000)
+                    and Address = (select address from houses where price = 389000)
+                        or NumBedrooms = 5";
+        }
 
         static void FullIntegration()
         {

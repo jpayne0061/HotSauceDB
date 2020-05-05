@@ -70,7 +70,7 @@ namespace SharpDb.Services.Parsers
             return -1;
         }
 
-        public List<string> ParsePredicates(string query)
+        public PredicateStep ParsePredicates(string query)
         {
             var predicates = new List<string>();
 
@@ -125,7 +125,7 @@ namespace SharpDb.Services.Parsers
 
             if(whereClauseIndex == -1)
             {
-                return new List<string>();
+                return new PredicateStep { HasPredicates = false  };
             }
 
             string firstPredicate = queryPartsWithP[whereClauseIndex + 0] + " " + 
@@ -137,7 +137,9 @@ namespace SharpDb.Services.Parsers
 
             int operatorIndex = whereClauseIndex + 4;
 
-            while (operatorIndex < queryPartsWithP.Count())
+            HashSet<string> andOrOps = new HashSet<string> { "or", "and" };
+
+            while (operatorIndex < queryPartsWithP.Count() && andOrOps.Contains(queryPartsWithP[operatorIndex].ToLower()))
             {
                 string currentPredicate = queryPartsWithP[operatorIndex + 0] + " " +
                                           queryPartsWithP[operatorIndex + 1] + " " +
@@ -149,7 +151,13 @@ namespace SharpDb.Services.Parsers
                 operatorIndex += 4;
             }
 
-            return predicates;
+            PredicateStep predicateStep = new PredicateStep();
+
+            predicateStep.Predicates = predicates;
+            predicateStep.HasPredicates = true;
+            predicateStep.PredicateTrailer = queryPartsWithP.GetRange(operatorIndex, queryPartsWithP.Count() - operatorIndex);
+
+            return predicateStep;
         }
 
         public InnerStatement GetInnerMostSelectStatement(string query)

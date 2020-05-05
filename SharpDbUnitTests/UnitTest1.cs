@@ -86,7 +86,7 @@ namespace SharpDbUnitTests
             SelectParser selectParser = new SelectParser();
 
             //act
-            List<string> predicates = selectParser.ParsePredicates(query);
+            List<string> predicates = selectParser.ParsePredicates(query).Predicates;
 
             //assert
             Assert.AreEqual("where origin > 8", predicates[0]);
@@ -104,7 +104,7 @@ namespace SharpDbUnitTests
             SelectParser selectParser = new SelectParser();
 
             //act
-            List<string> predicates = selectParser.ParsePredicates(query);
+            List<string> predicates = selectParser.ParsePredicates(query).Predicates;
 
             //assert
             Assert.AreEqual("where origin > 8", predicates[0]);
@@ -124,7 +124,60 @@ namespace SharpDbUnitTests
             SelectParser selectParser = new SelectParser();
 
             //act
-            List<string> predicates = selectParser.ParsePredicates(query);
+            List<string> predicates = selectParser.ParsePredicates(query).Predicates;
+
+            //assert
+            Assert.AreEqual("where origin > 8", predicates[0]);
+            Assert.AreEqual("AND truck = '   ford'", predicates[1]);
+            Assert.AreEqual("OR space = 98", predicates[2]);
+        }
+
+        [TestMethod]
+        public void ParsePredicates_With_Trailing_Predicates_One_Column()
+        {
+            //arrange
+            string query = @"select truck, origin, space
+                            from someTable where origin > 8
+                            AND truck = '   ford' 
+                            OR space = 98
+                            ORDER BY truck";
+
+            SelectParser selectParser = new SelectParser();
+
+            //act
+            var predicateResults = selectParser.ParsePredicates(query);
+
+            var predicates = predicateResults.Predicates;
+
+
+
+            //assert
+            Assert.AreEqual("where origin > 8", predicates[0]);
+            Assert.AreEqual("AND truck = '   ford'", predicates[1]);
+            Assert.AreEqual("OR space = 98", predicates[2]);
+            Assert.AreEqual("ORDER", predicateResults.PredicateTrailer[0]);
+            Assert.AreEqual("BY", predicateResults.PredicateTrailer[1]);
+            Assert.AreEqual("truck", predicateResults.PredicateTrailer[2]);
+        }
+
+        [TestMethod]
+        public void ParsePredicates_With_Trailing_Predicates_Two_Columns()
+        {
+            //arrange
+            string query = @"select truck, origin, space
+                            from someTable where origin > 8
+                            AND truck = '   ford' 
+                            OR space = 98
+                            ORDER BY truck, origin";
+
+            SelectParser selectParser = new SelectParser();
+
+            //act
+            var predicateResults = selectParser.ParsePredicates(query);
+
+            var predicates = predicateResults.Predicates;
+
+
 
             //assert
             Assert.AreEqual("where origin > 8", predicates[0]);

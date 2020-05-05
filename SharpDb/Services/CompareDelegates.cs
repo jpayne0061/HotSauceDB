@@ -42,5 +42,10 @@ namespace SharpDb.Services
             return ((HashSet<IComparable>)queryValue).Contains(data);
         }
 
+        //public static List<List<IComparable>> OrderBy(List<List<IComparable>>, object queryValue)
+        //{
+        //    return ((HashSet<IComparable>)queryValue).Contains(data);
+        //}
+
     }
 }
