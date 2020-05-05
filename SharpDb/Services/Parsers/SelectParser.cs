@@ -122,6 +122,11 @@ namespace SharpDb.Services.Parsers
 
             var whereClauseIndex = IndexOfWhereClause(query, GetTableName(query));
 
+            if(whereClauseIndex == -1)
+            {
+                return new List<string>();
+            }
+
             string firstPredicate = queryPartsWithP[whereClauseIndex + 0] + " " + 
                                     queryPartsWithP[whereClauseIndex + 1] + " " +
                                     queryPartsWithP[whereClauseIndex + 2] + " " +

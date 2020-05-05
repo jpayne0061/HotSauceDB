@@ -20,8 +20,8 @@ namespace SharpDbConsole
 
             try
             {
-
-                RunInStatement();
+                FullIntegration();
+                //RunInStatement();
                 //RunInStatement();
                 //WriteTablesAndFillRows();
 
@@ -44,13 +44,7 @@ namespace SharpDbConsole
 
                 //    writer.WriteTableDefinition(t);
                 //    writer.WriteTableDefinition(p);
-                //}
 
-                var reader = new Reader();
-
-                var indexPage = reader.GetIndexPage();
-
-                var x = 0;
 
                 //WriteTablesAndFillRows();
 
@@ -371,8 +365,9 @@ namespace SharpDbConsole
 
             //interpreter.ProcessStatement(insert2);
 
-            string select = @"select price, address from houses where price in (341000, 365000)
-                                or Address = '123 abc street'";
+            string select = @"select price, address from houses where price in (
+                        select price from houses where address = '123 abc street'
+)";
 
             var rows = interpreter.ProcessStatement(select);
         }
@@ -407,6 +402,135 @@ namespace SharpDbConsole
 
 
             var rows = interpreter.ProcessStatement(select);
+        }
+
+
+
+        static void FullIntegration()
+        {
+            var interpreter = new Interpreter(
+                    new SelectParser(),
+                    new InsertParser(new SchemaFetcher()),
+                    new Reader(),
+                    new Writer(),
+                    new SchemaFetcher(),
+                    new GeneralParser(),
+                    new CreateParser());
+
+            //if integration.txt exists, delete and recreate
+            File.WriteAllText("integration.txt", null);
+
+            Globals.FILE_NAME = "integration.txt";
+
+
+            string createHousesTable = @"create table houses (
+                                            Address varchar(100),
+                                            Price decimal,
+                                            SqFeet bigint,
+                                            IsListed bool,
+                                            NumBedrooms int
+                                       )";
+
+            interpreter.ProcessStatement(createHousesTable);
+
+            Random rd = new Random();
+
+            for (int i = 0; i < 200; i++)
+            {
+
+                string insertStatement = @"insert into houses values ('" + CreateString(10) + "',"+
+                                           rd.Next().ToString() +"," + rd.Next().ToString() + "," + "true," + rd.Next().ToString() + ")";
+
+                interpreter.ProcessStatement(insertStatement);
+            }
+
+            string insertStatement2 = @"insert into houses values ('" + "450 Adams St" + "'," +
+                           "320000" + "," + "2300" + "," + "false," + "3" + ")";
+
+            interpreter.ProcessStatement(insertStatement2);
+
+
+            string createToolsTable = @"create table tools (
+                                            Name varchar(30),
+                                            Price decimal,
+                                            NumInStock bigint,
+                                            IsWooden bool,
+                                            Manufacturer varchar(50)
+                                       )";
+
+            interpreter.ProcessStatement(createToolsTable);
+
+
+            for (int i = 0; i < 500; i++)
+            {
+
+                string insertStatement = @"insert into tools values ('" + CreateString(10) + "'," +
+                                           rd.Next().ToString() + "," + rd.Next().ToString() + "," + "true," + CreateString(10) + ")";
+
+                interpreter.ProcessStatement(insertStatement);
+            }
+
+
+            string insertStatement3 = @"insert into tools values ('" + "hammer" + "'," +
+                                           "23.99" + "," + "67" + "," + "false," + "'craftsman'" + ")";
+
+            interpreter.ProcessStatement(insertStatement3);
+
+            for (int i = 0; i < 200; i++)
+            {
+
+                string insertStatement = @"insert into houses values ('" + CreateString(10) + "'," +
+                                           rd.Next().ToString() + "," + rd.Next().ToString() + "," + "true," + rd.Next().ToString() + ")";
+
+                interpreter.ProcessStatement(insertStatement);
+            }
+
+
+            string insertStatement4 = @"insert into tools values ('" + "drill" + "'," +
+                               "45.99" + "," + "90" + "," + "false," + "'dewalt'" + ")";
+
+            interpreter.ProcessStatement(insertStatement4);
+
+
+            for (int i = 0; i < 250; i++)
+            {
+
+                string insertStatement = @"insert into tools values ('" + CreateString(10) + "'," +
+                                           rd.Next().ToString() + "," + rd.Next().ToString() + "," + "true," + CreateString(10) + ")";
+
+                interpreter.ProcessStatement(insertStatement);
+            }
+
+            //houses count should be: 1401
+
+            //tools count should be: 752
+
+            string readAllHouses = @"select * from houses";
+
+
+            var rows = (List<List<IComparable>>)interpreter.ProcessStatement(readAllHouses);
+
+            bool rowCountCorrect = rows.Count() == 401;
+            bool columnCountCorrect = rows[0].Count() == 5;
+
+
+            string readAllTools = @"select price, numInstock from tools";
+
+
+            var tools = (List<List<IComparable>>)interpreter.ProcessStatement(readAllTools);
+
+            bool rowCountCorrect2 = tools.Count() == 752;
+            bool columnCountCorrect2 = tools[0].Count() == 2;
+
+
+            if(!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2)
+            {
+                throw new Exception("tests failed");
+            }
+            else
+            {
+                Console.WriteLine("SUCCESS!!");
+            }
         }
 
     }

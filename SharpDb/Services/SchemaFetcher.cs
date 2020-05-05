@@ -28,7 +28,13 @@ namespace SharpDb.Services
 
         public TableDefinition GetTableDefinition(string tableName)
         {
+            //TODO update table defintion in memory when adding table
+
             tableName = tableName.ToLower();
+
+            var index = GetIndexPage();
+
+            return index.TableDefinitions.Where(x => x.TableName == tableName).First();
 
             if (_indexPage == null)
             {

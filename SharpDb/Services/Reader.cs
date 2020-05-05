@@ -291,6 +291,11 @@ namespace SharpDb.Services
 
         public bool EvaluateRow(List<PredicateOperation> predicateOperations, List<IComparable> row)
         {
+            if(predicateOperations.Count() == 0)
+            {
+                return true;
+            }
+
             bool addRow = false;
 
             for (int i = 0; i < predicateOperations.Count(); i++)

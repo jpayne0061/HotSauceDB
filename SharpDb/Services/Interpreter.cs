@@ -88,12 +88,6 @@ namespace SharpDb.Services
 
             var subQuery = _selectParser.GetInnerMostSelectStatement(query);
 
-            //there may still be subqueries, this could catch an 'in' statemnent
-            //if(_generalParser.GetSqlStatementType(subQuery.Statement.Trim().ToLower()) != "select")
-            //{
-            //    subQuery = null;
-            //}
-
             if(subQuery != null)
             {
                 var tableName = _selectParser.GetTableName(subQuery.Statement);
