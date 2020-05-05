@@ -523,7 +523,36 @@ namespace SharpDbConsole
             bool columnCountCorrect2 = tools[0].Count() == 2;
 
 
-            if(!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2)
+            string querySearchHousesByName = @"select * from houses where address = '450 Adams St'";
+
+
+            var result = (List<List<IComparable>>)interpreter.ProcessStatement(querySearchHousesByName);
+
+            bool resultCountCorrect = result.Count() == 1;
+
+            string querySearchHousesByNameAndPrice = @"select * 
+                                                    from houses 
+                                                     where address = '450 Adams St'
+                                                      AND price > 315000";
+
+
+            var result2 = (List<List<IComparable>>)interpreter.ProcessStatement(querySearchHousesByNameAndPrice);
+
+            bool resultCountCorrect2 = result.Count() == 1;
+
+            string subQueryTools = @"select * from tools 
+                                        where name = (select name from tools where price = 45.99 )";
+
+            var toolsSubQueryResult = (List<List<IComparable>>)interpreter.ProcessStatement(subQueryTools);
+
+            //string insertStatement4 = @"insert into tools values ('" + "drill" + "'," +
+            //       "45.99" + "," + "90" + "," + "false," + "'dewalt'" + ")";
+
+            var toolSubQueryCompare = ((string)toolsSubQueryResult[0][0]).Trim() == "drill" && (decimal)toolsSubQueryResult[0][1] 
+                == 45.99m && (bool)toolsSubQueryResult[0][4] == false;
+
+            if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
+                || !toolSubQueryCompare)
             {
                 throw new Exception("tests failed");
             }
