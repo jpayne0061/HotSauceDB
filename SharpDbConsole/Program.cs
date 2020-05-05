@@ -549,10 +549,21 @@ namespace SharpDbConsole
             //       "45.99" + "," + "90" + "," + "false," + "'dewalt'" + ")";
 
             var toolSubQueryCompare = ((string)toolsSubQueryResult[0][0]).Trim() == "drill" && (decimal)toolsSubQueryResult[0][1] 
-                == 45.99m && (bool)toolsSubQueryResult[0][4] == false;
+                == 45.99m && (bool)toolsSubQueryResult[0][3] == false;
+
+
+            //string toolsInClause = @"select * from tools 
+            //                            where name IN (select name from tools where price > 20 )";
+
+            string toolsInClause = @"select * from tools 
+                                        where name IN ('drill', 'hammer' )";
+
+            var toolsInClauseResults = (List<List<IComparable>>)interpreter.ProcessStatement(toolsInClause);
+
+            var compare = toolsInClauseResults.Count() == 2;
 
             if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
-                || !toolSubQueryCompare)
+                || !toolSubQueryCompare || !compare)
             {
                 throw new Exception("tests failed");
             }

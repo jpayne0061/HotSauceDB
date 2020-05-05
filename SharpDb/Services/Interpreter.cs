@@ -144,6 +144,48 @@ namespace SharpDb.Services
                                    : new string[] { "'" + element + "'" })  // Keep the entire item
              .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).ToList();
 
+
+                //****************abstract to method
+
+                string valuesInParantheses = "";
+
+                //rewrite without shitty temp list
+                var queryPartsWithP = new List<string>();
+
+                bool startParantheses = false;
+
+                foreach (var part in predicateParts)
+                {
+                    if (part.Contains(")"))
+                    {
+                        startParantheses = false;
+                        valuesInParantheses += part;
+                        queryPartsWithP.Add(valuesInParantheses);
+                        continue;
+                    }
+
+                    if (startParantheses)
+                    {
+                        valuesInParantheses += part;
+                        continue;
+                    }
+
+                    if (part.Contains("("))
+                    {
+                        startParantheses = true;
+                        valuesInParantheses += part;
+                    }
+                    else
+                    {
+                        queryPartsWithP.Add(part);
+                    }
+
+                }
+
+                //*******************************
+
+                predicateParts = queryPartsWithP;
+
                 var colDef = tableDefinition.ColumnDefinitions
                     .Where(x => x.ColumnName == predicateParts[1].ToLower()).FirstOrDefault();
 
@@ -158,7 +200,7 @@ namespace SharpDb.Services
                     { "in",  CompareDelegates.Contains},
                 };
 
-                if(predicateParts[2] == "in")
+                if(predicateParts[2].ToLower() == "in")
                 {
                     string innerValue = predicateParts[3].Trim('(').Trim(')');
 
@@ -170,7 +212,7 @@ namespace SharpDb.Services
 
                     predicateOperations.Add(new PredicateOperation
                     {
-                        Delegate = operatorToDelegate[predicateParts[2]],
+                        Delegate = operatorToDelegate[predicateParts[2].ToLower()],
                         Predicate = predicates[i],
                         ColumnName = predicateParts[1],
                         Value = targetList,

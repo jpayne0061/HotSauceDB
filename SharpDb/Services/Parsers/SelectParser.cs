@@ -105,6 +105,7 @@ namespace SharpDb.Services.Parsers
                 if(startParantheses)
                 {
                     valuesInParantheses += part;
+                    continue;
                 }
 
                 if(part.Contains("("))
