@@ -21,6 +21,8 @@ namespace SharpDbConsole
 
             try
             {
+                FullIntegration();
+                //QueryWithOrderBy();
                 //ConcurrentStack<char> stack = new ConcurrentStack<char>();
 
                 //Parallel.For(0, 30,
@@ -37,7 +39,7 @@ namespace SharpDbConsole
                 //             }
                 //         });
 
-                FullIntegration();
+                //
                 //RunInStatement();
                 //RunInStatement();
                 //WriteTablesAndFillRows();
@@ -421,6 +423,22 @@ namespace SharpDbConsole
             var rows = interpreter.ProcessStatement(select);
         }
 
+        static void QueryWithOrderBy()
+        {
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(new SchemaFetcher()),
+                new Reader(),
+                new Writer(),
+                new SchemaFetcher(),
+                new GeneralParser(),
+                new CreateParser());
+
+            string select = @"select * from houses where price > 200000 order by price, address";
+
+            var rows = interpreter.ProcessStatement(select);
+        }
+
         static void TestParsingGroupBy()
         {
             string select = @"select * from houses where price in (341000, 365000)
@@ -508,6 +526,11 @@ namespace SharpDbConsole
             }
 
 
+            string insertStatement6 = @"insert into houses values ('" + "999 Adams St" + "'," +
+"269000" + "," + "2300" + "," + "false," + "3" + ")";
+
+            interpreter.ProcessStatement(insertStatement6);
+
             string insertStatement4 = @"insert into tools values ('" + "drill" + "'," +
                                "45.99" + "," + "90" + "," + "false," + "'dewalt'" + ")";
 
@@ -532,7 +555,7 @@ namespace SharpDbConsole
 
             var rows = (List<List<IComparable>>)interpreter.ProcessStatement(readAllHouses);
 
-            bool rowCountCorrect = rows.Count() == 401;
+            bool rowCountCorrect = rows.Count() == 402;
             bool columnCountCorrect = rows[0].Count() == 5;
 
 

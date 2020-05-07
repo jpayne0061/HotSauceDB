@@ -70,6 +70,18 @@ namespace SharpDb.Services.Parsers
             return -1;
         }
 
+        public int IndexOfTableName(string query, string tableName)
+        {
+            query = query.ToLower();
+
+            List<string> queryParts = query.Split(' ')
+                .Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+
+            int tableNameIndex = queryParts.IndexOf(tableName);
+
+            return tableNameIndex;
+        }
+
         public PredicateStep ParsePredicates(string query)
         {
             var predicates = new List<string>();
@@ -82,8 +94,6 @@ namespace SharpDb.Services.Parsers
                                    : new string[] { "'" + element + "'" })  // Keep the entire item
              .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
              Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
-
-            //need to add parts in parantheses back together
 
             string valuesInParantheses = "";
 
@@ -117,47 +127,91 @@ namespace SharpDb.Services.Parsers
                 {
                     queryPartsWithP.Add(part);
                 }
-
             }
 
 
             var whereClauseIndex = IndexOfWhereClause(query, GetTableName(query));
 
-            if(whereClauseIndex == -1)
+            int? operatorIndex = null;
+
+            if (whereClauseIndex != -1)
             {
-                return new PredicateStep { HasPredicates = false  };
+                string firstPredicate = queryPartsWithP[whereClauseIndex + 0] + " " +
+                                        queryPartsWithP[whereClauseIndex + 1] + " " +
+                                        queryPartsWithP[whereClauseIndex + 2] + " " +
+                                        queryPartsWithP[whereClauseIndex + 3];
+
+                predicates.Add(firstPredicate);
+
+                operatorIndex = whereClauseIndex + 4;
+
+                HashSet<string> andOrOps = new HashSet<string> { "or", "and" };
+
+                while (operatorIndex < queryPartsWithP.Count() && andOrOps.Contains(queryPartsWithP[(int)operatorIndex].ToLower()))
+                {
+                    string currentPredicate = queryPartsWithP[(int)operatorIndex + 0] + " " +
+                                              queryPartsWithP[(int)operatorIndex + 1] + " " +
+                                              queryPartsWithP[(int)operatorIndex + 2] + " " +
+                                              queryPartsWithP[(int)operatorIndex + 3];
+
+                    predicates.Add(currentPredicate);
+
+                    operatorIndex += 4;
+                }
             }
 
-            string firstPredicate = queryPartsWithP[whereClauseIndex + 0] + " " + 
-                                    queryPartsWithP[whereClauseIndex + 1] + " " +
-                                    queryPartsWithP[whereClauseIndex + 2] + " " +
-                                    queryPartsWithP[whereClauseIndex + 3];
-
-            predicates.Add(firstPredicate);
-
-            int operatorIndex = whereClauseIndex + 4;
-
-            HashSet<string> andOrOps = new HashSet<string> { "or", "and" };
-
-            while (operatorIndex < queryPartsWithP.Count() && andOrOps.Contains(queryPartsWithP[operatorIndex].ToLower()))
-            {
-                string currentPredicate = queryPartsWithP[operatorIndex + 0] + " " +
-                                          queryPartsWithP[operatorIndex + 1] + " " +
-                                          queryPartsWithP[operatorIndex + 2] + " " +
-                                          queryPartsWithP[operatorIndex + 3];
-
-                predicates.Add(currentPredicate);
-
-                operatorIndex += 4;
-            }
+            int startTrailingPredicate = operatorIndex == null ? IndexOfTableName(query, GetTableName(query)) + 1 : (int)operatorIndex;
 
             PredicateStep predicateStep = new PredicateStep();
 
             predicateStep.Predicates = predicates;
             predicateStep.HasPredicates = true;
-            predicateStep.PredicateTrailer = queryPartsWithP.GetRange(operatorIndex, queryPartsWithP.Count() - operatorIndex);
+            predicateStep.PredicateTrailer = ParsePredicateTrailers(string.Join(' ', queryPartsWithP.GetRange(startTrailingPredicate, queryPartsWithP.Count() - startTrailingPredicate))
+                .Split(new[] { " ", ",", "by" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrEmpty(x)).ToList());
 
             return predicateStep;
+        }
+
+
+
+        public List<string> ParsePredicateTrailers(List<string> predicateTrailers)
+        {
+            if(!predicateTrailers.Any())
+            {
+                return null;
+            }
+
+            predicateTrailers = predicateTrailers.Select(x => x.ToLower()).ToList();
+
+            if(!Globals.PredicateTrailers.Contains(predicateTrailers[0]))
+            {
+                throw new Exception($"Invalid expression: {string.Join(' ', predicateTrailers)}");
+            }
+
+            List<string> parsedPredicates = new List<string>();
+
+            string temp = "";
+
+            for (int i = 0; i < predicateTrailers.Count(); i++)
+            {
+                if(Globals.PredicateTrailers.Contains(predicateTrailers[i]))
+                {
+                    if(temp != "")
+                    {
+                        parsedPredicates.Add(temp);
+                    }
+                    
+                    temp = "";
+                    temp = predicateTrailers[i];
+                    continue;
+                }
+
+                temp += " " + predicateTrailers[i];
+            }
+
+            parsedPredicates.Add(temp);
+
+            return parsedPredicates;
         }
 
         public InnerStatement GetInnerMostSelectStatement(string query)

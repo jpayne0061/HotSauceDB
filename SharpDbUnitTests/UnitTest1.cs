@@ -387,5 +387,21 @@ namespace SharpDbUnitTests
             Assert.AreEqual(expected, result);
         }
 
+        [TestMethod]
+        //public void Parse_Select_Predicates()
+        //{
+
+
+
+        //    var parser = new SelectParser();
+
+        //    var 
+
+        //    //act
+
+        //    PredicateStep result = parser.ParsePredicates(select);
+
+        //}
+
     }
 }

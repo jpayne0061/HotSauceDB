@@ -22,5 +22,7 @@ namespace SharpDb
         public const short Int16ByteLength = 2;
         public const short Int32ByteLength = 4;
         public const short Int64ByteLength = 8;
+
+        public static readonly HashSet<string> PredicateTrailers = new HashSet<string> { "order", "group" };
     }
 }

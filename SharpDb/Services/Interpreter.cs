@@ -71,23 +71,30 @@ namespace SharpDb.Services
             throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
         }
 
-        private List<List<IComparable>> ProcessPostPredicateClauses(string query, PredicateStep predicateStep)
+        private List<List<IComparable>> ProcessPostPredicateClauses(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
         {
-            if(predicateStep.PredicateTrailer[0] == "order")
-            {
+            //first, group by
+            var orderByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("order")).FirstOrDefault();
 
+            if (orderByClause != null)
+            {
+                var orderParts = orderByClause.Split(' ');
+
+                var select = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+
+                var orderedRows = rows.OrderBy(x => x[select.Index]);
+
+                for (int i = 2; i < orderParts.Count(); i++)
+                {
+                    select = selects.Where(x => x.ColumnName == orderParts[i]).FirstOrDefault();
+
+                    orderedRows = orderedRows.ThenBy(x => x[select.Index]);
+                }
+
+                rows = orderedRows.ToList();
             }
 
-            //get index of column from column defintion
-
-            //create dictionary/hashset based on index
-
-
-            List<List<IComparable>> r = new List<List<IComparable>> { new List<IComparable> { 2, 3, 4 }, new List<IComparable> { 6, 9, 0 } };
-
-            r.OrderBy(x => x[2]);
-
-            return new List<List<IComparable>>();
+            return rows;
         }
 
         public List<List<IComparable>> RunQuery(string query)
@@ -108,7 +115,7 @@ namespace SharpDb.Services
                 }
             }
 
-            var predicateStep = _selectParser.ParsePredicates(query);
+            PredicateStep predicateStep = _selectParser.ParsePredicates(query);
 
             var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
 
@@ -116,7 +123,7 @@ namespace SharpDb.Services
 
             if(predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {
-                rows = ProcessPostPredicateClauses(query, predicateStep);
+                rows = ProcessPostPredicateClauses(selects, predicateStep, rows);
             }
 
             return rows;
