@@ -21,6 +21,21 @@ namespace SharpDbConsole
 
             try
             {
+                //var interpreter = new Interpreter(
+                //                    new SelectParser(),
+                //                    new InsertParser(new SchemaFetcher()),
+                //                    new Reader(),
+                //                    new Writer(),
+                //                    new SchemaFetcher(),
+                //                    new GeneralParser(),
+                //                    new CreateParser());
+
+                //string query = @"select * from houses order by price, address";
+
+                //var rows = interpreter.ProcessStatement(query);
+
+                //var x = 0;
+
                 FullIntegration();
                 //QueryWithOrderBy();
                 //ConcurrentStack<char> stack = new ConcurrentStack<char>();
@@ -531,6 +546,11 @@ namespace SharpDbConsole
 
             interpreter.ProcessStatement(insertStatement6);
 
+            string insertStatement7 = @"insert into houses values ('" + "999 Adams St" + "'," +
+"270000" + "," + "2300" + "," + "false," + "3" + ")";
+
+            interpreter.ProcessStatement(insertStatement7);
+
             string insertStatement4 = @"insert into tools values ('" + "drill" + "'," +
                                "45.99" + "," + "90" + "," + "false," + "'dewalt'" + ")";
 
@@ -555,7 +575,7 @@ namespace SharpDbConsole
 
             var rows = (List<List<IComparable>>)interpreter.ProcessStatement(readAllHouses);
 
-            bool rowCountCorrect = rows.Count() == 402;
+            bool rowCountCorrect = rows.Count() == 403;
             bool columnCountCorrect = rows[0].Count() == 5;
 
 
@@ -583,7 +603,7 @@ namespace SharpDbConsole
 
             var result2 = (List<List<IComparable>>)interpreter.ProcessStatement(querySearchHousesByNameAndPrice);
 
-            bool resultCountCorrect2 = result.Count() == 1;
+            bool resultCountCorrect2 = result2.Count() == 1;
 
             string subQueryTools = @"select * from tools 
                                         where name = (select name from tools where price = 45.99 )";
@@ -607,8 +627,19 @@ namespace SharpDbConsole
 
             var compare = toolsInClauseResults.Count() == 2;
 
+
+            string selectWithPredicatesAndOrderBy = @"select * from houses
+                                                      where address != '98765 ABC str'
+                                                       AND Price > 269000
+                                                        order by price";
+
+            var predicatesAndOrderResults = (List<List<IComparable>>)interpreter.ProcessStatement(selectWithPredicatesAndOrderBy);
+
+            var comparePredicatesAndOrderResults = predicatesAndOrderResults.Count() == 1;
+
+
             if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
-                || !toolSubQueryCompare || !compare)
+                || !toolSubQueryCompare || !compare || !comparePredicatesAndOrderResults)
             {
                 throw new Exception("tests failed");
             }

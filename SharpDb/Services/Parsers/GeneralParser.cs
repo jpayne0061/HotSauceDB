@@ -1,5 +1,6 @@
 ﻿using SharpDb.Models;
 using System;
+using System.Collections.Generic;
 
 namespace SharpDb.Services.Parsers
 {
@@ -61,6 +62,46 @@ namespace SharpDb.Services.Parsers
                 StartIndexOfOpenParantheses = (int)indexOfLastOpeningParantheses,
                 EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
             };
+        }
+
+        public List<string> CombineValuesInParantheses(List<string> parts)
+        {
+            string valuesInParantheses = "";
+
+            //rewrite without shitty temp list
+            var queryPartsWithParantheses = new List<string>();
+
+            bool startParantheses = false;
+
+            foreach (var part in parts)
+            {
+                if (part.Contains(")"))
+                {
+                    startParantheses = false;
+                    valuesInParantheses += part;
+                    queryPartsWithParantheses.Add(valuesInParantheses);
+                    continue;
+                }
+
+                if (startParantheses)
+                {
+                    valuesInParantheses += part;
+                    continue;
+                }
+
+                if (part.Contains("("))
+                {
+                    startParantheses = true;
+                    valuesInParantheses += part;
+                }
+                else
+                {
+                    queryPartsWithParantheses.Add(part);
+                }
+
+            }
+
+            return queryPartsWithParantheses;
         }
 
         public InnerStatement GetOuterMostParantheses(string query)

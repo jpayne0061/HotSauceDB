@@ -49,7 +49,7 @@ namespace SharpDb.Services.Parsers
                 tableName += query[i];
             }
 
-            return tableName.ToLower();
+            return tableName.ToLower().Replace("\r\n", "");
         }
 
         public int IndexOfWhereClause(string query, string tableName)
@@ -57,7 +57,7 @@ namespace SharpDb.Services.Parsers
             query = query.ToLower();
 
             List<string> queryParts = query.Split(' ')
-                .Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Replace("\r\n", "")).ToList();
 
             int tableNameIndex = queryParts.IndexOf(tableName);
 
@@ -86,49 +86,8 @@ namespace SharpDb.Services.Parsers
         {
             var predicates = new List<string>();
 
-            //https://stackoverflow.com/questions/14655023/split-a-string-that-has-white-spaces-unless-they-are-enclosed-within-quotes
-            //https://stackoverflow.com/users/1284526/c%c3%a9dric-bignon
-            var queryParts = query.Split("'")
-             .Select((element, index) => index % 2 == 0  // If even index
-                                   ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
-                                   : new string[] { "'" + element + "'" })  // Keep the entire item
-             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
-             Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
 
-            string valuesInParantheses = "";
-
-            //rewrite without shitty temp list
-            var queryPartsWithP = new List<string>();
-
-            bool startParantheses = false;
-
-            foreach (var part in queryParts)
-            {
-                if(part.Contains(")"))
-                {
-                    startParantheses = false;
-                    valuesInParantheses += part;
-                    queryPartsWithP.Add(valuesInParantheses);
-                    continue;
-                }
-
-                if(startParantheses)
-                {
-                    valuesInParantheses += part;
-                    continue;
-                }
-
-                if(part.Contains("("))
-                {
-                    startParantheses = true;
-                    valuesInParantheses += part;
-                }
-                else
-                {
-                    queryPartsWithP.Add(part);
-                }
-            }
-
+            List<string> queryParts = SplitOnWhiteSpaceExceptQuotesAndParantheses(query);
 
             var whereClauseIndex = IndexOfWhereClause(query, GetTableName(query));
 
@@ -136,10 +95,10 @@ namespace SharpDb.Services.Parsers
 
             if (whereClauseIndex != -1)
             {
-                string firstPredicate = queryPartsWithP[whereClauseIndex + 0] + " " +
-                                        queryPartsWithP[whereClauseIndex + 1] + " " +
-                                        queryPartsWithP[whereClauseIndex + 2] + " " +
-                                        queryPartsWithP[whereClauseIndex + 3];
+                string firstPredicate = queryParts[whereClauseIndex + 0] + " " +
+                                        queryParts[whereClauseIndex + 1] + " " +
+                                        queryParts[whereClauseIndex + 2] + " " +
+                                        queryParts[whereClauseIndex + 3];
 
                 predicates.Add(firstPredicate);
 
@@ -147,12 +106,12 @@ namespace SharpDb.Services.Parsers
 
                 HashSet<string> andOrOps = new HashSet<string> { "or", "and" };
 
-                while (operatorIndex < queryPartsWithP.Count() && andOrOps.Contains(queryPartsWithP[(int)operatorIndex].ToLower()))
+                while (operatorIndex < queryParts.Count() && andOrOps.Contains(queryParts[(int)operatorIndex].ToLower()))
                 {
-                    string currentPredicate = queryPartsWithP[(int)operatorIndex + 0] + " " +
-                                              queryPartsWithP[(int)operatorIndex + 1] + " " +
-                                              queryPartsWithP[(int)operatorIndex + 2] + " " +
-                                              queryPartsWithP[(int)operatorIndex + 3];
+                    string currentPredicate = queryParts[(int)operatorIndex + 0] + " " +
+                                              queryParts[(int)operatorIndex + 1] + " " +
+                                              queryParts[(int)operatorIndex + 2] + " " +
+                                              queryParts[(int)operatorIndex + 3];
 
                     predicates.Add(currentPredicate);
 
@@ -166,12 +125,30 @@ namespace SharpDb.Services.Parsers
 
             predicateStep.Predicates = predicates;
             predicateStep.HasPredicates = true;
-            predicateStep.PredicateTrailer = ParsePredicateTrailers(string.Join(' ', queryPartsWithP.GetRange(startTrailingPredicate, queryPartsWithP.Count() - startTrailingPredicate))
-                .Split(new[] { " ", ",", "by" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrEmpty(x)).ToList());
+
+            List<string> predicateTrailersUnparsed = string.Join(' ', queryParts.GetRange(startTrailingPredicate, queryParts.Count() - startTrailingPredicate))
+                .Split(new[] { " ", ",", "by" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrEmpty(x)).ToList();
+
+            predicateStep.PredicateTrailer = ParsePredicateTrailers(predicateTrailersUnparsed);
 
             return predicateStep;
         }
 
+        public List<string> SplitOnWhiteSpaceExceptQuotesAndParantheses(string query)
+        {
+            //https://stackoverflow.com/questions/14655023/split-a-string-that-has-white-spaces-unless-they-are-enclosed-within-quotes
+            //https://stackoverflow.com/users/1284526/c%c3%a9dric-bignon
+            var queryParts = query.Split("'")
+             .Select((element, index) => index % 2 == 0  // If even index
+                                   ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
+                                   : new string[] { "'" + element + "'" })  // Keep the entire item
+             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
+             Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
+
+            var queryPartsWithParantheses = CombineValuesInParantheses(queryParts);
+
+            return queryPartsWithParantheses;
+        }
 
 
         public List<string> ParsePredicateTrailers(List<string> predicateTrailers)

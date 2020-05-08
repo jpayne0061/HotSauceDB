@@ -155,9 +155,7 @@ namespace SharpDbUnitTests
             Assert.AreEqual("where origin > 8", predicates[0]);
             Assert.AreEqual("AND truck = '   ford'", predicates[1]);
             Assert.AreEqual("OR space = 98", predicates[2]);
-            Assert.AreEqual("ORDER", predicateResults.PredicateTrailer[0]);
-            Assert.AreEqual("BY", predicateResults.PredicateTrailer[1]);
-            Assert.AreEqual("truck", predicateResults.PredicateTrailer[2]);
+            Assert.AreEqual("order by truck", predicateResults.PredicateTrailer[0]);
         }
 
         [TestMethod]
@@ -387,7 +385,7 @@ namespace SharpDbUnitTests
             Assert.AreEqual(expected, result);
         }
 
-        [TestMethod]
+        //[TestMethod]
         //public void Parse_Select_Predicates()
         //{
 

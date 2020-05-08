@@ -71,27 +71,79 @@ namespace SharpDb.Services
             throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
         }
 
-        private List<List<IComparable>> ProcessPostPredicateClauses(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
+        private List<List<IComparable>> ProcessPostPredicateOrderBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
         {
             //first, group by
             var orderByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("order")).FirstOrDefault();
 
-            if (orderByClause != null)
+            if(orderByClause == null)
             {
-                var orderParts = orderByClause.Split(' ');
+                return rows;
+            }
 
-                var select = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+            var orderParts = orderByClause.Split(' ');
 
-                var orderedRows = rows.OrderBy(x => x[select.Index]);
+            //storing an inenumerable in a temporary list and trhen adding the "then by"
+            //clause does not work. changes to an ienumerable are not guaranteed to persist
 
-                for (int i = 2; i < orderParts.Count(); i++)
-                {
-                    select = selects.Where(x => x.ColumnName == orderParts[i]).FirstOrDefault();
+            switch (orderParts.Count())
+            {
+                case 2:
+                    var select = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[select.Index]).ToList();
+                    break;
+                case 3:
+                    var selectCase2 = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+                    var selectCase2_2 = selects.Where(x => x.ColumnName == orderParts[2]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[selectCase2.Index]).ThenBy(x => x[selectCase2_2.Index]).ToList();
+                    break;
+                case 4:
+                    var selectCase3 = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+                    var selectCase3_2 = selects.Where(x => x.ColumnName == orderParts[2]).FirstOrDefault();
+                    var selectCase3_3 = selects.Where(x => x.ColumnName == orderParts[3]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[selectCase3.Index]).ThenBy(x => x[selectCase3_2.Index]).
+                        ThenBy(x => x[selectCase3_3.Index]).ToList();
+                    break;
+                default:
+                    throw new Exception("There is a maximum of three columns allowed in the order by clause.");
 
-                    orderedRows = orderedRows.ThenBy(x => x[select.Index]);
-                }
+            }
 
-                rows = orderedRows.ToList();
+            return rows;
+        }
+
+        //Need to implement parsing of aggregate functions in order to do group by
+        private List<List<IComparable>> ProcessPostPredicateGroupBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
+        {
+            //first, group by
+            var groupByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("group")).FirstOrDefault();
+
+            var groupParts = groupByClause.Split(' ');
+
+            //storing an inenumerable in a temporary list and trhen adding the "then by"
+            //clause does not work. changes to an ienumerable are not guaranteed to persist
+
+            switch (groupParts.Count())
+            {
+                case 2:
+                    var select = selects.Where(x => x.ColumnName == groupParts[1]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[select.Index]).ToList();
+                    break;
+                case 3:
+                    var selectCase2 = selects.Where(x => x.ColumnName == groupParts[1]).FirstOrDefault();
+                    var selectCase2_2 = selects.Where(x => x.ColumnName == groupParts[2]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[selectCase2.Index]).ThenBy(x => x[selectCase2_2.Index]).ToList();
+                    break;
+                case 4:
+                    var selectCase3 = selects.Where(x => x.ColumnName == groupParts[1]).FirstOrDefault();
+                    var selectCase3_2 = selects.Where(x => x.ColumnName == groupParts[2]).FirstOrDefault();
+                    var selectCase3_3 = selects.Where(x => x.ColumnName == groupParts[2]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[selectCase3.Index]).ThenBy(x => x[selectCase3_2.Index]).
+                        ThenBy(x => x[selectCase3_3.Index]).ToList();
+                    break;
+                default:
+                    throw new Exception("There is a maximum of three columns allowed in the order by clause.");
+
             }
 
             return rows;
@@ -123,7 +175,7 @@ namespace SharpDb.Services
 
             if(predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {
-                rows = ProcessPostPredicateClauses(selects, predicateStep, rows);
+                rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
             }
 
             return rows;
@@ -193,52 +245,13 @@ namespace SharpDb.Services
             for (int i = 0; i < predicates.Count(); i++)
             {
                 List<string> predicateParts = predicates[i].Split("'")
-             .Select((element, index) => index % 2 == 0  // If even index
+                               .Select((element, index) => index % 2 == 0  // If even index
                                    ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
                                    : new string[] { "'" + element + "'" })  // Keep the entire item
-             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).ToList();
+                                    .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).ToList();
 
 
-                //****************abstract to method
-
-                string valuesInParantheses = "";
-
-                //rewrite without shitty temp list
-                var queryPartsWithP = new List<string>();
-
-                bool startParantheses = false;
-
-                foreach (var part in predicateParts)
-                {
-                    if (part.Contains(")"))
-                    {
-                        startParantheses = false;
-                        valuesInParantheses += part;
-                        queryPartsWithP.Add(valuesInParantheses);
-                        continue;
-                    }
-
-                    if (startParantheses)
-                    {
-                        valuesInParantheses += part;
-                        continue;
-                    }
-
-                    if (part.Contains("("))
-                    {
-                        startParantheses = true;
-                        valuesInParantheses += part;
-                    }
-                    else
-                    {
-                        queryPartsWithP.Add(part);
-                    }
-
-                }
-
-                //*******************************
-
-                predicateParts = queryPartsWithP;
+                predicateParts = _generalParser.CombineValuesInParantheses(predicateParts);
 
                 var colDef = tableDefinition.ColumnDefinitions
                     .Where(x => x.ColumnName == predicateParts[1].ToLower()).FirstOrDefault();
