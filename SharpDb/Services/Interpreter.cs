@@ -112,24 +112,92 @@ namespace SharpDb.Services
             return rows;
         }
 
+        private List<IComparable> ReturnGroupedList(IComparable key, List<List<IComparable>> groupingValues,
+                                                    IEnumerable<KeyValuePair<int, Func<List<IComparable>, IComparable>>> columnIndexesToAggregate)
+        {
+
+            var aggregatedRow = new List<IComparable> { key };
+
+            foreach (var kvp in columnIndexesToAggregate)
+            {
+                if (kvp.Value == null) //column is not aggregated
+                {
+                    continue;
+                }
+
+                //select value from each list
+                var valuesToGroupFromEachList = groupingValues.Select(x => x[kvp.Key]).ToList();
+
+                var aggregateValue = kvp.Value(valuesToGroupFromEachList);
+
+                aggregatedRow.Add(aggregateValue);
+            }
+
+            return aggregatedRow;
+        }
+
+
         //Need to implement parsing of aggregate functions in order to do group by
         private List<List<IComparable>> ProcessPostPredicateGroupBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
         {
+            Func<IComparable, 
+                List<List<IComparable>>, 
+                IEnumerable<KeyValuePair<int, 
+                Func<List<IComparable>, IComparable>>>, 
+                List<IComparable>> processGrouping = ReturnGroupedList;
+
+
             //first, group by
             var groupByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("group")).FirstOrDefault();
+
+            if (groupByClause == null)
+            {
+                return rows;
+            }
 
             var groupParts = groupByClause.Split(' ');
 
             //storing an inenumerable in a temporary list and trhen adding the "then by"
             //clause does not work. changes to an ienumerable are not guaranteed to persist
 
+
             switch (groupParts.Count())
             {
                 case 2:
-                    var select = selects.Where(x => x.ColumnName == groupParts[1]).FirstOrDefault();
-                    rows = rows.OrderBy(x => x[select.Index]).ToList();
-                    break;
-                case 3:
+
+                    //need to pull out indexes (in the select list) of aggregated column
+
+                    //need to pull out corresponding aggregate functions that align with each aggregated column
+
+                    //ex: "select price, MAX(addreess), MIN(Bedrooms)"
+
+                    //address - 1 - MAX
+                    //bedrooms - 2 - MIN
+
+                    string groupingColumn = groupParts[1].ToLower();
+
+                    selects = selects.Where(x => x.IsInSelect);
+
+                    int groupColumnIndex = selects.Select(x => x.ColumnName.ToLower()).ToList().IndexOf(groupingColumn);
+
+                    var columnIndexToAggregateFunction = selects.Select((x, i) => new KeyValuePair<int, Func<List<IComparable>, IComparable>>(i, x.AggregateFunction)).ToList();
+
+                    var groupings = rows.GroupBy(x => x[groupColumnIndex]);
+
+                    var aggregatedRows = new List<List<IComparable>>();
+
+
+                    foreach(var grouping in groupings)
+                    {
+                        List<List<IComparable>> groupingValues = grouping.Select(x => x).ToList();
+
+                        List<IComparable> groupedRow = ReturnGroupedList(grouping.Key, groupingValues, columnIndexToAggregateFunction);
+
+                        aggregatedRows.Add(groupedRow);
+                    }
+
+                    return aggregatedRows;
+                case 9:
                     var selectCase2 = selects.Where(x => x.ColumnName == groupParts[1]).FirstOrDefault();
                     var selectCase2_2 = selects.Where(x => x.ColumnName == groupParts[2]).FirstOrDefault();
                     rows = rows.OrderBy(x => x[selectCase2.Index]).ThenBy(x => x[selectCase2_2.Index]).ToList();
@@ -155,15 +223,24 @@ namespace SharpDb.Services
 
             var tableDef = _schemaFetcher.GetTableDefinition(tableName);
 
-            HashSet<string> columns = _selectParser.GetColumns(query).Select(x => x.ToLower()).ToHashSet();
+            List<SelectColumnDto> columns = _selectParser.GetColumns(query);
 
-            IEnumerable<SelectColumnDto> selects = tableDef.ColumnDefinitions.Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
+            IEnumerable<SelectColumnDto> selects = tableDef.ColumnDefinitions
+                .Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
 
             foreach(var select in selects)
             {
-                if(columns.Contains(select.ColumnName) || columns.First() == "*")
+                if(columns.Select(x => x.ColumnName).Contains(select.ColumnName) || columns.First().ColumnName == "*")
                 {
                     select.IsInSelect = true;
+
+                    SelectColumnDto firstMatchingColumn = columns.Where(x => x.ColumnName == select.ColumnName).FirstOrDefault();
+
+                    if (firstMatchingColumn != null)
+                    {
+                        select.AggregateFunction = columns.Where(x => x.ColumnName == select.ColumnName).First().AggregateFunction;
+
+                    }
                 }
             }
 
@@ -176,6 +253,7 @@ namespace SharpDb.Services
             if(predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {
                 rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
+                rows = ProcessPostPredicateGroupBy(selects, predicateStep, rows);
             }
 
             return rows;
@@ -193,7 +271,7 @@ namespace SharpDb.Services
             {
                 var tableName = _selectParser.GetTableName(subQuery.Statement);
 
-                IList<string> subQueryColumns = _selectParser.GetColumns(subQuery.Statement);
+                IList<string> subQueryColumns = _selectParser.GetColumns(subQuery.Statement).Select(x => x.ColumnName).ToList();
 
                 var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 

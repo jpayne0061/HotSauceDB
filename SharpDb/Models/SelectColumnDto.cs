@@ -6,6 +6,11 @@ namespace SharpDb.Models
 {
     public class SelectColumnDto : ColumnDefinition
     {
+        public SelectColumnDto()
+        {
+
+        }
+
         public SelectColumnDto(ColumnDefinition columnDefinition)
         {
             ColumnName = columnDefinition.ColumnName.ToLower();
@@ -15,5 +20,8 @@ namespace SharpDb.Models
         }
 
         public bool IsInSelect { get; set; }
+        public Func<List<IComparable>, IComparable> AggregateFunction { get; set; }
+        public bool IsAggregate { get; set; }
+
     }
 }

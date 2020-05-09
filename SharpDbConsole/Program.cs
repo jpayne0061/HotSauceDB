@@ -21,6 +21,10 @@ namespace SharpDbConsole
 
             try
             {
+                FullIntegration();
+                //TestGroupBy();
+                //TestParsingGroupBy();
+
                 //var interpreter = new Interpreter(
                 //                    new SelectParser(),
                 //                    new InsertParser(new SchemaFetcher()),
@@ -36,7 +40,7 @@ namespace SharpDbConsole
 
                 //var x = 0;
 
-                FullIntegration();
+                //
                 //QueryWithOrderBy();
                 //ConcurrentStack<char> stack = new ConcurrentStack<char>();
 
@@ -454,11 +458,48 @@ namespace SharpDbConsole
             var rows = interpreter.ProcessStatement(select);
         }
 
-        static void TestParsingGroupBy()
+        static void TestGroupBy()
         {
-            string select = @"select * from houses where price in (341000, 365000)
-                    and Address = (select address from houses where price = 389000)
-                        or NumBedrooms = 5";
+            var interpreter = new Interpreter(
+                            new SelectParser(),
+                            new InsertParser(new SchemaFetcher()),
+                            new Reader(),
+                            new Writer(),
+                            new SchemaFetcher(),
+                            new GeneralParser(),
+                            new CreateParser());
+
+            string createTable = @"create table houses( Price int, NumBedRooms int, NumBathrooms int )";
+
+            interpreter.ProcessStatement(createTable);
+
+            string insert1 = "insert into houses values (300000, 3, 2)";
+
+            interpreter.ProcessStatement(insert1);
+
+            string insert2 = "insert into houses values (300000, 4, 3)";
+
+            interpreter.ProcessStatement(insert2);
+
+            string insert3 = "insert into houses values (300000, 5, 4)";
+
+            interpreter.ProcessStatement(insert3);
+
+            string insert4 = "insert into houses values (330000, 6, 5)";
+
+            interpreter.ProcessStatement(insert4);
+
+            string insert5 = "insert into houses values (330000, 7, 6)";
+
+            interpreter.ProcessStatement(insert5);
+
+
+
+            string select = @"select Price, Max(NumBedRooms), Min(NumBathrooms)
+                             from houses
+                                GROUP BY PRICE";
+
+            var rows = interpreter.ProcessStatement(select);
         }
 
         static void FullIntegration()
@@ -635,11 +676,65 @@ namespace SharpDbConsole
 
             var predicatesAndOrderResults = (List<List<IComparable>>)interpreter.ProcessStatement(selectWithPredicatesAndOrderBy);
 
-            var comparePredicatesAndOrderResults = predicatesAndOrderResults.Count() == 1;
+            bool colCountCorrect = ((int)predicatesAndOrderResults[0].Count()) == 5;
 
+            bool orderIsCorrect = ((decimal)predicatesAndOrderResults[1][1]) > ((decimal)predicatesAndOrderResults[0][1])
+                                && ((decimal)predicatesAndOrderResults[15][1]) > ((decimal)predicatesAndOrderResults[6][1])
+                                && ((decimal)predicatesAndOrderResults[90][1]) > ((decimal)predicatesAndOrderResults[89][1])
+                                && ((decimal)predicatesAndOrderResults[100][1]) > ((decimal)predicatesAndOrderResults[98][1])
+                                && ((decimal)predicatesAndOrderResults[120][1]) > ((decimal)predicatesAndOrderResults[118][1])
+                                && ((decimal)predicatesAndOrderResults[150][1]) > ((decimal)predicatesAndOrderResults[145][1]);
+
+
+            //*******group by tests
+
+            string createTable = @"create table houses2( Price int, NumBedRooms int, NumBathrooms int )";
+
+            interpreter.ProcessStatement(createTable);
+
+            string insert1 = "insert into houses2 values (300000, 3, 2)";
+
+            interpreter.ProcessStatement(insert1);
+
+            string insert2 = "insert into houses2 values (300000, 4, 3)";
+
+            interpreter.ProcessStatement(insert2);
+
+            string insert3 = "insert into houses2 values (300000, 5, 4)";
+
+            interpreter.ProcessStatement(insert3);
+
+            string insert4 = "insert into houses2 values (330000, 6, 5)";
+
+            interpreter.ProcessStatement(insert4);
+
+            string insert5 = "insert into houses2 values (330000, 7, 6)";
+
+            interpreter.ProcessStatement(insert5);
+
+
+
+            string select = @"select Price, Max(NumBedRooms), Min(NumBathrooms)
+                             from houses2
+                                GROUP BY PRICE";
+
+            var groupedRows = (List<List<IComparable>>)interpreter.ProcessStatement(select);
+
+            var groupedCountCorrect = groupedRows.Count() == 2;
+
+            var groupedValuesCorrect = (int)groupedRows[0][0] == 300000
+                             && (int)groupedRows[0][1] == 5
+                             && (int)groupedRows[0][2] == 2
+                             && (int)groupedRows[1][0] == 330000
+                             && (int)groupedRows[1][1] == 7
+                             && (int)groupedRows[1][2] == 5;
+
+
+            //******
 
             if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
-                || !toolSubQueryCompare || !compare || !comparePredicatesAndOrderResults)
+                || !toolSubQueryCompare || !compare || !groupedCountCorrect || !groupedValuesCorrect
+                || !colCountCorrect || !orderIsCorrect)
             {
                 throw new Exception("tests failed");
             }

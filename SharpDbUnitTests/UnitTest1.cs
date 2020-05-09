@@ -23,7 +23,7 @@ namespace SharpDbUnitTests
             SelectParser selectParser = new SelectParser();
 
             //act
-            IList<string> columns = selectParser.GetColumns(query);
+            IList<string> columns = selectParser.GetColumns(query).Select(x => x.ColumnName).ToList();
 
             //assert
             Assert.AreEqual(columns[0], "name");

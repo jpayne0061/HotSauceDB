@@ -24,5 +24,6 @@ namespace SharpDb
         public const short Int64ByteLength = 8;
 
         public static readonly HashSet<string> PredicateTrailers = new HashSet<string> { "order", "group" };
+        public static readonly HashSet<string> AggregateFunctions = new HashSet<string> { "max", "min", "avg" };
     }
 }

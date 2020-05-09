@@ -1,6 +1,7 @@
 ﻿using SharpDb.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace SharpDb.Services
@@ -42,10 +43,20 @@ namespace SharpDb.Services
             return ((HashSet<IComparable>)queryValue).Contains(data);
         }
 
-        //public static List<List<IComparable>> OrderBy(List<List<IComparable>>, object queryValue)
-        //{
-        //    return ((HashSet<IComparable>)queryValue).Contains(data);
-        //}
+        public static IComparable Max(List<IComparable> rows)
+        {
+            return rows.Max();
+        }
+
+        public static IComparable Min(List<IComparable> rows)
+        {
+            return rows.Min();
+        }
+
+        public static IComparable Count(List<IComparable> rows)
+        {
+            return rows.Count();
+        }
 
     }
 }

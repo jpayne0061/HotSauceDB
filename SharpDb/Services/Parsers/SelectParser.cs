@@ -9,7 +9,7 @@ namespace SharpDb.Services.Parsers
 {
     public class SelectParser : GeneralParser
     {
-        public IList<string> GetColumns(string query)
+        public List<SelectColumnDto> GetColumns(string query)
         {
             query = query.ToLower().Trim();
 
@@ -28,7 +28,7 @@ namespace SharpDb.Services.Parsers
 
             List<string> columnsSplit = columns.Split(',').ToList();
 
-            return columnsSplit;
+            return ParseAggregates(columnsSplit);
         }
 
         public string GetTableName(string query)
@@ -50,6 +50,66 @@ namespace SharpDb.Services.Parsers
             }
 
             return tableName.ToLower().Replace("\r\n", "");
+        }
+
+        public List<SelectColumnDto> ParseAggregates(List<string> columns)
+        {
+            List<SelectColumnDto> selectDtos = new List<SelectColumnDto>();
+
+            columns = columns.Select(x => x.ToLower().Replace(" ", "").Replace("\r\n", "")).ToList();
+
+            foreach (var col in columns)
+            {
+                InnerStatement innerStatement = GetFirstMostInnerParantheses(col);
+
+                string columnName = innerStatement == null ? col : innerStatement.Statement;
+
+                if(columnName == null)
+                {
+                    selectDtos.Add(new SelectColumnDto {
+                        ColumnName = col
+                    });
+                    continue;
+                }
+
+                string aggregrateFunction = col.Replace(columnName, "");
+
+                if(aggregrateFunction == "max()")
+                {
+                    selectDtos.Add(new SelectColumnDto
+                    {
+                        ColumnName = columnName,
+                        AggregateFunction = CompareDelegates.Max
+                    });
+                }
+                else if(aggregrateFunction == "min()")
+                {
+                    selectDtos.Add(new SelectColumnDto
+                    {
+                        ColumnName = columnName,
+                        AggregateFunction = CompareDelegates.Min
+                    });
+                }
+                else if (aggregrateFunction == "count()")
+                {
+                    selectDtos.Add(new SelectColumnDto
+                    {
+                        ColumnName = columnName,
+                        AggregateFunction = CompareDelegates.Count
+                    });
+                }
+                else
+                {
+                    selectDtos.Add(new SelectColumnDto
+                    {
+                        ColumnName = columnName,
+                        AggregateFunction = null
+                    });
+                }
+
+            }
+
+            return selectDtos;
         }
 
         public int IndexOfWhereClause(string query, string tableName)
@@ -74,7 +134,7 @@ namespace SharpDb.Services.Parsers
         {
             query = query.ToLower();
 
-            List<string> queryParts = query.Split(' ')
+            List<string> queryParts = query.Split(new[] { ' ', '\r', '\n'})
                 .Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
 
             int tableNameIndex = queryParts.IndexOf(tableName);
@@ -126,7 +186,7 @@ namespace SharpDb.Services.Parsers
             predicateStep.Predicates = predicates;
             predicateStep.HasPredicates = true;
 
-            List<string> predicateTrailersUnparsed = string.Join(' ', queryParts.GetRange(startTrailingPredicate, queryParts.Count() - startTrailingPredicate))
+            List<string> predicateTrailersUnparsed = string.Join(' ', queryParts.GetRange(startTrailingPredicate, queryParts.Count() - startTrailingPredicate)).ToLower()
                 .Split(new[] { " ", ",", "by" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrEmpty(x)).ToList();
 
             predicateStep.PredicateTrailer = ParsePredicateTrailers(predicateTrailersUnparsed);
