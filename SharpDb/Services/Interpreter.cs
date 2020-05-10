@@ -137,7 +137,12 @@ namespace SharpDb.Services
         }
 
 
-        //Need to implement parsing of aggregate functions in order to do group by
+        public IEnumerable<IGrouping<IComparable, List<IComparable>>> GetGroupings()
+        {
+            throw new NotImplementedException();
+        }
+
+        //break grouping / order by logic into their own classes
         private List<List<IComparable>> ProcessPostPredicateGroupBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
         {
             Func<IComparable, 
@@ -157,64 +162,34 @@ namespace SharpDb.Services
 
             var groupParts = groupByClause.Split(' ');
 
-            //storing an inenumerable in a temporary list and trhen adding the "then by"
-            //clause does not work. changes to an ienumerable are not guaranteed to persist
-
-
-            switch (groupParts.Count())
+            if(groupParts.Count() > 2)
             {
-                case 2:
-
-                    //need to pull out indexes (in the select list) of aggregated column
-
-                    //need to pull out corresponding aggregate functions that align with each aggregated column
-
-                    //ex: "select price, MAX(addreess), MIN(Bedrooms)"
-
-                    //address - 1 - MAX
-                    //bedrooms - 2 - MIN
-
-                    string groupingColumn = groupParts[1].ToLower();
-
-                    selects = selects.Where(x => x.IsInSelect);
-
-                    int groupColumnIndex = selects.Select(x => x.ColumnName.ToLower()).ToList().IndexOf(groupingColumn);
-
-                    var columnIndexToAggregateFunction = selects.Select((x, i) => new KeyValuePair<int, Func<List<IComparable>, IComparable>>(i, x.AggregateFunction)).ToList();
-
-                    var groupings = rows.GroupBy(x => x[groupColumnIndex]);
-
-                    var aggregatedRows = new List<List<IComparable>>();
-
-
-                    foreach(var grouping in groupings)
-                    {
-                        List<List<IComparable>> groupingValues = grouping.Select(x => x).ToList();
-
-                        List<IComparable> groupedRow = ReturnGroupedList(grouping.Key, groupingValues, columnIndexToAggregateFunction);
-
-                        aggregatedRows.Add(groupedRow);
-                    }
-
-                    return aggregatedRows;
-                case 9:
-                    var selectCase2 = selects.Where(x => x.ColumnName == groupParts[1]).FirstOrDefault();
-                    var selectCase2_2 = selects.Where(x => x.ColumnName == groupParts[2]).FirstOrDefault();
-                    rows = rows.OrderBy(x => x[selectCase2.Index]).ThenBy(x => x[selectCase2_2.Index]).ToList();
-                    break;
-                case 4:
-                    var selectCase3 = selects.Where(x => x.ColumnName == groupParts[1]).FirstOrDefault();
-                    var selectCase3_2 = selects.Where(x => x.ColumnName == groupParts[2]).FirstOrDefault();
-                    var selectCase3_3 = selects.Where(x => x.ColumnName == groupParts[2]).FirstOrDefault();
-                    rows = rows.OrderBy(x => x[selectCase3.Index]).ThenBy(x => x[selectCase3_2.Index]).
-                        ThenBy(x => x[selectCase3_3.Index]).ToList();
-                    break;
-                default:
-                    throw new Exception("There is a maximum of three columns allowed in the order by clause.");
-
+                throw new Exception("Only one group by column allowed");
             }
 
-            return rows;
+            string groupingColumn = groupParts[1].ToLower();
+
+            selects = selects.Where(x => x.IsInSelect);
+
+            int groupColumnIndex = selects.Select(x => x.ColumnName.ToLower()).ToList().IndexOf(groupingColumn);
+
+            var columnIndexToAggregateFunction = selects.Select((x, i) => new KeyValuePair<int, Func<List<IComparable>, IComparable>>(i, x.AggregateFunction)).ToList();
+
+            var groupings = rows.GroupBy(x => x[groupColumnIndex]);
+
+            var aggregatedRows = new List<List<IComparable>>();
+
+
+            foreach (var grouping in groupings)
+            {
+                List<List<IComparable>> groupingValues = grouping.Select(x => x).ToList();
+
+                List<IComparable> groupedRow = ReturnGroupedList(grouping.Key, groupingValues, columnIndexToAggregateFunction);
+
+                aggregatedRows.Add(groupedRow);
+            }
+
+            return aggregatedRows;
         }
 
         public List<List<IComparable>> RunQuery(string query)
