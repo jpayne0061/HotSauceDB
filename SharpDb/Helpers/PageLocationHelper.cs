@@ -16,6 +16,11 @@ namespace SharpDb.Helpers
             return next;
         }
 
+        public static long GetLowerBounds(long current )
+        {
+            return current - (current % Globals.PageSize);
+        }
+
         public static long GetNextPagePointer(long pageAddress)
         {
             using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))

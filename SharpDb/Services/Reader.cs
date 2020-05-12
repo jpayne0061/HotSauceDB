@@ -182,17 +182,6 @@ namespace SharpDb.Services
             }
         }
 
-        public List<List<IComparable>> StreamRows(string tableName)
-        {
-            var indexPage = GetIndexPage();
-
-            var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
-
-            var rows = new List<List<IComparable>>();
-
-            return rows;
-        }
-
         public IComparable ReadColumn(ColumnDefinition columnDefintion, BinaryReader binaryReader)
         {
             switch (columnDefintion.Type)
@@ -255,39 +244,6 @@ namespace SharpDb.Services
             }
         }
 
-        public List<List<IComparable>> GetRowsWithPredicate(string tableName, List<PredicateOperation> predicateOperations)
-        {
-            var indexPage = GetIndexPage();
-
-            var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
-
-            var rows = new List<List<IComparable>>();
-
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open))
-            {
-                fileStream.Position = tableDefinition.DataAddress;
-
-                using (BinaryReader binaryReader = new BinaryReader(fileStream))
-                {
-                    while (binaryReader.PeekChar() != -1 && binaryReader.PeekChar() != 0)
-                    {
-                        List<IComparable> row = new List<IComparable>();
-
-                        for (int j = 0; j < tableDefinition.ColumnDefinitions.Count; j++)
-                        {
-                            row.Add(ReadColumn(tableDefinition.ColumnDefinitions[j], binaryReader));
-                        }
-
-                        bool addRow = EvaluateRow(predicateOperations, row);
-
-                        if(addRow)
-                            rows.Add(row);
-                    }
-                }
-            }
-
-            return rows;
-        }
 
         public bool EvaluateRow(List<PredicateOperation> predicateOperations, List<IComparable> row)
         {

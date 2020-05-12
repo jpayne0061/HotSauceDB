@@ -11,15 +11,20 @@ namespace SharpDb.Services
     {
         public void WriteRow(IComparable[] row, TableDefinition tableDef)
         {
-            var writer = new Writer();
-
             var reader = new Reader();
 
             long addressToWrite = reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
 
-            writer.WriteRow(row, addressToWrite, tableDef);
+            WriteRow(row, addressToWrite, tableDef);
 
-            writer.UpdateObjectCount(addressToWrite);
+            UpdateObjectCount(addressToWrite);
+        }
+
+        public void WriteRow(IComparable[] row, TableDefinition tableDef, long addressToWrite)
+        {
+            WriteRow(row, addressToWrite, tableDef);
+
+            UpdateObjectCount(addressToWrite);
         }
         public void WriteRow(IComparable[] row, long diskLocation, TableDefinition tableDefinition)
         {

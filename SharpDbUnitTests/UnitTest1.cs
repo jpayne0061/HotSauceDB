@@ -246,7 +246,8 @@ namespace SharpDbUnitTests
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -283,7 +284,8 @@ namespace SharpDbUnitTests
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -309,7 +311,8 @@ namespace SharpDbUnitTests
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             var insertParser = new InsertParser(new SchemaFetcher());
 

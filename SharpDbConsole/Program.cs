@@ -32,9 +32,10 @@ namespace SharpDbConsole
                 //                    new Writer(),
                 //                    new SchemaFetcher(),
                 //                    new GeneralParser(),
-                //                    new CreateParser());
+                //                    new CreateParser(),
+                //                    new LockManager(new Writer(), new Reader()));
 
-                //string query = @"select * from houses order by price, address";
+                //string query = @"select * from houses order by price";
 
                 //var rows = interpreter.ProcessStatement(query);
 
@@ -292,7 +293,8 @@ namespace SharpDbConsole
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
 
             string query = "select ToolName, Price from tools where NumInStock = 4";
@@ -315,7 +317,8 @@ namespace SharpDbConsole
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             string query = @"select ToolName, Price
                                From tools where NumInStock = (
@@ -342,7 +345,8 @@ namespace SharpDbConsole
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             var insertParser = new InsertParser(new SchemaFetcher());
 
@@ -360,7 +364,8 @@ namespace SharpDbConsole
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             string dml = @"create table Houses(
                                 Address varchar(100),
@@ -393,7 +398,8 @@ namespace SharpDbConsole
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
 
@@ -419,7 +425,8 @@ namespace SharpDbConsole
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
 
@@ -451,7 +458,8 @@ namespace SharpDbConsole
                 new Writer(),
                 new SchemaFetcher(),
                 new GeneralParser(),
-                new CreateParser());
+                new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             string select = @"select * from houses where price > 200000 order by price, address";
 
@@ -467,7 +475,8 @@ namespace SharpDbConsole
                             new Writer(),
                             new SchemaFetcher(),
                             new GeneralParser(),
-                            new CreateParser());
+                            new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             string createTable = @"create table houses( Price int, NumBedRooms int, NumBathrooms int )";
 
@@ -511,7 +520,8 @@ namespace SharpDbConsole
                     new Writer(),
                     new SchemaFetcher(),
                     new GeneralParser(),
-                    new CreateParser());
+                    new CreateParser(),
+                new LockManager(new Writer(), new Reader()));
 
             //if integration.txt exists, delete and recreate
             File.WriteAllText("integration.txt", null);

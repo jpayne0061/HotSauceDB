@@ -1,11 +1,13 @@
 ﻿using SharpDb.Enums;
 using SharpDb.Models;
+using SharpDb.Models.Transactions;
 using SharpDb.Services.Parsers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace SharpDb.Services
 {
@@ -20,6 +22,7 @@ namespace SharpDb.Services
         private SchemaFetcher _schemaFetcher;
         private GeneralParser _generalParser;
         private CreateParser _createParser;
+        private LockManager _lockManager;
 
         public Interpreter(SelectParser selectParser, 
                             InsertParser insertParser, 
@@ -27,7 +30,8 @@ namespace SharpDb.Services
                             Writer writer, 
                             SchemaFetcher schemaFetcher,
                             GeneralParser generalParser,
-                            CreateParser createParser)
+                            CreateParser createParser,
+                            LockManager lockManager)
         {
             _selectParser = selectParser;
             _insertParser = insertParser;
@@ -36,6 +40,7 @@ namespace SharpDb.Services
             _schemaFetcher = schemaFetcher;
             _generalParser = generalParser;
             _createParser = createParser;
+            _lockManager = lockManager;
         }
 
         public object ProcessStatement(string sql)
@@ -223,12 +228,32 @@ namespace SharpDb.Services
 
             var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
 
-            List<List<IComparable>> rows =  _reader.GetRows(tableDef, selects, predicateOperations);
-
-            if(predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
+            //queue transaction
+            //subscribe to event being read/finished
+            var readTransaction = new ReadTransaction
             {
-                rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
+                TableDefinition = tableDef,
+                Selects = selects,
+                PredicateOperations = predicateOperations,
+                Key = Guid.NewGuid().ToString()
+            };
+
+            _lockManager.Queue(readTransaction);
+
+            while(!_lockManager.DataStore.ContainsKey(readTransaction.Key))
+            {
+                Thread.Sleep(10);
+            }
+
+            var rows = (List<List<IComparable>>)_lockManager.DataStore[readTransaction.Key];
+
+            //remove reference so data can be garbage collected
+            _lockManager.DataStore[readTransaction.Key] = null;
+
+            if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
+            {
                 rows = ProcessPostPredicateGroupBy(selects, predicateStep, rows);
+                rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
             }
 
             return rows;
@@ -365,7 +390,30 @@ namespace SharpDb.Services
 
             try
             {
-                _writer.WriteRow(row, _schemaFetcher.GetTableDefinition(tableName));
+                TableDefinition tableDef = _schemaFetcher.GetTableDefinition(tableName);
+
+                long firstAvailableAddress = _reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
+
+                var writeTransaction = new WriteTransaction
+                {
+                    Data = row,
+                    TableDefinition = tableDef,
+                    AddressToWriteTo = firstAvailableAddress,
+                    Query = dml,
+                    Key = Guid.NewGuid().ToString()
+                };
+
+                _lockManager.Queue(writeTransaction);
+
+                while (!_lockManager.DataStore.ContainsKey(writeTransaction.Key))
+                {
+                    Thread.Sleep(10);
+                }
+
+                InsertResult result = (InsertResult)_lockManager.DataStore[writeTransaction.Key];
+
+                //remove reference so data can be garbage collected
+                _lockManager.DataStore[writeTransaction.Key] = null;
             }
             catch(Exception ex)
             {
