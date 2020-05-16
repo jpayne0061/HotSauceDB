@@ -25,15 +25,21 @@ namespace SharpDbConsole
                 //TestGroupBy();
                 //TestParsingGroupBy();
 
+                //var reader = new Reader();
+                //var writer = new Writer();
+
+                //var lockManager = new LockManager(writer, reader);
+
+                //var schemaFetcher = new SchemaFetcher();
+
                 //var interpreter = new Interpreter(
                 //                    new SelectParser(),
-                //                    new InsertParser(new SchemaFetcher()),
-                //                    new Reader(),
-                //                    new Writer(),
+                //                    new InsertParser(schemaFetcher),
                 //                    new SchemaFetcher(),
                 //                    new GeneralParser(),
                 //                    new CreateParser(),
-                //                    new LockManager(new Writer(), new Reader()));
+                //                    lockManager,
+                //                    reader);
 
                 //string query = @"select * from houses order by price";
 
@@ -45,19 +51,43 @@ namespace SharpDbConsole
                 //QueryWithOrderBy();
                 //ConcurrentStack<char> stack = new ConcurrentStack<char>();
 
-                //Parallel.For(0, 30,
-                //         index => {
-                //             using (FileStream fs = new FileStream("test.txt", FileMode.Open, FileAccess.Read, FileShare.Read))
-                //             {
-                //                 using (BinaryReader binaryReader = new BinaryReader(fs))
-                //                 {
-                //                     binaryReader.BaseStream.Position = 0;
+//                Globals.FILE_NAME = "integration.txt";
 
-                //                     var x = binaryReader.ReadChar();
-                //                     stack.Push(x);
-                //                 }
-                //             }
-                //         });
+//                //                string query = "select * from houses";
+
+//                string insertStatement7 = @"insert into houses values ('" + "999 Adams St" + "'," +
+//"270000" + "," + "2300" + "," + "false," + "3" + ")";
+
+
+//                List<List<List<IComparable>>> l = new List<List<List<IComparable>>>();
+
+//                insertStatement7 = @"insert into houses values ('" + "777990 Adams St" + "'," +
+//"270000" + "," + "2300" + "," + "false," + "3" + ")";
+
+
+//                Parallel.For(0, 500,
+//                         index =>
+//                         {
+
+//                             if (index % 2 == 0)
+//                             {
+//                                 l.Add((List<List<IComparable>>)interpreter.ProcessStatement("select * from houses"));
+//                             }
+//                             else
+//                             {
+//                                 interpreter.ProcessStatement(insertStatement7);
+//                             }
+
+//                         });
+
+
+
+                //                string queryx = "select * from houses where address = '777990 Adams St'";
+
+                //                var rows = (List<List<IComparable>>)interpreter.ProcessStatement(queryx);
+
+
+                //                var x = 9;
 
                 //
                 //RunInStatement();
@@ -286,16 +316,21 @@ namespace SharpDbConsole
 
         public static void SelectWithPredicates()
         {
-            var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+            var reader = new Reader();
+            var writer = new Writer();
 
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
+            var interpreter = new Interpreter(
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             string query = "select ToolName, Price from tools where NumInStock = 4";
 
@@ -310,15 +345,21 @@ namespace SharpDbConsole
 
         public static void SelectWithSubQueries()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             string query = @"select ToolName, Price
                                From tools where NumInStock = (
@@ -338,15 +379,21 @@ namespace SharpDbConsole
 
         static void InsertRows()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             var insertParser = new InsertParser(new SchemaFetcher());
 
@@ -357,15 +404,21 @@ namespace SharpDbConsole
 
         static void ProcessCreateTableStatement()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             string dml = @"create table Houses(
                                 Address varchar(100),
@@ -391,15 +444,21 @@ namespace SharpDbConsole
 
         static void RunInStatement()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
 
@@ -418,15 +477,21 @@ namespace SharpDbConsole
 
         static void RunInStatementWithSubqueries()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
 
@@ -451,15 +516,21 @@ namespace SharpDbConsole
 
         static void QueryWithOrderBy()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             string select = @"select * from houses where price > 200000 order by price, address";
 
@@ -468,15 +539,21 @@ namespace SharpDbConsole
 
         static void TestGroupBy()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                            new SelectParser(),
-                            new InsertParser(new SchemaFetcher()),
-                            new Reader(),
-                            new Writer(),
-                            new SchemaFetcher(),
-                            new GeneralParser(),
-                            new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             string createTable = @"create table houses( Price int, NumBedRooms int, NumBathrooms int )";
 
@@ -513,15 +590,21 @@ namespace SharpDbConsole
 
         static void FullIntegration()
         {
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                    new SelectParser(),
-                    new InsertParser(new SchemaFetcher()),
-                    new Reader(),
-                    new Writer(),
-                    new SchemaFetcher(),
-                    new GeneralParser(),
-                    new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             //if integration.txt exists, delete and recreate
             File.WriteAllText("integration.txt", null);

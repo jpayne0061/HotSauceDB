@@ -1,14 +1,14 @@
 ﻿using SharpDb.Enums;
+using SharpDb.Models.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace SharpDb.Models
 {
-    public class SharpDbTransaction
+    public class UserTransaction : BaseTransaction
     {
         public TableDefinition TableDefinition { get; set; }
-        public string Key { get; set; }
         public string GetTableName {
             get
             {
@@ -16,15 +16,5 @@ namespace SharpDb.Models
             }
         }
         public string Query { get; set; }
-        protected virtual void OnTransactionComplete(EventArgs e)
-        {
-            EventHandler handler = TransactionComplete;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
-        }
-
-        public event EventHandler TransactionComplete;
     }
 }

@@ -25,5 +25,7 @@ namespace SharpDb
 
         public static readonly HashSet<string> PredicateTrailers = new HashSet<string> { "order", "group" };
         public static readonly HashSet<string> AggregateFunctions = new HashSet<string> { "max", "min", "avg" };
+
+        public const string InternalTableName = "disk";
     }
 }

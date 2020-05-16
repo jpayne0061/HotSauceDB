@@ -13,34 +13,29 @@ namespace SharpDb.Services
 {
     public class Interpreter
     {
-        private ConcurrentQueue<string> _queue = new ConcurrentQueue<string>();
-
         private SelectParser _selectParser;
         private InsertParser _insertParser;
-        private Reader _reader;
-        private Writer _writer;
         private SchemaFetcher _schemaFetcher;
         private GeneralParser _generalParser;
         private CreateParser _createParser;
+        private Reader _reader;
         private LockManager _lockManager;
 
         public Interpreter(SelectParser selectParser, 
                             InsertParser insertParser, 
-                            Reader reader, 
-                            Writer writer, 
                             SchemaFetcher schemaFetcher,
                             GeneralParser generalParser,
                             CreateParser createParser,
-                            LockManager lockManager)
+                            LockManager lockManager,
+                            Reader reader)
         {
             _selectParser = selectParser;
             _insertParser = insertParser;
-            _reader = reader;
-            _writer = writer;
             _schemaFetcher = schemaFetcher;
             _generalParser = generalParser;
             _createParser = createParser;
             _lockManager = lockManager;
+            _reader = reader;
         }
 
         public object ProcessStatement(string sql)
@@ -234,21 +229,16 @@ namespace SharpDb.Services
             {
                 TableDefinition = tableDef,
                 Selects = selects,
-                PredicateOperations = predicateOperations,
-                Key = Guid.NewGuid().ToString()
+                PredicateOperations = predicateOperations
             };
 
-            _lockManager.Queue(readTransaction);
+            _lockManager.QueueQuery(readTransaction);
 
-            while(!_lockManager.DataStore.ContainsKey(readTransaction.Key))
-            {
-                Thread.Sleep(10);
-            }
+            object data;
 
-            var rows = (List<List<IComparable>>)_lockManager.DataStore[readTransaction.Key];
+            _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
 
-            //remove reference so data can be garbage collected
-            _lockManager.DataStore[readTransaction.Key] = null;
+            var rows = (List<List<IComparable>>)data;
 
             if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {
@@ -392,28 +382,30 @@ namespace SharpDb.Services
             {
                 TableDefinition tableDef = _schemaFetcher.GetTableDefinition(tableName);
 
-                long firstAvailableAddress = _reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
+                long? firstAvailableAddress = null;
+                lock (_reader)
+                {
+                    firstAvailableAddress = _reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
+                }
 
                 var writeTransaction = new WriteTransaction
                 {
                     Data = row,
                     TableDefinition = tableDef,
-                    AddressToWriteTo = firstAvailableAddress,
-                    Query = dml,
-                    Key = Guid.NewGuid().ToString()
+                    AddressToWriteTo = (long)firstAvailableAddress,
+                    Query = dml
                 };
 
-                _lockManager.Queue(writeTransaction);
+                _lockManager.QueueQuery(writeTransaction);
 
-                while (!_lockManager.DataStore.ContainsKey(writeTransaction.Key))
-                {
-                    Thread.Sleep(10);
-                }
+                object result;
 
-                InsertResult result = (InsertResult)_lockManager.DataStore[writeTransaction.Key];
+                _lockManager.DataStore.TryGetValue(writeTransaction.DataRetrievalKey, out result);
 
-                //remove reference so data can be garbage collected
-                _lockManager.DataStore[writeTransaction.Key] = null;
+                InsertResult insertResult = (InsertResult)result;
+
+                _lockManager.DataStore.TryRemove(writeTransaction.DataRetrievalKey, out object x);
+
             }
             catch(Exception ex)
             {
@@ -431,7 +423,20 @@ namespace SharpDb.Services
             tableDef.TableName = _createParser.GetTableName(dml);
             tableDef.ColumnDefinitions = _createParser.GetColumnDefintions(dml);
 
-            return _writer.WriteTableDefinition(tableDef);
+            DmlTransaction dmlTransaction = new DmlTransaction
+            {
+                TableDefinition = tableDef
+            };
+
+            _lockManager.QueueQuery(dmlTransaction);
+
+            object result;
+
+            _lockManager.DataStore.TryGetValue(dmlTransaction.DataRetrievalKey, out result);
+
+            ResultMessage resultMessage = (ResultMessage)result;
+
+            return resultMessage;
         }
 
         public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)

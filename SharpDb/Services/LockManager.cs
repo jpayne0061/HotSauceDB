@@ -1,11 +1,8 @@
-﻿using SharpDb.Helpers;
+﻿using SharpDb.Enums;
 using SharpDb.Models;
 using SharpDb.Models.Transactions;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpDb.Services
 {
@@ -20,26 +17,27 @@ namespace SharpDb.Services
             _reader = reader;
         }
 
-        public ConcurrentDictionary<string, ConcurrentQueue<SharpDbTransaction>> _queues
-            = new ConcurrentDictionary<string, ConcurrentQueue<SharpDbTransaction>>();
+        public ConcurrentDictionary<string, ConcurrentQueue<BaseTransaction>> _queues
+            = new ConcurrentDictionary<string, ConcurrentQueue<BaseTransaction>>();
 
-        public Dictionary<string, object> DataStore = new Dictionary<string, object>();
+        public ConcurrentDictionary<string, object> DataStore = new ConcurrentDictionary<string, object>();
 
-        public void Queue(object sharpDbTransaction)
+        public void QueueQuery(UserTransaction sharpDbTransaction)
         {
-            var castedSharpDbTransaction = (SharpDbTransaction)sharpDbTransaction;
+            string tableName = sharpDbTransaction.GetTableName;
 
-            string tableName = castedSharpDbTransaction.GetTableName;
+            var q = _queues.GetOrAdd(tableName, x => new ConcurrentQueue<BaseTransaction>());
 
-            if (_queues.ContainsKey(tableName))
-            {
-                _queues[tableName].Enqueue(castedSharpDbTransaction);
-            }
-            else
-            {
-                _queues[tableName] = new ConcurrentQueue<SharpDbTransaction>();
-                _queues[tableName].Enqueue(castedSharpDbTransaction);
-            }
+            q.Enqueue(sharpDbTransaction);
+
+            ProcessNextQueueItems();
+        }
+
+        public void QueueInternalTransaction(InternalTransaction transaction)
+        {
+            var q = _queues.GetOrAdd(transaction.QueueKey, x => new ConcurrentQueue<BaseTransaction>());
+
+            q.Enqueue(transaction);
 
             ProcessNextQueueItems();
         }
@@ -48,19 +46,19 @@ namespace SharpDb.Services
         {
             bool allQueuesEmpty = true;
 
-
-            Parallel.ForEach(_queues, (queue) =>
+            foreach(var queue in _queues)
             {
                 if (queue.Value.IsEmpty)
                 {
-                    return;
+                    continue;
                 }
                 else
                 {
                     allQueuesEmpty = false;
                 }
 
-                SharpDbTransaction sharpDbTransaction;
+                BaseTransaction sharpDbTransaction;
+
 
                 bool succeeded = queue.Value.TryDequeue(out sharpDbTransaction);
 
@@ -72,22 +70,38 @@ namespace SharpDb.Services
 
                         _writer.WriteRow(writeTxn.Data, writeTxn.TableDefinition, writeTxn.AddressToWriteTo);
 
-                        DataStore[sharpDbTransaction.Key] = new InsertResult { Successful = true };
+                        DataStore[sharpDbTransaction.DataRetrievalKey] = new InsertResult { Successful = true };
                     }
                     else if (sharpDbTransaction is ReadTransaction)
                     {
                         ReadTransaction readTransaction = (ReadTransaction)sharpDbTransaction;
 
-                        var rows = _reader.GetRows(sharpDbTransaction.TableDefinition, readTransaction.Selects, readTransaction.PredicateOperations);
+                        var rows = _reader.GetRows(readTransaction.TableDefinition, readTransaction.Selects, readTransaction.PredicateOperations);
 
-                        DataStore[sharpDbTransaction.Key] = rows;
+                        DataStore[sharpDbTransaction.DataRetrievalKey] = rows;
+                    }
+                    else if(sharpDbTransaction is DmlTransaction)
+                    {
+                        DmlTransaction dmlTransaction = (DmlTransaction)sharpDbTransaction;
+
+                        DataStore[sharpDbTransaction.DataRetrievalKey] = _writer.WriteTableDefinition(dmlTransaction.TableDefinition);
+                    }
+                    else if (sharpDbTransaction is InternalTransaction)
+                    {
+                        InternalTransaction txn = (InternalTransaction)sharpDbTransaction;
+
+                        switch(txn.IntTxnType)
+                        {
+                            case (InternalTransactionType.GetFirstAvailableDataAddress):
+                                long address =  _reader.GetFirstAvailableDataAddress((long)txn.Parameters[0], (int)txn.Parameters[1]);
+                                DataStore[txn.DataRetrievalKey] = address;
+                                break;
+                            default:
+                                throw new Exception("invalid internal transaction type ");
+                        }
                     }
                 }
-                else
-                {
-                    //need to handle when dequeue does not succeed
-                }
-            });
+            }
 
             if(!allQueuesEmpty)
             {

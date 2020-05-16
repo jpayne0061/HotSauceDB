@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpDb.Models.Transactions
 {
-    public class ReadTransaction : SharpDbTransaction
+    public class ReadTransaction : UserTransaction
     {
         public IEnumerable<SelectColumnDto> Selects { get; set; }
 

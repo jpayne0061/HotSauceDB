@@ -35,25 +35,6 @@ namespace SharpDb.Services
             var index = GetIndexPage();
 
             return index.TableDefinitions.Where(x => x.TableName == tableName).First();
-
-            if (_indexPage == null)
-            {
-                GetIndexPage(false);
-            }
-
-            try
-            {
-                return _indexPage.TableDefinitions.Where(x => x.TableName == tableName).First();
-            }
-            catch (Exception ex)
-            {
-                if(ex.Message.Contains("Sequence contains no elements"))
-                {
-                    throw new Exception($"No table found by the name of : {tableName}", ex);
-                }
-
-                throw;
-            }
         }
 
     }

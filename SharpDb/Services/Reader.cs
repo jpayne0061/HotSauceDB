@@ -24,7 +24,7 @@ namespace SharpDb.Services
 
             bool nextPageHasTables = true;
 
-            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(fileStream))
                 {
@@ -95,7 +95,7 @@ namespace SharpDb.Services
 
             short rowCount = GetObjectCount(tableDefinition.DataAddress);
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(fileStream))
                 {
@@ -153,7 +153,7 @@ namespace SharpDb.Services
             long pointerToNextPage = PageLocationHelper.GetNextDivisbleNumber(pageAddress, Globals.PageSize)
                                         - Globals.Int64ByteLength;
 
-            using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(fs))
                 {
@@ -169,7 +169,7 @@ namespace SharpDb.Services
 
         public short GetObjectCount(long rowCountPointer)
         {
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 fileStream.Position = rowCountPointer;
 
@@ -212,7 +212,7 @@ namespace SharpDb.Services
                 dataStart = PageLocationHelper.GetNextPagePointer(dataStart);
             }
 
-            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 fileStream.Position = dataStart;
 
@@ -227,7 +227,7 @@ namespace SharpDb.Services
 
         public bool PageIsFull(long address, int objectSize)
         {
-            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 fileStream.Position = address;
 

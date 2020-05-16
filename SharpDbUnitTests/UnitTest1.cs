@@ -155,7 +155,7 @@ namespace SharpDbUnitTests
             Assert.AreEqual("where origin > 8", predicates[0]);
             Assert.AreEqual("AND truck = '   ford'", predicates[1]);
             Assert.AreEqual("OR space = 98", predicates[2]);
-            Assert.AreEqual("order by truck", predicateResults.PredicateTrailer[0]);
+            Assert.AreEqual("order truck", predicateResults.PredicateTrailer[0]);
         }
 
         [TestMethod]
@@ -239,15 +239,21 @@ namespace SharpDbUnitTests
 
             InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -277,15 +283,21 @@ namespace SharpDbUnitTests
 
             InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -304,15 +316,21 @@ namespace SharpDbUnitTests
         public void InsertParser_ParseTableName()
         {
             //arrange
+            var reader = new Reader();
+            var writer = new Writer();
+
+            var lockManager = new LockManager(writer, reader);
+
+            var schemaFetcher = new SchemaFetcher();
+
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(new SchemaFetcher()),
-                new Reader(),
-                new Writer(),
-                new SchemaFetcher(),
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(new Writer(), new Reader()));
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                new SchemaFetcher(),
+                                new GeneralParser(),
+                                new CreateParser(),
+                                new LockManager(writer, reader),
+                                reader);
 
             var insertParser = new InsertParser(new SchemaFetcher());
 
@@ -388,21 +406,6 @@ namespace SharpDbUnitTests
             Assert.AreEqual(expected, result);
         }
 
-        //[TestMethod]
-        //public void Parse_Select_Predicates()
-        //{
-
-
-
-        //    var parser = new SelectParser();
-
-        //    var 
-
-        //    //act
-
-        //    PredicateStep result = parser.ParsePredicates(select);
-
-        //}
 
     }
 }

@@ -1,7 +1,10 @@
 ﻿using SharpDb.Cache;
+using SharpDb.Enums;
 using SharpDb.Helpers;
 using SharpDb.Models;
+using SharpDb.Models.Transactions;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -36,7 +39,7 @@ namespace SharpDb.Services
                 WriteZeroPointerForFirstRow(addressToWriteTo);
             }
 
-            using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
+            using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 fileStream.Position = addressToWriteTo;
 
@@ -59,7 +62,7 @@ namespace SharpDb.Services
 
             long zeroPointerAddress = currentAddress + (Globals.NextPointerAddress - 2);
 
-            using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
+            using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 fileStream.Position = zeroPointerAddress;
 
@@ -111,19 +114,14 @@ namespace SharpDb.Services
 
             if(isFirstTable)
             {
-                WriteZero(0); //record count as zero
-                //var pointerToNextIndexRecord = GetNextUnclaimedDataPage();
-                //WriteLong(Globals.NextPointerAddress, pointerToNextIndexRecord);
+                WriteZero(0); 
             }
-
             var reader = new Reader();
 
             //need to pass in address of current page, not zero
             long addressToWrite = reader.GetFirstAvailableDataAddress(0, Globals.TABLE_DEF_LENGTH);
 
-
-            //just added t
-            if((addressToWrite - 2) % Globals.PageSize == 0)
+            if ((addressToWrite - 2) % Globals.PageSize == 0)
             {
                 var pointerToNextIndexRecord = GetNextUnclaimedDataPage();
                 WriteLong((addressToWrite - 2) + Globals.NextPointerAddress, pointerToNextIndexRecord);
@@ -138,7 +136,7 @@ namespace SharpDb.Services
 
             long tableDefEnd = 0;
 
-            using (FileStream stream = File.OpenWrite(Globals.FILE_NAME))
+            using (FileStream stream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(stream))
                 {
@@ -171,7 +169,7 @@ namespace SharpDb.Services
 
         void WriteZero(long address)
         {
-            using (FileStream stream = File.OpenWrite(Globals.FILE_NAME))
+            using (FileStream stream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(stream))
                 {
@@ -184,7 +182,7 @@ namespace SharpDb.Services
 
         void WriteLong(long address, long num)
         {
-            using (FileStream stream = File.OpenWrite(Globals.FILE_NAME))
+            using (FileStream stream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(stream))
                 {
@@ -197,7 +195,7 @@ namespace SharpDb.Services
 
         private bool IsFirstTable()
         {
-            using (FileStream stream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream stream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
@@ -210,7 +208,7 @@ namespace SharpDb.Services
 
         private long FindSpotForNewTableDefinition()
         {
-            using (FileStream stream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream stream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
@@ -233,7 +231,7 @@ namespace SharpDb.Services
 
             long nextFreeAddress = headAddress;
 
-            using (FileStream stream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream stream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(stream))
                 {
@@ -265,7 +263,7 @@ namespace SharpDb.Services
 
             short numRows = 0;
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(fileStream))
                 {
@@ -275,7 +273,7 @@ namespace SharpDb.Services
                 }
             }
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.Write))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                 {
@@ -311,7 +309,7 @@ namespace SharpDb.Services
             {
                 long nextPagePointer = GetNextUnclaimedDataPage();
 
-                using (FileStream fileStream = File.OpenWrite(Globals.FILE_NAME))
+                using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
                 {
                     using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                     {

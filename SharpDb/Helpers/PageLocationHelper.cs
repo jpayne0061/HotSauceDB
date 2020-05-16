@@ -23,7 +23,7 @@ namespace SharpDb.Helpers
 
         public static long GetNextPagePointer(long pageAddress)
         {
-            using (FileStream fileStream = File.OpenRead(Globals.FILE_NAME))
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 fileStream.Position = pageAddress + Globals.NextPointerAddress;
 

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpDb.Models.Transactions
 {
-    public class WriteTransaction : SharpDbTransaction
+    public class WriteTransaction : UserTransaction
     {
 
         public IComparable[] Data { get; set; }

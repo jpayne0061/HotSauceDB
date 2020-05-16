@@ -4,9 +4,8 @@ using System.Text;
 
 namespace SharpDb.Enums
 {
-    public enum TransactionType
+    public enum InternalTransactionType
     {
-        Read,
-        Write
+        GetFirstAvailableDataAddress
     }
 }
