@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SharpDbOrm\SharpDbOrm.csproj" />
     <ProjectReference Include="..\SharpDb\SharpDb.csproj" />
   </ItemGroup>
 

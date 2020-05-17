@@ -64,34 +64,44 @@ namespace SharpDb.Services
 
         public void WriteColumnData(BinaryWriter binaryWriter, IComparable data, ColumnDefinition columnDefinition)
         {
-            if (data is bool)
+            if (columnDefinition.Type == TypeEnum.Boolean)
             {
                 binaryWriter.Write((bool)data);
             }
-            else if (data is char)
+            else if (columnDefinition.Type == TypeEnum.Char)
             {
                 binaryWriter.Write((char)data);
             }
-            else if (data is decimal)
+            else if (columnDefinition.Type == TypeEnum.Decimal)
             {
                 binaryWriter.Write((decimal)data);
             }
-            else if (data is Int32)
+            else if (columnDefinition.Type == TypeEnum.Int32)
             {
                 binaryWriter.Write((Int32)data);
             }
-            else if (data is Int64)
+            else if (columnDefinition.Type == TypeEnum.Int64)
             {
                 binaryWriter.Write((Int64)data);
             }
             else if (columnDefinition.Type == Enums.TypeEnum.DateTime)
             {
-                binaryWriter.Write((long)data);
+                long unixTime = ((DateTimeOffset)(DateTime)data).ToUnixTimeSeconds();
+                binaryWriter.Write(unixTime);
             }
-            else if (data is string)
+            else if (columnDefinition.Type == TypeEnum.String)
             {
-                var x = ((string)data).PadRight(columnDefinition.ByteSize - 1, ' ');
-                binaryWriter.Write(x);
+                if(data == null)
+                {
+                    binaryWriter.Write("".PadRight(columnDefinition.ByteSize - 1, ' '));
+                }
+                else
+                {
+                    var x = ((string)data).PadRight(columnDefinition.ByteSize - 1, ' ');
+                    binaryWriter.Write(x);
+                }
+
+
             }
         }
 

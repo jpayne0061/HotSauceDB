@@ -3,6 +3,7 @@ using SharpDb.Enums;
 using SharpDb.Models;
 using SharpDb.Services;
 using SharpDb.Services.Parsers;
+using SharpDbOrm;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,25 +22,48 @@ namespace SharpDbConsole
 
             try
             {
-                FullIntegration();
+                File.WriteAllText("data.txt", null);
+
+
+                Executor executor = new Executor();
+
+                executor.CreateTable<House>();
+
+                House h1 = new House
+                {
+                    NumBedrooms = 4,
+                    NumBath = 2,
+                    Price = 320000,
+                    IsListed = true,
+                    DateListed = DateTime.Now
+                };
+
+                executor.Insert(h1);
+
+                House h2 = new House
+                {
+                    NumBedrooms = 3,
+                    NumBath = 2,
+                    Price = 310000,
+                    IsListed = true,
+                    DateListed = new DateTime(2020, 1, 30),
+                    Address = "456 Nada street"
+                };
+
+                executor.Insert(h2);
+
+                string query = "select * from house where NumBedRooms > 3";
+
+                var records = executor.Read<House>(query);
+
+                var z = 0;
+                //FullIntegration();
                 //TestGroupBy();
                 //TestParsingGroupBy();
 
-                //var reader = new Reader();
-                //var writer = new Writer();
 
-                //var lockManager = new LockManager(writer, reader);
 
-                //var schemaFetcher = new SchemaFetcher();
 
-                //var interpreter = new Interpreter(
-                //                    new SelectParser(),
-                //                    new InsertParser(schemaFetcher),
-                //                    new SchemaFetcher(),
-                //                    new GeneralParser(),
-                //                    new CreateParser(),
-                //                    lockManager,
-                //                    reader);
 
                 //string query = @"select * from houses order by price";
 
@@ -51,34 +75,34 @@ namespace SharpDbConsole
                 //QueryWithOrderBy();
                 //ConcurrentStack<char> stack = new ConcurrentStack<char>();
 
-//                Globals.FILE_NAME = "integration.txt";
+                //                Globals.FILE_NAME = "integration.txt";
 
-//                //                string query = "select * from houses";
+                //                //                string query = "select * from houses";
 
-//                string insertStatement7 = @"insert into houses values ('" + "999 Adams St" + "'," +
-//"270000" + "," + "2300" + "," + "false," + "3" + ")";
-
-
-//                List<List<List<IComparable>>> l = new List<List<List<IComparable>>>();
-
-//                insertStatement7 = @"insert into houses values ('" + "777990 Adams St" + "'," +
-//"270000" + "," + "2300" + "," + "false," + "3" + ")";
+                //                string insertStatement7 = @"insert into houses values ('" + "999 Adams St" + "'," +
+                //"270000" + "," + "2300" + "," + "false," + "3" + ")";
 
 
-//                Parallel.For(0, 500,
-//                         index =>
-//                         {
+                //                List<List<List<IComparable>>> l = new List<List<List<IComparable>>>();
 
-//                             if (index % 2 == 0)
-//                             {
-//                                 l.Add((List<List<IComparable>>)interpreter.ProcessStatement("select * from houses"));
-//                             }
-//                             else
-//                             {
-//                                 interpreter.ProcessStatement(insertStatement7);
-//                             }
+                //                insertStatement7 = @"insert into houses values ('" + "777990 Adams St" + "'," +
+                //"270000" + "," + "2300" + "," + "false," + "3" + ")";
 
-//                         });
+
+                //                Parallel.For(0, 500,
+                //                         index =>
+                //                         {
+
+                //                             if (index % 2 == 0)
+                //                             {
+                //                                 l.Add((List<List<IComparable>>)interpreter.ProcessStatement("select * from houses"));
+                //                             }
+                //                             else
+                //                             {
+                //                                 interpreter.ProcessStatement(insertStatement7);
+                //                             }
+
+                //                         });
 
 
 

@@ -200,7 +200,7 @@ namespace SharpDb.Services
                     return binaryReader.ReadString();
                 case TypeEnum.DateTime:
                     return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                        .AddMilliseconds(binaryReader.ReadInt64());
+                        .AddSeconds(binaryReader.ReadInt64());
                 default:
                     throw new Exception("invalid column definition type");
             }

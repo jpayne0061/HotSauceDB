@@ -41,37 +41,37 @@ namespace SharpDbOrm.Operations
 
             PropertyInfo[] properties = model.GetType().GetProperties();
 
-            int count = properties.Where(x => types.Contains(x.GetType())).Count();
+            int count = properties.Where(x => types.Contains(x.PropertyType)).Count();
 
             IComparable[] row = new IComparable[count];
 
             for (int i = 0; i < properties.Count(); i++)
             {
-                if (properties[i].GetType() == typeof(bool))
+                if (properties[i].PropertyType == typeof(bool))
                 {
                     row[i] = (bool)properties[i].GetValue(model);
                 }
-                else if (properties[i].GetType() == typeof(char))
+                else if (properties[i].PropertyType == typeof(char))
                 {
                     row[i] = (char)properties[i].GetValue(model);
                 }
-                else if (properties[i].GetType() == typeof(decimal))
+                else if (properties[i].PropertyType == typeof(decimal))
                 {
                     row[i] = (decimal)properties[i].GetValue(model);
                 }
-                else if (properties[i].GetType() == typeof(Int32))
+                else if (properties[i].PropertyType == typeof(Int32))
                 {
                     row[i] = (Int32)properties[i].GetValue(model);
                 }
-                else if (properties[i].GetType() == typeof(Int64))
+                else if (properties[i].PropertyType == typeof(Int64))
                 {
                     row[i] = (Int64)properties[i].GetValue(model);
                 }
-                else if (properties[i].GetType() == typeof(string))
+                else if (properties[i].PropertyType == typeof(string))
                 {
                     row[i] = (string)properties[i].GetValue(model);
                 }
-                else if (properties[i].GetType() == typeof(DateTime))
+                else if (properties[i].PropertyType == typeof(DateTime))
                 {
                     row[i] = (DateTime)properties[i].GetValue(model);
                 }

@@ -1,8 +1,10 @@
-﻿using SharpDb.Enums;
+﻿using SharpDb;
+using SharpDb.Enums;
 using SharpDb.Models;
 using SharpDb.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace SharpDbOrm.Operations
@@ -16,11 +18,11 @@ namespace SharpDbOrm.Operations
             _interpreter = interpreter;
         }
 
-        public void CreateTable<T>(T model)
+        public void CreateTable<T>()
         {
-            PropertyInfo[] properties = model.GetType().GetProperties();
+            PropertyInfo[] properties = typeof(T).GetProperties();
 
-            string name = model.GetType().Name;
+            string name = typeof(T).Name;
 
             List<ColumnDefinition> columnDefinitions = GetColumnDefinitions(properties);
 
@@ -44,8 +46,9 @@ namespace SharpDbOrm.Operations
                 columnDefinition.ColumnName = properties[i].Name;
                 columnDefinition.Index = (byte)i;
                 columnDefinition.Type = GetTypeEnum(properties[i].PropertyType);
+                columnDefinition.ByteSize = GetByteSize(columnDefinition.Type, properties[i]);
 
-                if(columnDefinition.Type == TypeEnum.UnsupportedType)
+                if (columnDefinition.Type == TypeEnum.UnsupportedType)
                 {
                     continue;
                 }
@@ -54,6 +57,59 @@ namespace SharpDbOrm.Operations
             }
 
             return colDefinitions;
+        }
+
+        private short GetByteSize(TypeEnum typeEnum, PropertyInfo propertyInfo = null)
+        {
+            if (typeEnum == TypeEnum.Boolean)
+            {
+                return Globals.BooleanByteLength;
+            }
+            else if (typeEnum == TypeEnum.Char)
+            {
+                return Globals.CharByteLength;
+            }
+            else if (typeEnum == TypeEnum.DateTime)
+            {
+                return Globals.Int64ByteLength;
+            }
+            else if (typeEnum == TypeEnum.Decimal)
+            {
+                return Globals.DecimalByteLength;
+            }
+            else if (typeEnum == TypeEnum.Int32)
+            {
+                return Globals.Int32ByteLength;
+            }
+            else if (typeEnum == TypeEnum.DateTime)
+            {
+                return Globals.Int64ByteLength;
+            }
+            else if (typeEnum == TypeEnum.String)
+            {
+                //get attribute from property
+                int? stringLength = null;
+
+                try
+                {
+                    stringLength = (int)propertyInfo.CustomAttributes.ToList()
+                    .Where(x => x.AttributeType.Name == "StringLengthAttribute")
+                    .First().ConstructorArguments.First().Value;
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(@"Failed to get string length from model. String properties
+must have a StringLength attribute. Example:
+[StringLength(20)] 
+public string Name { get; set; }", ex);
+                }
+
+                return (short)stringLength;
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         private TypeEnum GetTypeEnum(Type type)
