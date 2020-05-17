@@ -168,6 +168,11 @@ namespace SharpDbConsole
             }
         }
 
+        static T ReturnInstance<T>(int x) where T : new()
+        {
+            return new T();
+        }
+
         private static TableDefinition BuildToolsTable()
         {
             TableDefinition table = new TableDefinition();
@@ -175,11 +180,11 @@ namespace SharpDbConsole
 
             table.ColumnDefinitions = new List<ColumnDefinition>();
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnums.String, ByteSize = 41, ColumnName = "ToolName" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnum.String, ByteSize = 41, ColumnName = "ToolName" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnums.Decimal, ByteSize = Globals.DecimalByteLength, ColumnName = "Price" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnum.Decimal, ByteSize = Globals.DecimalByteLength, ColumnName = "Price" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = TypeEnums.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "NumInStock" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = TypeEnum.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "NumInStock" });
 
             return table;
         }
@@ -191,11 +196,11 @@ namespace SharpDbConsole
 
             table.ColumnDefinitions = new List<ColumnDefinition>();
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnums.String, ByteSize = 21, ColumnName = "Name" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnum.String, ByteSize = 21, ColumnName = "Name" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnums.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "Age" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnum.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "Age" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = TypeEnums.Boolean, ByteSize = Globals.BooleanByteLength, ColumnName = "IsAdult" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 2, Type = TypeEnum.Boolean, ByteSize = Globals.BooleanByteLength, ColumnName = "IsAdult" });
 
             return table;
         }
@@ -207,94 +212,11 @@ namespace SharpDbConsole
 
             table.ColumnDefinitions = new List<ColumnDefinition>();
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnums.String, ByteSize = 21, ColumnName = "FamilyName" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 0, Type = TypeEnum.String, ByteSize = 21, ColumnName = "FamilyName" });
 
-            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnums.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "NumberMembers" });
+            table.ColumnDefinitions.Add(new ColumnDefinition { Index = 1, Type = TypeEnum.Int32, ByteSize = Globals.Int32ByteLength, ColumnName = "NumberMembers" });
 
             return table;
-        }
-
-        public static void WriteTablesAndFillRows()
-        {
-            var t = BuildToolsTable();
-
-            var p = BuildPersonTable();
-
-            var writer = new Writer();
-
-            writer.WriteTableDefinition(t);
-            writer.WriteTableDefinition(p);
-
-            Random rd = new Random();
-
-            var reader = new Reader();
-
-            var indexPage = reader.GetIndexPage();
-
-            var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "tools").FirstOrDefault();
-
-
-            //fill first data page, and partially fill second
-            for (int i = 0; i < 100; i++)
-            {
-                IComparable[] row = new IComparable[3];
-
-                row[0] = CreateString(20);
-                row[1] = (decimal)rd.NextDouble();
-                row[2] = rd.Next();
-
-                writer.WriteRow(row, tableDef);
-            }
-
-            IComparable[] rowx = new IComparable[3];
-
-            rowx[0] = "Drill";
-            rowx[1] = 33.78m;
-            rowx[2] = 89;
-
-            writer.WriteRow(rowx, tableDef);
-
-            var personTableDef = indexPage.TableDefinitions.Where(x => x.TableName == "person").FirstOrDefault();
-
-            //write rows for second table
-            for (int i = 0; i < 1200; i++)
-            {
-                IComparable[] row = new IComparable[3];
-
-                row[0] = CreateString(10);
-                row[1] = rd.Next();
-                row[2] = DateTime.Now.Ticks % 2 == 0 ? true : false;
-
-                writer.WriteRow(row, personTableDef);
-            }
-
-            //continue writing writing rows for first table
-            for (int i = 0; i < 1800; i++)
-            {
-                IComparable[] row = new IComparable[3];
-
-                row[0] = CreateString(20);
-                row[1] = (decimal)rd.NextDouble();
-                row[2] = rd.Next();
-
-                writer.WriteRow(row, tableDef);
-            }
-
-            IComparable[] rowz = new IComparable[3];
-
-            rowz[0] = "Drill";
-            rowz[1] = 678.99m;
-            rowz[2] = 89;
-
-            writer.WriteRow(rowz, tableDef);
-
-            IComparable[] rowz2 = new IComparable[3];
-
-            rowz2[0] = "Drill";
-            rowz2[1] = 22.21m;
-            rowz2[2] = 4;
-
-            writer.WriteRow(rowz2, tableDef);
         }
 
         internal static string CreateString(int stringLength)

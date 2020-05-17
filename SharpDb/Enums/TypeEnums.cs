@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpDb.Enums
 {
-    public enum TypeEnums
+    public enum TypeEnum
     {
         Boolean,
         Char,
@@ -12,6 +12,7 @@ namespace SharpDb.Enums
         Int32,
         Int64,
         String,
-        DateTime
+        DateTime,
+        UnsupportedType
     }
 }

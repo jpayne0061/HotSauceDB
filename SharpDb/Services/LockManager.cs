@@ -80,9 +80,9 @@ namespace SharpDb.Services
 
                         DataStore[sharpDbTransaction.DataRetrievalKey] = rows;
                     }
-                    else if(sharpDbTransaction is DmlTransaction)
+                    else if(sharpDbTransaction is SchemaTransaction)
                     {
-                        DmlTransaction dmlTransaction = (DmlTransaction)sharpDbTransaction;
+                        SchemaTransaction dmlTransaction = (SchemaTransaction)sharpDbTransaction;
 
                         DataStore[sharpDbTransaction.DataRetrievalKey] = _writer.WriteTableDefinition(dmlTransaction.TableDefinition);
                     }

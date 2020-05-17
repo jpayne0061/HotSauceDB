@@ -251,9 +251,7 @@ namespace SharpDb.Services
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
         {
-            var reader = new Reader();
-
-            var indexPage = reader.GetIndexPage();
+            var indexPage = _reader.GetIndexPage();
 
             var subQuery = _selectParser.GetInnerMostSelectStatement(query);
 
@@ -282,12 +280,12 @@ namespace SharpDb.Services
 
         }
 
-        public string ReplaceSubqueryWithValue(string query, InnerStatement subquery, string value, TypeEnums type)
+        public string ReplaceSubqueryWithValue(string query, InnerStatement subquery, string value, TypeEnum type)
         {
             string subQueryWithParantheses = query.Substring(subquery.StartIndexOfOpenParantheses,
                 subquery.EndIndexOfCloseParantheses - subquery.StartIndexOfOpenParantheses + 1);
 
-            if(type == TypeEnums.String)
+            if(type == TypeEnum.String)
             {
                 value = "'" + value + "'";
             }
@@ -302,9 +300,7 @@ namespace SharpDb.Services
                 return new List<PredicateOperation>();
             }
 
-            var reader = new Reader();
-
-            var indexPage = reader.GetIndexPage();
+            var indexPage = _reader.GetIndexPage();
 
             var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
@@ -378,6 +374,11 @@ namespace SharpDb.Services
 
             string tableName = _insertParser.ParseTableName(dml);
 
+            return RunInsert(row, tableName, dml);
+        }
+
+        public InsertResult RunInsert(IComparable[] row, string tableName, string dml = null)
+        {
             try
             {
                 TableDefinition tableDef = _schemaFetcher.GetTableDefinition(tableName);
@@ -407,7 +408,7 @@ namespace SharpDb.Services
                 _lockManager.DataStore.TryRemove(writeTransaction.DataRetrievalKey, out object x);
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
 
                 return new InsertResult { Successful = false, ErrorMessage = ex.Message };
@@ -423,7 +424,12 @@ namespace SharpDb.Services
             tableDef.TableName = _createParser.GetTableName(dml);
             tableDef.ColumnDefinitions = _createParser.GetColumnDefintions(dml);
 
-            DmlTransaction dmlTransaction = new DmlTransaction
+            return RunCreateTable(tableDef);
+        }
+
+        public ResultMessage RunCreateTable(TableDefinition tableDef)
+        {
+            SchemaTransaction dmlTransaction = new SchemaTransaction
             {
                 TableDefinition = tableDef
             };
@@ -445,25 +451,25 @@ namespace SharpDb.Services
 
             switch (columnDefinition.Type)
             {
-                case TypeEnums.Boolean:
+                case TypeEnum.Boolean:
                     convertedVal = Convert.ToBoolean(val);
                     break;
-                case TypeEnums.Char:
+                case TypeEnum.Char:
                     convertedVal = Convert.ToChar(val);
                     break;
-                case TypeEnums.Decimal:
+                case TypeEnum.Decimal:
                     convertedVal = Convert.ToDecimal(val);
                     break;
-                case TypeEnums.Int32:
+                case TypeEnum.Int32:
                     convertedVal = Convert.ToInt32(val);
                     break;
-                case TypeEnums.Int64:
+                case TypeEnum.Int64:
                     convertedVal = Convert.ToInt64(val);
                     break;
-                case TypeEnums.String:
+                case TypeEnum.String:
                     convertedVal = val.TrimStart('\'').TrimEnd('\'').PadRight(columnDefinition.ByteSize - 1, ' ');
                     break;
-                case TypeEnums.DateTime:
+                case TypeEnum.DateTime:
                     convertedVal = Convert.ToDateTime(val);
                     break;
                 default:

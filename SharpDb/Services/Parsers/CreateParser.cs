@@ -48,35 +48,35 @@ namespace SharpDb.Services.Parsers
 
         //refactor
         //do not manipulate object (columnDefinition) while also returning a value - seems ugly
-        private TypeEnums ParseTypeAndByteSize(string type, ColumnDefinition colDef)
+        private TypeEnum ParseTypeAndByteSize(string type, ColumnDefinition colDef)
         {
             if(type.Length > 6 && type.Substring(0, 7) == "varchar")
             {
                 colDef.ByteSize = ParseVarcharSize(type);
                 colDef.ByteSize += 1;
-                return TypeEnums.String;
+                return TypeEnum.String;
             }
 
             switch(type)
             {
                 case "decimal":
                     colDef.ByteSize = Globals.DecimalByteLength;
-                    return TypeEnums.Decimal;
+                    return TypeEnum.Decimal;
                 case "bool":
                     colDef.ByteSize = Globals.BooleanByteLength;
-                    return TypeEnums.Boolean;
+                    return TypeEnum.Boolean;
                 case "char":
                     colDef.ByteSize = Globals.CharByteLength;
-                    return TypeEnums.Char;
+                    return TypeEnum.Char;
                 case "int":
                     colDef.ByteSize = Globals.Int32ByteLength;
-                    return TypeEnums.Int32;
+                    return TypeEnum.Int32;
                 case "bigint":
                     colDef.ByteSize = Globals.Int64ByteLength;
-                    return TypeEnums.Int64;
+                    return TypeEnum.Int64;
                 case "datetime":
                     colDef.ByteSize = Globals.Int64ByteLength;
-                    return TypeEnums.DateTime;
+                    return TypeEnum.DateTime;
                 default:
                     throw new Exception($"{type} is not recognized as a valid type");
 

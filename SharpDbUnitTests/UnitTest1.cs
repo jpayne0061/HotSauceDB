@@ -261,7 +261,7 @@ namespace SharpDbUnitTests
                             OR space = 98";
 
             //act
-            var newQuery = interpreter.ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnums.String);
+            var newQuery = interpreter.ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnum.String);
 
 
             //assert
@@ -305,7 +305,7 @@ namespace SharpDbUnitTests
                             OR space = 98";
 
             //act
-            var newQuery = interpreter.ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnums.String);
+            var newQuery = interpreter.ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnum.String);
 
 
             //assert

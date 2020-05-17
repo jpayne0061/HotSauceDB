@@ -7,21 +7,21 @@ namespace SharpDb.Services
 {
     public class Converter
     {
-        public IComparable ConvertToType(string val, TypeEnums type)
+        public IComparable ConvertToType(string val, TypeEnum type)
         {
             switch(type)
             {
-                case TypeEnums.Boolean:
+                case TypeEnum.Boolean:
                     return bool.Parse(val);
-                case TypeEnums.Char:
+                case TypeEnum.Char:
                     return char.Parse(val);
-                case TypeEnums.Decimal:
+                case TypeEnum.Decimal:
                     return decimal.Parse(val);
-                case TypeEnums.Int32:
+                case TypeEnum.Int32:
                     return Int32.Parse(val);
-                case TypeEnums.Int64:
+                case TypeEnum.Int64:
                     return Int64.Parse(val);
-                case TypeEnums.String:
+                case TypeEnum.String:
                     return val.Trim('\'');
                 default:
                     throw new Exception($"no enum found for {type.ToString()}");

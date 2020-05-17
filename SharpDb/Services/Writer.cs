@@ -12,17 +12,6 @@ namespace SharpDb.Services
 {
     public class Writer
     {
-        public void WriteRow(IComparable[] row, TableDefinition tableDef)
-        {
-            var reader = new Reader();
-
-            long addressToWrite = reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
-
-            WriteRow(row, addressToWrite, tableDef);
-
-            UpdateObjectCount(addressToWrite);
-        }
-
         public void WriteRow(IComparable[] row, TableDefinition tableDef, long addressToWrite)
         {
             WriteRow(row, addressToWrite, tableDef);
@@ -95,9 +84,9 @@ namespace SharpDb.Services
             {
                 binaryWriter.Write((Int64)data);
             }
-            else if (columnDefinition.Type == Enums.TypeEnums.DateTime)
+            else if (columnDefinition.Type == Enums.TypeEnum.DateTime)
             {
-                binaryWriter.Write((string)data);
+                binaryWriter.Write((long)data);
             }
             else if (data is string)
             {
