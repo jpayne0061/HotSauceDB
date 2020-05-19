@@ -58,5 +58,50 @@ executor.CreateTable<House>();
 List<House> houses = executor.Read<House>("select * FROM house where address = '7450 Calm Lane'");
 ```
 
+## What Can HotSauceDB do?
+
+Curently, HotSauceDB supports the creation of tables with the following types:
+
+- Boolean
+- Char
+- Decimal
+- Int32
+- Int64
+- String
+- DateTime
+
+Only inserts and reads are supported at this time. HotsauceDB supports mutlithreaded 
+applications.
+
+The following read operations are all valid for HotSauceDB
+
+`select * from house`
+
+`select Address, Price from house`
+
+`select * from houses where address = '450 Adams St'`
+
+`select * 
+from houses 
+ where address = '450 Adams St'
+  AND price > 315000`
+
+`select * from house 
+where price = (select price from house where address = '450 Adams St' )`
+
+`select * from house
+where address != '98765 ABC str'
+AND Price > 269000
+order by price`
+
+`select Price, Max(NumBedRooms), Min(NumBathrooms)
+from house
+GROUP BY PRICE`
+
+
+`select * from house 
+where price = (select price from house where address = '450 Adams St' )
+and NumBedrooms = (select NumBedrooms from house where address = '123 ABC St')
+OR NumBath > 5`
 
 
