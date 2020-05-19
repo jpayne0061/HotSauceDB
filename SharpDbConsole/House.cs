@@ -13,7 +13,7 @@ namespace SharpDbConsole
         public bool IsListed { get; set; }
         public DateTime DateListed { get; set; }
 
-        [StringLength(20)]
+        [StringLength(50)]
         public string Address { get; set; }
     }
 }

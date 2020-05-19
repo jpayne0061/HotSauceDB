@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace SharpDb
 {
     public static class Globals
     {
-        public static string FILE_NAME = "data.txt";
+        public const string FILE_NAME = "sharpDb.sdb";
         public static byte INDEX_PAGE_HEADER_LENGTH = 32;
         public const short TABLE_DEF_LENGTH = 530;
         public const int PageSize = 8000;

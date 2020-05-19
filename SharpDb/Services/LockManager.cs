@@ -107,10 +107,6 @@ namespace SharpDb.Services
             {
                 ProcessNextQueueItems();
             }
-                
-
         }
-
-
     }
 }

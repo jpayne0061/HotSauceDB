@@ -3,11 +3,8 @@ using SharpDb.Models;
 using SharpDb.Models.Transactions;
 using SharpDb.Services.Parsers;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
 
 namespace SharpDb.Services
 {
@@ -38,21 +35,13 @@ namespace SharpDb.Services
             _reader = reader;
         }
 
+        public object GetTableDefinition(string tableName)
+        {
+            return _schemaFetcher.GetTableDefinition(tableName);
+        }
+
         public object ProcessStatement(string sql)
         {
-            //_queue.Enqueue(sql);
-
-            //while()
-            //{
-
-            //}
-
-            //if(!_queue.IsEmpty)
-            //{
-
-            //}
-            
-
             string sqlStatementType = _generalParser.GetSqlStatementType(sql);
 
             if(sqlStatementType == "select")
@@ -134,12 +123,6 @@ namespace SharpDb.Services
             }
 
             return aggregatedRow;
-        }
-
-
-        public IEnumerable<IGrouping<IComparable, List<IComparable>>> GetGroupings()
-        {
-            throw new NotImplementedException();
         }
 
         //break grouping / order by logic into their own classes

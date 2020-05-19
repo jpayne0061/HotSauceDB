@@ -34,7 +34,7 @@ namespace SharpDb.Services
 
             var index = GetIndexPage();
 
-            return index.TableDefinitions.Where(x => x.TableName == tableName).First();
+            return index.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
         }
 
     }

@@ -5,13 +5,9 @@ using SharpDb.Services;
 using SharpDb.Services.Parsers;
 using SharpDbOrm;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SharpDbConsole
 {
@@ -22,179 +18,107 @@ namespace SharpDbConsole
 
             try
             {
-                File.WriteAllText("data.txt", null);
-
+                //FullIntegration();
 
                 Executor executor = new Executor();
 
                 executor.CreateTable<House>();
 
-                House h1 = new House
+                var h = new House   
                 {
-                    NumBedrooms = 4,
-                    NumBath = 2,
-                    Price = 320000,
-                    IsListed = true,
-                    DateListed = DateTime.Now
+                    NumBedrooms = 2,
+                    NumBath = 1,
+                    Address = "7450 Calm Lane",
+                    Price = 125000,
+                    IsListed = false
                 };
 
-                executor.Insert(h1);
+                var h1 = new House
+                {
+                    NumBedrooms = 2,
+                    NumBath = 2,
+                    Address = "43 Long Beach Ct",
+                    Price = 226000,
+                    IsListed = true,
+                    DateListed = new DateTime(2020, 3, 30)
+                };
 
-                House h2 = new House
+                var h2 = new House
                 {
                     NumBedrooms = 3,
                     NumBath = 2,
-                    Price = 310000,
+                    Address = "9009 Hawley Burch Street",
+                    Price = 226000,
                     IsListed = true,
-                    DateListed = new DateTime(2020, 1, 30),
-                    Address = "456 Nada street"
+                    DateListed = new DateTime(2020, 1, 20)
                 };
 
+                var h3 = new House
+                {
+                    NumBedrooms = 4,
+                    NumBath = 2,
+                    Address = "607 Smyrna Blvd",
+                    Price = 330000,
+                    IsListed = true,
+                    DateListed = new DateTime(2020, 4, 30)
+                };
+
+                var h4 = new House
+                {
+                    NumBedrooms = 3,
+                    NumBath = 2,
+                    Address = "800 Wormwood Dr",
+                    Price = 450000,
+                    IsListed = true,
+                    DateListed = new DateTime(2020, 1, 6)
+                };
+
+                executor.Insert(h);
+                executor.Insert(h1);
                 executor.Insert(h2);
+                executor.Insert(h3);
+                executor.Insert(h4);
 
-                string query = "select * from house where NumBedRooms > 3";
+                //must use select all ( * ) in outer most select when using ORM
+                List<House> houses = executor.Read<House>("select * FROM house where address = '800 Wormwood Dr'");
 
-                var records = executor.Read<House>(query);
+                List<House> houses2 = executor.Read<House>("select * FROM house order by price");
 
-                var z = 0;
-                //FullIntegration();
-                //TestGroupBy();
-                //TestParsingGroupBy();
-
-
-
-
-
-                //string query = @"select * from houses order by price";
-
-                //var rows = interpreter.ProcessStatement(query);
-
-                //var x = 0;
-
-                //
-                //QueryWithOrderBy();
-                //ConcurrentStack<char> stack = new ConcurrentStack<char>();
-
-                //                Globals.FILE_NAME = "integration.txt";
-
-                //                //                string query = "select * from houses";
-
-                //                string insertStatement7 = @"insert into houses values ('" + "999 Adams St" + "'," +
-                //"270000" + "," + "2300" + "," + "false," + "3" + ")";
+                List<House> houses3 = executor.Read<House>(@"select * FROM house
+                                                        WHERE price = (select price from house
+                                                                        where NumBedrooms = 4)
+                                                        AND NumBath >= 2");
 
 
-                //                List<List<List<IComparable>>> l = new List<List<List<IComparable>>>();
+                List<House> houses4 = executor.Read<House>(@"select * FROM house
+                                                        WHERE price IN (450000, 226000)");
 
-                //                insertStatement7 = @"insert into houses values ('" + "777990 Adams St" + "'," +
-                //"270000" + "," + "2300" + "," + "false," + "3" + ")";
+                //group by currently only supported with plain sql
+                var reader = new Reader();
+                var writer = new Writer();
+                var schemaFetcher = new SchemaFetcher();
+
+                var interpreter = new Interpreter(
+                    new SelectParser(),
+                    new InsertParser(schemaFetcher),
+                    new SchemaFetcher(),
+                    new GeneralParser(),
+                    new CreateParser(),
+                    new LockManager(writer, reader),
+                    reader);
 
 
-                //                Parallel.For(0, 500,
-                //                         index =>
-                //                         {
-
-                //                             if (index % 2 == 0)
-                //                             {
-                //                                 l.Add((List<List<IComparable>>)interpreter.ProcessStatement("select * from houses"));
-                //                             }
-                //                             else
-                //                             {
-                //                                 interpreter.ProcessStatement(insertStatement7);
-                //                             }
-
-                //                         });
+                var rows = (List<List<IComparable>>)interpreter.ProcessStatement(@"select Price, Max(NumBedRooms), Min(NumBath)
+                             from house
+                                GROUP BY PRICE");
 
 
 
-                //                string queryx = "select * from houses where address = '777990 Adams St'";
-
-                //                var rows = (List<List<IComparable>>)interpreter.ProcessStatement(queryx);
-
-
-                //                var x = 9;
-
-                //
-                //RunInStatement();
-                //RunInStatement();
-                //WriteTablesAndFillRows();
-
-                //ProcessCreateTableStatement();
-
-
-                //SelectWithPredicates();
-
-                //InsertRows();
-
-                //WriteTablesAndFillRows();
-
-                //for (int i = 0; i < 20; i++)
-                //{
-                //    var t = BuildToolsTable();
-
-                //    var p = BuildPersonTable();
-
-                //    var writer = new Writer();
-
-                //    writer.WriteTableDefinition(t);
-                //    writer.WriteTableDefinition(p);
-
-
-                //WriteTablesAndFillRows();
-
-                //InsertRows();
-                //SelectWithSubQueries();
-                //SelectWithPredicates();
-                //SelectWithSubQueries();
-                //    var reader = new Reader();
-
-                //    var indexPage = reader.GetIndexPage();
-
-                //    var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == "Tools").FirstOrDefault();
-
-                //    var writer = new Writer();
-
-                //    object[] rowz = new object[3];
-
-                //    rowz[0] = "hammerTime";
-                //    rowz[1] = 44.99m;
-                //    rowz[2] = 29;
-
-                //    writer.WriteRow(rowz, tableDef);
-
-                //object[] rowz3 = new object[3];
-
-                //rowz3[0] = " A very cool Drill ";
-                //rowz3[1] = 56.99m;
-                //rowz3[2] = 256;
-
-                //writer.WriteRow(rowz3, tableDef);
-
-
-                //object[] rowz2 = new object[3];
-
-                //rowz2[0] = "A big hammer  ";
-                //rowz2[1] = 678.99m;
-                //rowz2[2] = 89;
-
-                //writer.WriteRow(rowz2, tableDef);
-
-                //var stream = File.Create("data.txt");
-
-                //stream.Close();
-
-                //FillRows();
-
-                //SelectWithPredicates();
             }
             catch (Exception ex)
             {
                 throw;
             }
-        }
-
-        static T ReturnInstance<T>(int x) where T : new()
-        {
-            return new T();
         }
 
         private static TableDefinition BuildToolsTable()
@@ -439,23 +363,10 @@ namespace SharpDbConsole
                                 new LockManager(writer, reader),
                                 reader);
 
-            //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
-
-            //interpreter.ProcessStatement(insert);
-
-            //string insert2 = "insert into houses values ('4500 Cool street', 389000, true, 2300, 3)";
-
-            //interpreter.ProcessStatement(insert2);
-
-            //string insert3 = "insert into houses values ('4500 Cool street', 389000, true, 2300, 5)";
-
-            //interpreter.ProcessStatement(insert3);
 
             string select = @"select * from houses where price in (341000, 365000)
                     and Address = (select address from houses where price = 389000)
                         or NumBedrooms = 5";
-             
-
 
             var rows = interpreter.ProcessStatement(select);
         }
@@ -553,9 +464,7 @@ namespace SharpDbConsole
                                 reader);
 
             //if integration.txt exists, delete and recreate
-            File.WriteAllText("integration.txt", null);
-
-            Globals.FILE_NAME = "integration.txt";
+            File.WriteAllText(Globals.FILE_NAME, null);
 
 
             string createHousesTable = @"create table houses (

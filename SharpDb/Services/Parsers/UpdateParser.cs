@@ -16,7 +16,6 @@ namespace SharpDb.Services.Parsers
             throw new NotImplementedException();
         }
 
-
         public KeyValuePair<string, IComparable> GetUpdates()
         {
             throw new NotImplementedException();

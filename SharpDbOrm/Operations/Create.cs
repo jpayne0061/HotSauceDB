@@ -4,6 +4,7 @@ using SharpDb.Models;
 using SharpDb.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -22,17 +23,32 @@ namespace SharpDbOrm.Operations
         {
             PropertyInfo[] properties = typeof(T).GetProperties();
 
-            string name = typeof(T).Name;
+            string tableName = typeof(T).Name;
+
+            if(TableAlreadyExists(tableName))
+            {
+                return;
+            }
 
             List<ColumnDefinition> columnDefinitions = GetColumnDefinitions(properties);
 
             TableDefinition tableDefinition = new TableDefinition
             {
-                TableName = name,
+                TableName = tableName,
                 ColumnDefinitions = columnDefinitions
             };
 
             _interpreter.RunCreateTable(tableDefinition);
+        }
+
+        public bool TableAlreadyExists(string tableName)
+        {
+            if(File.ReadAllBytes(Globals.FILE_NAME).Length == 0)
+            {
+                return false;
+            }
+
+            return _interpreter.GetTableDefinition(tableName) != null;
         }
 
         private List<ColumnDefinition> GetColumnDefinitions(PropertyInfo[] properties)
@@ -100,6 +116,7 @@ namespace SharpDbOrm.Operations
                 {
                     throw new Exception(@"Failed to get string length from model. String properties
 must have a StringLength attribute. Example:
+
 [StringLength(20)] 
 public string Name { get; set; }", ex);
                 }

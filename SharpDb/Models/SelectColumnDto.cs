@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpDb.Models
 {
     public class SelectColumnDto : ColumnDefinition
     {
-        public SelectColumnDto()
-        {
-
-        }
+        public SelectColumnDto() { }
 
         public SelectColumnDto(ColumnDefinition columnDefinition)
         {
@@ -21,7 +17,6 @@ namespace SharpDb.Models
 
         public bool IsInSelect { get; set; }
         public Func<List<IComparable>, IComparable> AggregateFunction { get; set; }
-        public bool IsAggregate { get; set; }
 
     }
 }

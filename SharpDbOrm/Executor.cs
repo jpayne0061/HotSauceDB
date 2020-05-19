@@ -1,15 +1,22 @@
-﻿using SharpDb.Services;
+﻿using SharpDb;
+using SharpDb.Services;
 using SharpDb.Services.Parsers;
 using SharpDbOrm.Operations;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace SharpDbOrm
 {
     public class Executor
     {
-        public Executor()
+        public Executor(string databaseName = Globals.FILE_NAME)
         {
+            if(databaseName != null)
+                if(!File.Exists(databaseName))
+                    using (File.Create(databaseName));
+                   
+
             var reader = new Reader();
             var writer = new Writer();
             var lockManager = new LockManager(writer, reader);
@@ -25,18 +32,19 @@ namespace SharpDbOrm
                                 lockManager,
                                 reader);
 
-            Creater = new Create(interpreter);
+            Creator = new Create(interpreter);
             Inserter = new Insert(interpreter);
             Reader = new Read(interpreter);
         }
 
-        private Create Creater { get; }
+        private Create Creator { get; }
         private Insert Inserter { get; }
         private Read Reader { get; }
 
+
         public void CreateTable<T>()
         {
-            Creater.CreateTable<T>();
+            Creator.CreateTable<T>();
         }
 
         public void Insert<T>(T model)

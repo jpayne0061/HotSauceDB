@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace SharpDb.Models
+﻿namespace SharpDb.Models
 {
     public class InnerStatement
     {
