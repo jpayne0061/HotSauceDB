@@ -112,7 +112,7 @@ namespace SharpDbConsole
                              from house
                                 GROUP BY PRICE");
 
-
+                
 
             }
             catch (Exception ex)

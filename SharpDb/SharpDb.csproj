@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+
+    <PackageId>HotSauceDb</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Evan Payne</Authors>
+    <Company>Evan Payne</Company>
   </PropertyGroup>
 
 </Project>
