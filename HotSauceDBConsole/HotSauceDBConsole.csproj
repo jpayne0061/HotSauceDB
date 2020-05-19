@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpDbOrm\HotSauceDbOrm.csproj" />
-    <ProjectReference Include="..\SharpDb\HotSauceDB.csproj" />
+    <ProjectReference Include="..\HotSauceDBOrm\HotSauceDbOrm.csproj" />
+    <ProjectReference Include="..\HotSauceDB\HotSauceDB.csproj" />
   </ItemGroup>
 
   <ItemGroup>

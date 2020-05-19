@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpDb\HotSauceDB.csproj" />
+    <ProjectReference Include="..\HotSauceDB\HotSauceDB.csproj" />
   </ItemGroup>
 
 </Project>
