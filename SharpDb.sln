@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29001.49
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDb", "SharpDb\SharpDb.csproj", "{C691F5CF-971A-4770-9A31-EB821214E3F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDB", "SharpDb\HotSauceDB.csproj", "{C691F5CF-971A-4770-9A31-EB821214E3F9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDbConsole", "SharpDbConsole\SharpDbConsole.csproj", "{0EB724F7-D12D-4EB9-B28F-49E7398409ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDBConsole", "SharpDbConsole\HotSauceDBConsole.csproj", "{0EB724F7-D12D-4EB9-B28F-49E7398409ED}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDbUnitTests", "SharpDbUnitTests\SharpDbUnitTests.csproj", "{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDBUnitTests", "SharpDbUnitTests\HotSauceDBUnitTests.csproj", "{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpDbOrm", "SharpDbOrm\SharpDbOrm.csproj", "{5870861D-5EAC-4E97-8AB8-935307B7D949}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HotSauceDbOrm", "SharpDbOrm\HotSauceDbOrm.csproj", "{5870861D-5EAC-4E97-8AB8-935307B7D949}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
