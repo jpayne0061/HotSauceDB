@@ -1,4 +1,5 @@
-﻿using SharpDb.Models;
+﻿using HotSauceDB.Statics;
+using SharpDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -115,8 +116,7 @@ namespace SharpDb.Services.Parsers
         {
             query = query.ToLower();
 
-            List<string> queryParts = query.Split(' ')
-                .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Replace("\r\n", "")).ToList();
+            List<string> queryParts = query.SplitOnWhiteSpace();
 
             int tableNameIndex = queryParts.IndexOf(tableName);
 

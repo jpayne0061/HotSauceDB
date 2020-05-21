@@ -1,4 +1,5 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDB.Models;
+using SharpDb.Enums;
 using SharpDb.Helpers;
 using SharpDb.Models;
 using System;
@@ -85,12 +86,12 @@ namespace SharpDb.Services
             return currentPosition;
         }
 
-
-
-        public List<List<IComparable>> GetRows(TableDefinition tableDefinition, IEnumerable<SelectColumnDto> selects, List<PredicateOperation> predicateOperations)
+        public SelectData GetRows(TableDefinition tableDefinition, IEnumerable<SelectColumnDto> selects, List<PredicateOperation> predicateOperations)
         {
+            var selectData = new SelectData();
 
-            var rows = new List<List<IComparable>>();
+            selectData.Rows = new List<List<IComparable>>();
+            selectData.RowLocations = new List<long>();
 
             short rowCount = GetObjectCount(tableDefinition.DataAddress);
 
@@ -106,6 +107,8 @@ namespace SharpDb.Services
                     {
                         for (int i = 0; i < rowCount; i++)
                         {
+                            long rowLocation = fileStream.Position;
+
                             List<IComparable> row = new List<IComparable>();
 
                             List<IComparable> rowToEvaluate = new List<IComparable>();
@@ -125,14 +128,18 @@ namespace SharpDb.Services
                             bool addRow = EvaluateRow(predicateOperations, rowToEvaluate);
 
                             if (addRow)
-                                rows.Add(row);
+                            {
+                                selectData.Rows.Add(row);
+                                selectData.RowLocations.Add(rowLocation);
+                            }
+                                
                         }
 
                         long nextPagePointer = GetPointerToNextPage(fileStream.Position);
 
                         if (nextPagePointer == 0m)
                         {
-                            return rows;
+                            return selectData;
                         }
                         else
                         {
@@ -144,8 +151,10 @@ namespace SharpDb.Services
                 }
             }
 
-            return rows;
+            return selectData;
         }
+
+
 
         public long GetPointerToNextPage(long pageAddress)
         {

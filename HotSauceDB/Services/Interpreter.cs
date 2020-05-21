@@ -1,4 +1,5 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDB.Models;
+using SharpDb.Enums;
 using SharpDb.Models;
 using SharpDb.Models.Transactions;
 using SharpDb.Services.Parsers;
@@ -221,7 +222,7 @@ namespace SharpDb.Services
 
             _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
 
-            var rows = (List<List<IComparable>>)data;
+            var rows = ((SelectData)data).Rows;
 
             if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {

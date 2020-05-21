@@ -1,4 +1,5 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDB.Models;
+using SharpDb.Enums;
 using SharpDb.Models;
 using SharpDb.Models.Transactions;
 using System;
@@ -76,9 +77,9 @@ namespace SharpDb.Services
                     {
                         ReadTransaction readTransaction = (ReadTransaction)sharpDbTransaction;
 
-                        var rows = _reader.GetRows(readTransaction.TableDefinition, readTransaction.Selects, readTransaction.PredicateOperations);
+                        SelectData selectData = _reader.GetRows(readTransaction.TableDefinition, readTransaction.Selects, readTransaction.PredicateOperations);
 
-                        DataStore[sharpDbTransaction.DataRetrievalKey] = rows;
+                        DataStore[sharpDbTransaction.DataRetrievalKey] = selectData;
                     }
                     else if(sharpDbTransaction is SchemaTransaction)
                     {
