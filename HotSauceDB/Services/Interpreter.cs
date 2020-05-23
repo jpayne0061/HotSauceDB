@@ -216,14 +216,18 @@ namespace SharpDb.Services
                 PredicateOperations = predicateOperations
             };
 
+
             lock(_lockManager)
             {
                 _lockManager.QueueQuery(readTransaction);
             }
+            
+            object data = null;
 
-            object data;
-
-            _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
+            while(data == null)
+            {
+                _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
+            }
 
             var rows = ((SelectData)data).Rows;
 

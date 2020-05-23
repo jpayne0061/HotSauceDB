@@ -21,28 +21,6 @@ namespace SharpDbConsole
             {
 
                 FullIntegration();
-                //ParallelTest();
-
-                //File.WriteAllText("sharpDb.sdb", null);
-
-                //using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
-                //{
-                //    using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
-                //    {
-                //        binaryWriter.BaseStream.Position = 8;
-
-                //        binaryWriter.Write(89);
-
-                //        binaryWriter.Write(102);
-
-                //        binaryWriter.Write(44);
-
-                //        binaryWriter.BaseStream.Position = 0;
-
-                //        binaryWriter.Write(13);
-
-                //    }
-                //}
 
             }
             catch (Exception ex)
@@ -70,10 +48,42 @@ namespace SharpDbConsole
                 new LockManager(writer, reader),
                 reader);
 
-            
+
+            interpreter.ProcessStatement(@"create table house4 (
+                                                    NumBedrooms int,
+                                                    NumBath int,
+                                                    Price decimal,
+                                                    IsListed bool,
+                                                    Address varchar(50)
+                                      )");
 
 
-            var x = 0;
+            var allHouses = new List<List<List<IComparable>>>();
+
+            interpreter.ProcessStatement("insert into house4 values (5,3,295000,true,'800 Wormwood Dr')");
+
+            Parallel.For(0, 200, i =>
+            {
+                interpreter.ProcessStatement("insert into house4 values (5,3,295000,true,'800 Wormwood Dr')");
+
+                var houses = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house4");
+
+                allHouses.Add(houses);
+            });
+
+            var housesOut = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house4");
+
+            allHouses.Add(housesOut);
+
+            var allHousesCountCorrect = allHouses.Count() == 201;
+
+            var insertCountCorrect = allHouses[200].Count() == 201;
+
+
+            if(!allHousesCountCorrect || !insertCountCorrect)
+            {
+                throw new Exception("err");
+            }
 
         }
 
