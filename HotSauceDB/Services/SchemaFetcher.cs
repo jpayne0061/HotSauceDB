@@ -8,7 +8,13 @@ namespace SharpDb.Services
 {
     public class SchemaFetcher
     {
+        public SchemaFetcher(Reader reader)
+        {
+            _reader = reader;
+        }
+
         IndexPage _indexPage;
+        private Reader _reader;
 
         public IndexPage GetIndexPage(bool overrideCache = true)
         {
@@ -17,9 +23,7 @@ namespace SharpDb.Services
                 return _indexPage;
             }
 
-            var reader = new Reader();
-
-            IndexPage indexPage = reader.GetIndexPage();
+            IndexPage indexPage = _reader.GetIndexPage();
 
             _indexPage = indexPage;
 

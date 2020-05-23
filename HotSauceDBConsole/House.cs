@@ -11,7 +11,6 @@ namespace SharpDbConsole
         public int NumBath { get; set; }
         public decimal Price { get; set; }
         public bool IsListed { get; set; }
-        public DateTime DateListed { get; set; }
 
         [StringLength(50)]
         public string Address { get; set; }

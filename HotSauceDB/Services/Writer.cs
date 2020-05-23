@@ -9,6 +9,13 @@ namespace SharpDb.Services
 {
     public class Writer
     {
+        private Reader _reader;
+
+        public Writer(Reader reader)
+        {
+            _reader = reader;
+        }
+
         public void WriteRow(IComparable[] row, TableDefinition tableDef, long addressToWrite)
         {
             WriteRow(row, addressToWrite, tableDef);
@@ -112,10 +119,9 @@ namespace SharpDb.Services
             {
                 WriteZero(0); 
             }
-            var reader = new Reader();
 
             //need to pass in address of current page, not zero
-            long addressToWrite = reader.GetFirstAvailableDataAddress(0, Globals.TABLE_DEF_LENGTH);
+            long addressToWrite = _reader.GetFirstAvailableDataAddress(0, Globals.TABLE_DEF_LENGTH);
 
             if ((addressToWrite - 2) % Globals.PageSize == 0)
             {
@@ -246,11 +252,12 @@ namespace SharpDb.Services
 
         private long GetNextUnclaimedDataPage()
         {
-            var reader = new Reader();
+            var indexPage = _reader.GetIndexPage();
 
-            var indexPage = reader.GetIndexPage();
-
-            return GetNextUnclaimedDataPage(indexPage);
+            lock(_reader)
+            {
+                return GetNextUnclaimedDataPage(indexPage);
+            }
         }
 
         private void UpdateObjectCount(long currentAddress)

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SharpDbConsole
 {
@@ -18,107 +19,182 @@ namespace SharpDbConsole
 
             try
             {
-                //FullIntegration();
 
-                Executor executor = new Executor();
+                FullIntegration();
+                //ParallelTest();
 
-                executor.CreateTable<House>();
+                //File.WriteAllText("sharpDb.sdb", null);
 
-                var h = new House   
-                {
-                    NumBedrooms = 2,
-                    NumBath = 1,
-                    Address = "7450 Calm Lane",
-                    Price = 125000,
-                    IsListed = false
-                };
+                //using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+                //{
+                //    using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
+                //    {
+                //        binaryWriter.BaseStream.Position = 8;
 
-                var h1 = new House
-                {
-                    NumBedrooms = 2,
-                    NumBath = 2,
-                    Address = "43 Long Beach Ct",
-                    Price = 226000,
-                    IsListed = true,
-                    DateListed = new DateTime(2020, 3, 30)
-                };
+                //        binaryWriter.Write(89);
 
-                var h2 = new House
-                {
-                    NumBedrooms = 3,
-                    NumBath = 2,
-                    Address = "9009 Hawley Burch Street",
-                    Price = 226000,
-                    IsListed = true,
-                    DateListed = new DateTime(2020, 1, 20)
-                };
+                //        binaryWriter.Write(102);
 
-                var h3 = new House
-                {
-                    NumBedrooms = 4,
-                    NumBath = 2,
-                    Address = "607 Smyrna Blvd",
-                    Price = 330000,
-                    IsListed = true,
-                    DateListed = new DateTime(2020, 4, 30)
-                };
+                //        binaryWriter.Write(44);
 
-                var h4 = new House
-                {
-                    NumBedrooms = 3,
-                    NumBath = 2,
-                    Address = "800 Wormwood Dr",
-                    Price = 450000,
-                    IsListed = true,
-                    DateListed = new DateTime(2020, 1, 6)
-                };
+                //        binaryWriter.BaseStream.Position = 0;
 
-                executor.Insert(h);
-                executor.Insert(h1);
-                executor.Insert(h2);
-                executor.Insert(h3);
-                executor.Insert(h4);
+                //        binaryWriter.Write(13);
 
-                //must use select all ( * ) in outer most select when using ORM
-                List<House> houses = executor.Read<House>("select * FROM house where address = '800 Wormwood Dr'");
-
-                List<House> houses2 = executor.Read<House>("select * FROM house order by price");
-
-                List<House> houses3 = executor.Read<House>(@"select * FROM house
-                                                        WHERE price = (select price from house
-                                                                        where NumBedrooms = 4)
-                                                        AND NumBath >= 2");
-
-
-                List<House> houses4 = executor.Read<House>(@"select * FROM house
-                                                        WHERE price IN (450000, 226000)");
-
-                //group by currently only supported with plain sql
-                var reader = new Reader();
-                var writer = new Writer();
-                var schemaFetcher = new SchemaFetcher();
-
-                var interpreter = new Interpreter(
-                    new SelectParser(),
-                    new InsertParser(schemaFetcher),
-                    new SchemaFetcher(),
-                    new GeneralParser(),
-                    new CreateParser(),
-                    new LockManager(writer, reader),
-                    reader);
-
-
-                var rows = (List<List<IComparable>>)interpreter.ProcessStatement(@"select Price, Max(NumBedRooms), Min(NumBath)
-                             from house
-                                GROUP BY PRICE");
-
-                
+                //    }
+                //}
 
             }
             catch (Exception ex)
             {
                 throw;
             }
+        }
+
+
+        public static void ParallelTest()
+        {
+
+            File.WriteAllText("sharpDb.sdb", null);
+
+            var reader = new Reader();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
+
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
+
+            interpreter.ProcessStatement(@"create table house(
+                                                    NumBedrooms int,
+                                                    NumBath int,
+                                                    Price decimal,
+                                                    IsListed bool,
+                                                    Address varchar(50)
+                                      )");
+
+
+            var allHouses = new List<List<List<IComparable>>>();
+
+            interpreter.ProcessStatement("insert into house values (5,3,295000,true,'800 Wormwood Dr')");
+
+            Parallel.For(0, 200, i =>
+            {
+                interpreter.ProcessStatement("insert into house values (5,3,295000,true,'800 Wormwood Dr')");
+
+                var houses = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house");
+
+                allHouses.Add(houses);
+            });
+
+
+            var x = 0;
+
+        }
+
+        static void ORM()
+        {
+            //ParallelTest();
+
+            ////FullIntegration();
+
+            //Executor executor = new Executor();
+
+            //executor.CreateTable<House>();
+
+            //var h = new House
+            //{
+            //    NumBedrooms = 2,
+            //    NumBath = 1,
+            //    Address = "7450 Calm Lane",
+            //    Price = 125000,
+            //    IsListed = false
+            //};
+
+            //var h1 = new House
+            //{
+            //    NumBedrooms = 2,
+            //    NumBath = 2,
+            //    Address = "43 Long Beach Ct",
+            //    Price = 226000,
+            //    IsListed = true,
+            //    DateListed = new DateTime(2020, 3, 30)
+            //};
+
+            //var h2 = new House
+            //{
+            //    NumBedrooms = 3,
+            //    NumBath = 2,
+            //    Address = "9009 Hawley Burch Street",
+            //    Price = 226000,
+            //    IsListed = true,
+            //    DateListed = new DateTime(2020, 1, 20)
+            //};
+
+            //var h3 = new House
+            //{
+            //    NumBedrooms = 4,
+            //    NumBath = 2,
+            //    Address = "607 Smyrna Blvd",
+            //    Price = 330000,
+            //    IsListed = true,
+            //    DateListed = new DateTime(2020, 4, 30)
+            //};
+
+            //var h4 = new House
+            //{
+            //    NumBedrooms = 3,
+            //    NumBath = 2,
+            //    Address = "800 Wormwood Dr",
+            //    Price = 450000,
+            //    IsListed = true,
+            //    DateListed = new DateTime(2020, 1, 6)
+            //};
+
+            //executor.Insert(h);
+            //executor.Insert(h1);
+            //executor.Insert(h2);
+            //executor.Insert(h3);
+            //executor.Insert(h4);
+
+            ////must use select all ( * ) in outer most select when using ORM
+            //List<House> houses = executor.Read<House>("select * FROM house where address = '800 Wormwood Dr'");
+
+            //List<House> houses2 = executor.Read<House>("select * FROM house order by price");
+
+            //List<House> houses3 = executor.Read<House>(@"select * FROM house
+            //                                            WHERE price = (select price from house
+            //                                                            where NumBedrooms = 4)
+            //                                            AND NumBath >= 2");
+
+
+            //List<House> houses4 = executor.Read<House>(@"select * FROM house
+            //                                            WHERE price IN (450000, 226000)");
+
+            ////group by currently only supported with plain sql
+            //var reader = new Reader();
+            //var writer = new Writer(reader);
+            //var schemaFetcher = new SchemaFetcher(reader);
+
+            //var interpreter = new Interpreter(
+            //    new SelectParser(),
+            //    new InsertParser(schemaFetcher),
+            //    schemaFetcher,
+            //    new GeneralParser(),
+            //    new CreateParser(),
+            //    new LockManager(writer, reader),
+            //    reader);
+
+
+            //var rows = (List<List<IComparable>>)interpreter.ProcessStatement(@"select Price, Max(NumBedRooms), Min(NumBath)
+            //                 from house
+            //                    GROUP BY PRICE");
+
         }
 
         private static TableDefinition BuildToolsTable()
@@ -186,21 +262,20 @@ namespace SharpDbConsole
 
         public static void SelectWithPredicates()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
             string query = "select ToolName, Price from tools where NumInStock = 4";
 
@@ -215,21 +290,20 @@ namespace SharpDbConsole
 
         public static void SelectWithSubQueries()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
             string query = @"select ToolName, Price
                                From tools where NumInStock = (
@@ -249,23 +323,22 @@ namespace SharpDbConsole
 
         static void InsertRows()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
-            var insertParser = new InsertParser(new SchemaFetcher());
+            var insertParser = new InsertParser(schemaFetcher);
 
             string dml = "insert into tools VALUES ('nail puller 2', 15.99, 34)";
 
@@ -274,21 +347,20 @@ namespace SharpDbConsole
 
         static void ProcessCreateTableStatement()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
             string dml = @"create table Houses(
                                 Address varchar(100),
@@ -314,21 +386,20 @@ namespace SharpDbConsole
 
         static void RunInStatement()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
             //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
 
@@ -347,21 +418,20 @@ namespace SharpDbConsole
 
         static void RunInStatementWithSubqueries()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
 
             string select = @"select * from houses where price in (341000, 365000)
@@ -373,21 +443,20 @@ namespace SharpDbConsole
 
         static void QueryWithOrderBy()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
             string select = @"select * from houses where price > 200000 order by price, address";
 
@@ -396,21 +465,20 @@ namespace SharpDbConsole
 
         static void TestGroupBy()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
             string createTable = @"create table houses( Price int, NumBedRooms int, NumBathrooms int )";
 
@@ -447,21 +515,20 @@ namespace SharpDbConsole
 
         static void FullIntegration()
         {
+
+            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer();
-
-            var lockManager = new LockManager(writer, reader);
-
-            var schemaFetcher = new SchemaFetcher();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                new SchemaFetcher(),
-                                new GeneralParser(),
-                                new CreateParser(),
-                                new LockManager(writer, reader),
-                                reader);
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new LockManager(writer, reader),
+                reader);
 
             //if integration.txt exists, delete and recreate
             File.WriteAllText(Globals.FILE_NAME, null);

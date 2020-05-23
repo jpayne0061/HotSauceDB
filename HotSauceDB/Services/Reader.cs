@@ -115,7 +115,17 @@ namespace SharpDb.Services
 
                             foreach (SelectColumnDto select in selects)
                             {
-                                IComparable val = ReadColumn(select, binaryReader);
+                                IComparable val;
+
+                                try
+                                {
+                                    val = ReadColumn(select, binaryReader);
+                                }
+                                catch (Exception ex)
+                                {
+
+                                    throw;
+                                }
 
                                 rowToEvaluate.Add(val);
 

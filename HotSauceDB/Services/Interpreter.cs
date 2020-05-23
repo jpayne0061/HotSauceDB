@@ -216,21 +216,25 @@ namespace SharpDb.Services
                 PredicateOperations = predicateOperations
             };
 
-            _lockManager.QueueQuery(readTransaction);
-
-            object data;
-
-            _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
-
-            var rows = ((SelectData)data).Rows;
-
-            if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
+            lock(_lockManager)
             {
-                rows = ProcessPostPredicateGroupBy(selects, predicateStep, rows);
-                rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
-            }
+                _lockManager.QueueQuery(readTransaction);
 
-            return rows;
+                object data;
+
+                _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
+
+                var rows = ((SelectData)data).Rows;
+
+                if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
+                {
+                    rows = ProcessPostPredicateGroupBy(selects, predicateStep, rows);
+                    rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
+                }
+
+                return rows;
+            }
+            
         }
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
@@ -371,25 +375,28 @@ namespace SharpDb.Services
                 lock (_reader)
                 {
                     firstAvailableAddress = _reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
+
+                    var writeTransaction = new WriteTransaction
+                    {
+                        Data = row,
+                        TableDefinition = tableDef,
+                        AddressToWriteTo = (long)firstAvailableAddress,
+                        Query = dml
+                    };
+
+                    lock(_lockManager)
+                    {
+                        _lockManager.QueueQuery(writeTransaction);
+                    }
+
+                    object result;
+
+                    _lockManager.DataStore.TryGetValue(writeTransaction.DataRetrievalKey, out result);
+
+                    InsertResult insertResult = (InsertResult)result;
+
+                    _lockManager.DataStore.TryRemove(writeTransaction.DataRetrievalKey, out object x);
                 }
-
-                var writeTransaction = new WriteTransaction
-                {
-                    Data = row,
-                    TableDefinition = tableDef,
-                    AddressToWriteTo = (long)firstAvailableAddress,
-                    Query = dml
-                };
-
-                _lockManager.QueueQuery(writeTransaction);
-
-                object result;
-
-                _lockManager.DataStore.TryGetValue(writeTransaction.DataRetrievalKey, out result);
-
-                InsertResult insertResult = (InsertResult)result;
-
-                _lockManager.DataStore.TryRemove(writeTransaction.DataRetrievalKey, out object x);
 
             }
             catch (Exception ex)
