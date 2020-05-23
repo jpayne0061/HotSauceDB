@@ -70,27 +70,7 @@ namespace SharpDbConsole
                 new LockManager(writer, reader),
                 reader);
 
-            interpreter.ProcessStatement(@"create table house(
-                                                    NumBedrooms int,
-                                                    NumBath int,
-                                                    Price decimal,
-                                                    IsListed bool,
-                                                    Address varchar(50)
-                                      )");
-
-
-            var allHouses = new List<List<List<IComparable>>>();
-
-            interpreter.ProcessStatement("insert into house values (5,3,295000,true,'800 Wormwood Dr')");
-
-            Parallel.For(0, 200, i =>
-            {
-                interpreter.ProcessStatement("insert into house values (5,3,295000,true,'800 Wormwood Dr')");
-
-                var houses = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house");
-
-                allHouses.Add(houses);
-            });
+            
 
 
             var x = 0;
@@ -744,12 +724,41 @@ namespace SharpDbConsole
                              && (int)groupedRows[1][1] == 7
                              && (int)groupedRows[1][2] == 5;
 
+            interpreter.ProcessStatement(@"create table house4 (
+                                                    NumBedrooms int,
+                                                    NumBath int,
+                                                    Price decimal,
+                                                    IsListed bool,
+                                                    Address varchar(50)
+                                      )");
+
+
+            var allHouses = new List<List<List<IComparable>>>();
+
+            interpreter.ProcessStatement("insert into house4 values (5,3,295000,true,'800 Wormwood Dr')");
+
+            Parallel.For(0, 200, i =>
+            {
+                interpreter.ProcessStatement("insert into house4 values (5,3,295000,true,'800 Wormwood Dr')");
+
+                var houses = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house4");
+
+                allHouses.Add(houses);
+            });
+
+            var housesOut = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house4");
+
+            allHouses.Add(housesOut);
+
+            var allHousesCountCorrect = allHouses.Count() == 201;
+
+            var insertCountCorrect = allHouses[200].Count() == 201;
 
             //******
 
             if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
                 || !toolSubQueryCompare || !compare || !groupedCountCorrect || !groupedValuesCorrect
-                || !colCountCorrect || !orderIsCorrect)
+                || !colCountCorrect || !orderIsCorrect || !insertCountCorrect)
             {
                 throw new Exception("tests failed");
             }

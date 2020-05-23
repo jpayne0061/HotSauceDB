@@ -219,22 +219,22 @@ namespace SharpDb.Services
             lock(_lockManager)
             {
                 _lockManager.QueueQuery(readTransaction);
-
-                object data;
-
-                _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
-
-                var rows = ((SelectData)data).Rows;
-
-                if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
-                {
-                    rows = ProcessPostPredicateGroupBy(selects, predicateStep, rows);
-                    rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
-                }
-
-                return rows;
             }
-            
+
+            object data;
+
+            _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
+
+            var rows = ((SelectData)data).Rows;
+
+            if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
+            {
+                rows = ProcessPostPredicateGroupBy(selects, predicateStep, rows);
+                rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
+            }
+
+            return rows;
+
         }
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
