@@ -69,7 +69,7 @@ namespace SharpDb.Services
                     {
                         WriteTransaction writeTxn = (WriteTransaction)sharpDbTransaction;
 
-                        _writer.WriteRow(writeTxn.Data, writeTxn.TableDefinition, writeTxn.AddressToWriteTo);
+                        _writer.WriteRow(writeTxn.Data, writeTxn.TableDefinition, writeTxn.AddressToWriteTo, writeTxn.UpdateObjectCount);
 
                         DataStore[sharpDbTransaction.DataRetrievalKey] = new InsertResult { Successful = true };
                     }

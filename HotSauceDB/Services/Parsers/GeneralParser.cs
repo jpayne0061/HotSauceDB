@@ -1,6 +1,7 @@
 ﻿using SharpDb.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpDb.Services.Parsers
 {
@@ -141,6 +142,69 @@ namespace SharpDb.Services.Parsers
                 StartIndexOfOpenParantheses = (int)indexFirstParantheses,
                 EndIndexOfCloseParantheses = (int)indexOfClosingParantheses
             };
+        }
+
+        public List<string> SplitOnSeparatorsExceptQuotesAndParantheses(string query, char[] separators)
+        {
+            //https://stackoverflow.com/questions/14655023/split-a-string-that-has-white-spaces-unless-they-are-enclosed-within-quotes
+            //https://stackoverflow.com/users/1284526/c%c3%a9dric-bignon
+            var queryParts = query.Split("'")
+             .Select((element, index) => index % 2 == 0  // If even index
+                                   ? element.Split(separators, StringSplitOptions.RemoveEmptyEntries)  // Split the item
+                                   : new string[] { "'" + element + "'" })  // Keep the entire item
+             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
+             Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
+
+            var queryPartsWithParantheses = CombineValuesInParantheses(queryParts);
+
+            return queryPartsWithParantheses;
+        }
+
+        public PredicateStep ParsePredicates(string query)
+        {
+            var predicates = new List<string>();
+
+
+            List<string> queryParts = SplitOnSeparatorsExceptQuotesAndParantheses(query, new char[] { ' ', '\r', '\n'});
+
+            var whereClauseIndex = queryParts.IndexOf("where");//IndexOfWhereClause(query, GetTableName(query));
+
+            int? operatorIndex = null;
+
+            if (whereClauseIndex != -1)
+            {
+                string firstPredicate = queryParts[whereClauseIndex + 0] + " " +
+                                        queryParts[whereClauseIndex + 1] + " " +
+                                        queryParts[whereClauseIndex + 2] + " " +
+                                        queryParts[whereClauseIndex + 3];
+
+                predicates.Add(firstPredicate);
+
+                operatorIndex = whereClauseIndex + 4;
+
+                HashSet<string> andOrOps = new HashSet<string> { "or", "and" };
+
+                while (operatorIndex < queryParts.Count() && andOrOps.Contains(queryParts[(int)operatorIndex].ToLower()))
+                {
+                    string currentPredicate = queryParts[(int)operatorIndex + 0] + " " +
+                                              queryParts[(int)operatorIndex + 1] + " " +
+                                              queryParts[(int)operatorIndex + 2] + " " +
+                                              queryParts[(int)operatorIndex + 3];
+
+                    predicates.Add(currentPredicate);
+
+                    operatorIndex += 4;
+                }
+            }
+
+            PredicateStep predicateStep = new PredicateStep();
+
+            predicateStep.Predicates = predicates;
+            predicateStep.HasPredicates = true;
+            predicateStep.OperatorIndex = operatorIndex;
+            predicateStep.QueryParts = queryParts;
+
+            return predicateStep;
         }
     }
 }

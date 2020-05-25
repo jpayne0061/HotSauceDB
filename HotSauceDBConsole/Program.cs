@@ -19,7 +19,6 @@ namespace SharpDbConsole
 
             try
             {
-
                 FullIntegration();
 
             }
@@ -764,11 +763,49 @@ namespace SharpDbConsole
 
             var insertCountCorrect = allHouses[200].Count() == 201;
 
+            //UPDATE TESTS
+
+            string createTable9 = @"create table houses9( Price int, NumBedRooms int, NumBathrooms int )";
+
+            interpreter.ProcessStatement(createTable9);
+
+            string insert19 = "insert into houses9 values (300000, 3, 2)";
+
+            interpreter.ProcessStatement(insert19);
+
+            string insert29 = "insert into houses9 values (310000, 4, 3)";
+
+            interpreter.ProcessStatement(insert29);
+
+            string insert39 = "insert into houses9 values (300000, 5, 4)";
+
+            interpreter.ProcessStatement(insert39);
+
+            string insert49 = "insert into houses9 values (330000, 6, 5)";
+
+            interpreter.ProcessStatement(insert49);
+
+            string insert59 = "insert into houses9 values (330000, 7, 6)";
+
+            interpreter.ProcessStatement(insert59);
+
+            string updateStatement = @"update houses9 Set Price = 440000, NumBathrooms = 90 where Numbedrooms = 7";
+
+            interpreter.ProcessStatement(updateStatement);
+
+            var updatedRows = (List<List<IComparable>>)interpreter.ProcessStatement("select * from houses9");
+
+            bool updatedOneCorrect = (int)updatedRows[4][0] == 440000;
+
+            bool updatedTwoCorrect = (int)updatedRows[4][2] == 90;
+
+            bool updatedRowsCountCorrect = updatedRows.Count() == 5;
+
             //******
 
             if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
                 || !toolSubQueryCompare || !compare || !groupedCountCorrect || !groupedValuesCorrect
-                || !colCountCorrect || !orderIsCorrect || !insertCountCorrect)
+                || !colCountCorrect || !orderIsCorrect || !insertCountCorrect || !updatedOneCorrect || !updatedTwoCorrect || !updatedRowsCountCorrect)
             {
                 throw new Exception("tests failed");
             }

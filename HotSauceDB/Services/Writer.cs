@@ -16,9 +16,12 @@ namespace SharpDb.Services
             _reader = reader;
         }
 
-        public void WriteRow(IComparable[] row, TableDefinition tableDef, long addressToWrite)
+        public void WriteRow(IComparable[] row, TableDefinition tableDef, long addressToWrite, bool updateCount = true)
         {
             WriteRow(row, addressToWrite, tableDef);
+
+            if (!updateCount)
+                return;
 
             UpdateObjectCount(addressToWrite);
         }

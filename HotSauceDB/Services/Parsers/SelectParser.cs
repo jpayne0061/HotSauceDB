@@ -141,72 +141,20 @@ namespace SharpDb.Services.Parsers
             return tableNameIndex;
         }
 
-        public PredicateStep ParsePredicates(string query)
+        public PredicateStep GetPredicateTrailers(PredicateStep predicateStep, string query)
         {
-            var predicates = new List<string>();
+            int startTrailingPredicate = predicateStep.OperatorIndex == null ? 
+                IndexOfTableName(query, GetTableName(query)) + 1 : (int)predicateStep.OperatorIndex;
 
-
-            List<string> queryParts = SplitOnWhiteSpaceExceptQuotesAndParantheses(query);
-
-            var whereClauseIndex = IndexOfWhereClause(query, GetTableName(query));
-
-            int? operatorIndex = null;
-
-            if (whereClauseIndex != -1)
-            {
-                string firstPredicate = queryParts[whereClauseIndex + 0] + " " +
-                                        queryParts[whereClauseIndex + 1] + " " +
-                                        queryParts[whereClauseIndex + 2] + " " +
-                                        queryParts[whereClauseIndex + 3];
-
-                predicates.Add(firstPredicate);
-
-                operatorIndex = whereClauseIndex + 4;
-
-                HashSet<string> andOrOps = new HashSet<string> { "or", "and" };
-
-                while (operatorIndex < queryParts.Count() && andOrOps.Contains(queryParts[(int)operatorIndex].ToLower()))
-                {
-                    string currentPredicate = queryParts[(int)operatorIndex + 0] + " " +
-                                              queryParts[(int)operatorIndex + 1] + " " +
-                                              queryParts[(int)operatorIndex + 2] + " " +
-                                              queryParts[(int)operatorIndex + 3];
-
-                    predicates.Add(currentPredicate);
-
-                    operatorIndex += 4;
-                }
-            }
-
-            int startTrailingPredicate = operatorIndex == null ? IndexOfTableName(query, GetTableName(query)) + 1 : (int)operatorIndex;
-
-            PredicateStep predicateStep = new PredicateStep();
-
-            predicateStep.Predicates = predicates;
-            predicateStep.HasPredicates = true;
-
-            List<string> predicateTrailersUnparsed = string.Join(' ', queryParts.GetRange(startTrailingPredicate, queryParts.Count() - startTrailingPredicate)).ToLower()
-                .Split(new[] { " ", ",", "by" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrEmpty(x)).ToList();
+            List<string> predicateTrailersUnparsed = string.Join(' ', 
+                                    predicateStep.QueryParts.GetRange(startTrailingPredicate, predicateStep.QueryParts.Count() - startTrailingPredicate))
+                                    .ToLower()
+                                    .Split(new[] { " ", ",", "by" }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Where(x => !string.IsNullOrEmpty(x)).ToList();
 
             predicateStep.PredicateTrailer = ParsePredicateTrailers(predicateTrailersUnparsed);
 
             return predicateStep;
-        }
-
-        public List<string> SplitOnWhiteSpaceExceptQuotesAndParantheses(string query)
-        {
-            //https://stackoverflow.com/questions/14655023/split-a-string-that-has-white-spaces-unless-they-are-enclosed-within-quotes
-            //https://stackoverflow.com/users/1284526/c%c3%a9dric-bignon
-            var queryParts = query.Split("'")
-             .Select((element, index) => index % 2 == 0  // If even index
-                                   ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
-                                   : new string[] { "'" + element + "'" })  // Keep the entire item
-             .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
-             Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
-
-            var queryPartsWithParantheses = CombineValuesInParantheses(queryParts);
-
-            return queryPartsWithParantheses;
         }
 
 

@@ -404,5 +404,31 @@ namespace SharpDbUnitTests
         }
 
 
+        [TestMethod]
+        public void ParseTableNameUpdate()
+        {
+
+            UpdateParser updateParser = new UpdateParser();
+
+            string tableName = updateParser.GetTableName("update loops where col1 = '345'");
+
+            Assert.AreEqual("loops", tableName);
+        }
+
+        [TestMethod]
+        public void GetSetClause()
+        {
+
+            UpdateParser updateParser = new UpdateParser();
+
+            List<KeyValuePair<string, string>> setClause = updateParser.GetUpdates(@"update houses
+Set Price = 456000, Address = 'gtggtt', Neigbs = 'gfff'
+where houseID = 908");
+
+            Assert.AreEqual("loops", "");
+        }
+
     }
 }
+
+

@@ -8,5 +8,6 @@ namespace SharpDb.Models.Transactions
     {
         public IComparable[] Data { get; set; }
         public long AddressToWriteTo { get; set; }
+        public bool UpdateObjectCount = true;
     }
 }

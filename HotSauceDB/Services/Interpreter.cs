@@ -57,8 +57,96 @@ namespace SharpDb.Services
             {
                 return RunCreateTableStatement(sql);
             }
+            else if (sqlStatementType == "update")
+            {
+                return RunUpdateStatement(sql);
+            }
 
             throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
+        }
+
+        private object RunUpdateStatement(string sql)
+        {
+            var parser = new UpdateParser();
+
+            List<KeyValuePair<string, string>> keyValuePairs = parser.GetUpdates(sql);
+
+            var tableName = parser.GetTableName(sql);
+
+            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
+
+            PredicateStep predicateStep = parser.ParsePredicates(sql);
+
+            var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
+
+            var selects = tableDef.ColumnDefinitions
+                            .Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
+
+            selects.ForEach(x => x.IsInSelect = true);
+
+            var readTransaction = new ReadTransaction
+            {
+                TableDefinition = tableDef,
+                Selects = selects,
+                PredicateOperations = predicateOperations
+            };
+
+            var selectData = RunReadTransaction(readTransaction);
+
+            var columnDefs = new List<ColumnDefinition>();
+
+            foreach (var col in keyValuePairs)
+            {
+                var colDef = tableDef.ColumnDefinitions.Where(x => x.ColumnName.ToLower() == col.Key).Single();
+
+                columnDefs.Add(colDef);
+            }
+
+            Converter converter = new Converter();
+
+            Dictionary<int, IComparable> indexToValue = new Dictionary<int, IComparable>();
+
+            foreach (var columnNameToValue in keyValuePairs)
+            {
+                var colDef = tableDef.ColumnDefinitions.Where(x => x.ColumnName.ToLower() == columnNameToValue.Key).Single();
+
+                indexToValue[colDef.Index] = converter.ConvertToType(columnNameToValue.Value, colDef.Type);
+            }
+
+            foreach (var colDef in columnDefs)
+            {
+                foreach (var row in selectData.Rows)
+                {
+                    row[colDef.Index] = indexToValue[colDef.Index];
+                }
+            }
+
+            for (int i = 0; i < selectData.Rows.Count; i++)
+            {
+                var writeTransaction = new WriteTransaction
+                {
+                    Data = selectData.Rows[i].ToArray(),
+                    TableDefinition = tableDef,
+                    AddressToWriteTo = selectData.RowLocations[i],
+                    Query = sql,
+                    UpdateObjectCount = false
+                };
+
+                lock (_lockManager)
+                {
+                    _lockManager.QueueQuery(writeTransaction);
+                }
+
+                object result;
+
+                _lockManager.DataStore.TryGetValue(writeTransaction.DataRetrievalKey, out result);
+
+                InsertResult insertResult = (InsertResult)result;
+
+                _lockManager.DataStore.TryRemove(writeTransaction.DataRetrievalKey, out object x);
+            }
+
+            return new object();
         }
 
         private List<List<IComparable>> ProcessPostPredicateOrderBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
@@ -197,13 +285,14 @@ namespace SharpDb.Services
 
                     if (firstMatchingColumn != null)
                     {
-                        select.AggregateFunction = columns.Where(x => x.ColumnName == select.ColumnName).First().AggregateFunction;
-
+                        select.AggregateFunction = firstMatchingColumn.AggregateFunction;
                     }
                 }
             }
 
             PredicateStep predicateStep = _selectParser.ParsePredicates(query);
+
+            predicateStep = _selectParser.GetPredicateTrailers(predicateStep, query);
 
             var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
 
@@ -216,20 +305,7 @@ namespace SharpDb.Services
                 PredicateOperations = predicateOperations
             };
 
-
-            lock(_lockManager)
-            {
-                _lockManager.QueueQuery(readTransaction);
-            }
-            
-            object data = null;
-
-            while(data == null)
-            {
-                _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
-            }
-
-            var rows = ((SelectData)data).Rows;
+            var rows = RunReadTransaction(readTransaction).Rows;
 
             if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {
@@ -238,7 +314,24 @@ namespace SharpDb.Services
             }
 
             return rows;
+        }
 
+        public SelectData RunReadTransaction(ReadTransaction readTransaction)
+        {
+
+            lock (_lockManager)
+            {
+                _lockManager.QueueQuery(readTransaction);
+            }
+
+            object data = null;
+
+            while (data == null)
+            {
+                _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
+            }
+
+            return (SelectData)data;
         }
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
