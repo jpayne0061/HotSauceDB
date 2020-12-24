@@ -4,7 +4,7 @@ namespace SharpDb
 {
     public static class Globals
     {
-        public const string FILE_NAME = "sharpDb.sdb";
+        public const string FILE_NAME = "sharpDb.hdb";
         public static byte INDEX_PAGE_HEADER_LENGTH = 32;
         public const short TABLE_DEF_LENGTH = 530;
         public const int PageSize = 8000;

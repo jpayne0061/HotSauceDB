@@ -19,7 +19,7 @@ namespace SharpDbOrm
 
             var reader = new Reader();
             var writer = new Writer(reader);
-            var lockManager = new LockManager(writer, reader);
+            var lockManager = new QueryCoordinator(writer, reader);
 
             var schemaFetcher = new SchemaFetcher(reader);
 

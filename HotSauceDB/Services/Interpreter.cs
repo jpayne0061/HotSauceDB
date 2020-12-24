@@ -17,14 +17,14 @@ namespace SharpDb.Services
         private GeneralParser _generalParser;
         private CreateParser _createParser;
         private Reader _reader;
-        private LockManager _lockManager;
+        private QueryCoordinator _lockManager;
 
         public Interpreter(SelectParser selectParser, 
                             InsertParser insertParser, 
                             SchemaFetcher schemaFetcher,
                             GeneralParser generalParser,
                             CreateParser createParser,
-                            LockManager lockManager,
+                            QueryCoordinator lockManager,
                             Reader reader)
         {
             _selectParser = selectParser;
@@ -45,21 +45,16 @@ namespace SharpDb.Services
         {
             string sqlStatementType = _generalParser.GetSqlStatementType(sql);
 
-            if(sqlStatementType == "select")
+            switch(sqlStatementType)
             {
-                return RunQueryAndSubqueries(sql);
-            }
-            else if(sqlStatementType == "insert")
-            {
-                return RunInsertStatement(sql);
-            }
-            else if (sqlStatementType == "create")
-            {
-                return RunCreateTableStatement(sql);
-            }
-            else if (sqlStatementType == "update")
-            {
-                return RunUpdateStatement(sql);
+                case "select":
+                    return RunQueryAndSubqueries(sql);
+                case "insert":
+                    return RunInsertStatement(sql);
+                case "create":
+                    return RunCreateTableStatement(sql);
+                case "update":
+                    return RunUpdateStatement(sql);
             }
 
             throw new Exception("Invalid query. Query must start with 'select' or 'insert'");

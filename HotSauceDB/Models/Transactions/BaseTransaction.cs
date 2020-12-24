@@ -10,7 +10,6 @@ namespace SharpDb.Models.Transactions
         {
             DataRetrievalKey = Guid.NewGuid().ToString();
         }
-
         public string DataRetrievalKey { get; }
     }
 }

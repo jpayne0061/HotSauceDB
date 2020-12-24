@@ -32,7 +32,7 @@ namespace SharpDbConsole
         public static void ParallelTest()
         {
 
-            File.WriteAllText("sharpDb.sdb", null);
+            File.WriteAllText("sharpDb.hdb", null);
 
             var reader = new Reader();
             var writer = new Writer(reader);
@@ -44,7 +44,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
 
@@ -263,7 +263,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
             string query = "select ToolName, Price from tools where NumInStock = 4";
@@ -291,7 +291,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
             string query = @"select ToolName, Price
@@ -324,7 +324,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
             var insertParser = new InsertParser(schemaFetcher);
@@ -348,7 +348,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
             string dml = @"create table Houses(
@@ -387,7 +387,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
             //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
@@ -419,7 +419,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
 
@@ -444,7 +444,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
             string select = @"select * from houses where price > 200000 order by price, address";
@@ -466,7 +466,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
             string createTable = @"create table houses( Price int, NumBedRooms int, NumBathrooms int )";
@@ -516,10 +516,10 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new LockManager(writer, reader),
+                new QueryCoordinator(writer, reader),
                 reader);
 
-            //if integration.txt exists, delete and recreate
+
             File.WriteAllText(Globals.FILE_NAME, null);
 
 
@@ -655,15 +655,10 @@ namespace SharpDbConsole
 
             var toolsSubQueryResult = (List<List<IComparable>>)interpreter.ProcessStatement(subQueryTools);
 
-            //string insertStatement4 = @"insert into tools values ('" + "drill" + "'," +
-            //       "45.99" + "," + "90" + "," + "false," + "'dewalt'" + ")";
 
             var toolSubQueryCompare = ((string)toolsSubQueryResult[0][0]).Trim() == "drill" && (decimal)toolsSubQueryResult[0][1] 
                 == 45.99m && (bool)toolsSubQueryResult[0][3] == false;
 
-
-            //string toolsInClause = @"select * from tools 
-            //                            where name IN (select name from tools where price > 20 )";
 
             string toolsInClause = @"select * from tools 
                                         where name IN ('drill', 'hammer' )";

@@ -7,12 +7,12 @@ using System.Collections.Concurrent;
 
 namespace SharpDb.Services
 {
-    public class LockManager
+    public class QueryCoordinator
     {
         private readonly Writer _writer;
         private readonly Reader _reader;
 
-        public LockManager(Writer writer, Reader reader)
+        public QueryCoordinator(Writer writer, Reader reader)
         {
             _writer = writer;
             _reader = reader;
@@ -60,7 +60,6 @@ namespace SharpDb.Services
 
                 BaseTransaction sharpDbTransaction;
 
-
                 bool succeeded = queue.Value.TryDequeue(out sharpDbTransaction);
 
                 if (succeeded)
@@ -91,7 +90,7 @@ namespace SharpDb.Services
                     {
                         InternalTransaction txn = (InternalTransaction)sharpDbTransaction;
 
-                        switch(txn.IntTxnType)
+                        switch(txn.InternalTransactionType)
                         {
                             case (InternalTransactionType.GetFirstAvailableDataAddress):
                                 long address =  _reader.GetFirstAvailableDataAddress((long)txn.Parameters[0], (int)txn.Parameters[1]);

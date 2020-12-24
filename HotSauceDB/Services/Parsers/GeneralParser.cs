@@ -20,7 +20,9 @@ namespace SharpDb.Services.Parsers
         {
             query = ToLowerAndTrim(query);
 
-            return TruncateLongString(query, 6);
+            int numberCharsToTake = 6; //all statements contain 6 characters - 'select', 'update', 'create'...
+
+            return TruncateLongString(query, numberCharsToTake);
         }
 
         public string TruncateLongString(string str, int maxLength)
@@ -149,9 +151,9 @@ namespace SharpDb.Services.Parsers
             //https://stackoverflow.com/questions/14655023/split-a-string-that-has-white-spaces-unless-they-are-enclosed-within-quotes
             //https://stackoverflow.com/users/1284526/c%c3%a9dric-bignon
             var queryParts = query.Split("'")
-             .Select((element, index) => index % 2 == 0  // If even index
-                                   ? element.Split(separators, StringSplitOptions.RemoveEmptyEntries)  // Split the item
-                                   : new string[] { "'" + element + "'" })  // Keep the entire item
+             .Select((element, index) => index % 2 == 0  
+                                   ? element.Split(separators, StringSplitOptions.RemoveEmptyEntries) 
+                                   : new string[] { "'" + element + "'" })  
              .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).
              Where(x => !string.IsNullOrWhiteSpace(x) && !string.IsNullOrEmpty(x)).ToList();
 
@@ -167,7 +169,7 @@ namespace SharpDb.Services.Parsers
 
             List<string> queryParts = SplitOnSeparatorsExceptQuotesAndParantheses(query, new char[] { ' ', '\r', '\n'});
 
-            var whereClauseIndex = queryParts.IndexOf("where");//IndexOfWhereClause(query, GetTableName(query));
+            var whereClauseIndex = queryParts.IndexOf("where");
 
             int? operatorIndex = null;
 
