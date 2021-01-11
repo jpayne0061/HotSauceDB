@@ -70,7 +70,7 @@ Curently, HotSauceDB supports the creation of tables with the following types:
 - String
 - DateTime
 
-Only inserts and reads are supported at this time. HotsauceDB supports mutlithreaded 
+Only inserts, reads, and updates are supported at this time. HotsauceDB supports mutlithreaded 
 applications.
 
 The following read operations are all valid for HotSauceDB
