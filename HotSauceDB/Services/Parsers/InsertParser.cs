@@ -42,6 +42,11 @@ namespace SharpDb.Services.Parsers
 
             List<string> vals = csv.Split(',').Select(x => x.Trim()).ToList();
 
+            if(vals.Count != tableDefinition.ColumnDefinitions.Count)
+            {
+                throw new Exception($"Table '{tableDefinition.TableName}' requires {tableDefinition.ColumnDefinitions.Count} values for an insert, but {vals.Count} was provided: {string.Join(',', vals)}");
+            }
+
             IComparable[] comparables = new IComparable[tableDefinition.ColumnDefinitions.Count()];
 
             for (int i = 0; i < tableDefinition.ColumnDefinitions.Count(); i++)

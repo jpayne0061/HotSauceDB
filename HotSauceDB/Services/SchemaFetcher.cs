@@ -36,7 +36,7 @@ namespace SharpDb.Services
 
             tableName = tableName.ToLower();
 
-            var index = GetIndexPage();
+            IndexPage index = GetIndexPage();
 
             return index.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
         }

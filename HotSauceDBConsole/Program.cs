@@ -19,14 +19,74 @@ namespace SharpDbConsole
 
             try
             {
+                //AlterTableIntegration();                     
                 FullIntegration();
 
             }
             catch (Exception ex)
             {
+                var z = Globals.GLOBAL_DEBUG;
+
                 throw;
             }
         }
+
+        private static void AlterTableIntegration()
+        {
+            //group by currently only supported with plain sql
+            var reader = new Reader();
+            var writer = new Writer(reader);
+            var schemaFetcher = new SchemaFetcher(reader);
+
+            var interpreter = new Interpreter(
+                new SelectParser(),
+                new InsertParser(schemaFetcher),
+                schemaFetcher,
+                new GeneralParser(),
+                new CreateParser(),
+                new QueryCoordinator(writer, reader),
+                reader);
+
+
+            File.WriteAllText(Globals.FILE_NAME, null);
+
+
+            string createHousesTable = @"create table houses (
+                                            Price decimal,
+                                            Price2 decimal,
+                                            Price3 decimal,
+                                            Price4 decimal
+                                       )";
+
+            interpreter.ProcessStatement(createHousesTable);
+
+            Random rd = new Random();
+
+            for (int i = 0; i < 242; i++)
+            {
+
+                string insertStatement = @"insert into houses values (" + rd.Next().ToString() + "," +
+                                           rd.Next().ToString() + "," + rd.Next().ToString() + "," + rd.Next().ToString() + ")";
+
+                interpreter.ProcessStatement(insertStatement);
+            }
+
+
+            string alterTableDefinition = "Alter table houses add NumBathrooms int";
+
+            interpreter.ProcessStatement(alterTableDefinition);
+
+            var allHouses = new List<List<List<IComparable>>>();
+
+            var housesOut = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM houses");
+
+            if(housesOut.Count != 242)
+            {
+                throw new Exception("row count doesnt match after alter table command");
+            }
+
+        }
+
 
 
         public static void ParallelTest()
@@ -795,6 +855,8 @@ namespace SharpDbConsole
             bool updatedTwoCorrect = (int)updatedRows[4][2] == 90;
 
             bool updatedRowsCountCorrect = updatedRows.Count() == 5;
+
+            AlterTableIntegration();
 
             //******
 

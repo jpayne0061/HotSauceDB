@@ -22,7 +22,7 @@ namespace SharpDb.Services.Parsers
 
             int numberCharsToTake = 6; //all statements contain 6 characters - 'select', 'update', 'create'...
 
-            return TruncateLongString(query, numberCharsToTake);
+            return TruncateLongString(query, numberCharsToTake).Trim();
         }
 
         public string TruncateLongString(string str, int maxLength)

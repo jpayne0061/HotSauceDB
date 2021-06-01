@@ -1,7 +1,10 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDB.Helpers;
+using HotSauceDB.Models;
+using SharpDb.Enums;
 using SharpDb.Helpers;
 using SharpDb.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -18,19 +21,21 @@ namespace SharpDb.Services
 
         public void WriteRow(IComparable[] row, TableDefinition tableDef, long addressToWrite, bool updateCount = true)
         {
-            WriteRow(row, addressToWrite, tableDef);
+            bool isEdit = !updateCount;
+
+            WriteRow(row, addressToWrite, tableDef, isEdit);
 
             if (!updateCount)
                 return;
 
             UpdateObjectCount(addressToWrite);
         }
-        public void WriteRow(IComparable[] row, long diskLocation, TableDefinition tableDefinition)
+        public void WriteRow(IComparable[] row, long diskLocation, TableDefinition tableDefinition, bool isEdit)
         {
-            long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes(), isRow: true);
+            long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes(), isRow: true && !isEdit);
 
             //if first row, write pointer as zero
-            if((addressToWriteTo - 2) % Globals.PageSize == 0)
+            if((addressToWriteTo - 2) % Globals.PageSize == 0 && !isEdit)
             {
                 WriteZeroPointerForFirstRow(addressToWriteTo);
             }
@@ -107,20 +112,17 @@ namespace SharpDb.Services
                     var x = ((string)data).PadRight(columnDefinition.ByteSize - 1, ' ');
                     binaryWriter.Write(x);
                 }
-
-
             }
         }
 
         public ResultMessage WriteTableDefinition(TableDefinition tableDefinition)
         {
-            //gte first free spot to write table def
-
+            //get first free spot to write table def
             bool isFirstTable = IsFirstTable();
 
-            if(isFirstTable)
+            if (isFirstTable)
             {
-                WriteZero(0); 
+                WriteZero(0);
             }
 
             //need to pass in address of current page, not zero
@@ -129,15 +131,28 @@ namespace SharpDb.Services
             if ((addressToWrite - 2) % Globals.PageSize == 0)
             {
                 var pointerToNextIndexRecord = GetNextUnclaimedDataPage();
-                WriteLong((addressToWrite - 2) + Globals.NextPointerAddress, pointerToNextIndexRecord);
+                WriteLong(addressToWrite - 2 + Globals.NextPointerAddress, pointerToNextIndexRecord);
                 WriteZero(pointerToNextIndexRecord);
             }
 
+            var resultMessage =  WriteTableDefinition(tableDefinition, addressToWrite);
+
+            var nextFreeDataPage = tableDefinition.DataAddress == 0 ? GetNextUnclaimedDataPage() : tableDefinition.DataAddress;
+
+            WriteLong(nextFreeDataPage, (long)0);
+
+            UpdateObjectCount(resultMessage.Address);
+
+            return resultMessage;
+        }
+
+        private ResultMessage WriteTableDefinition(TableDefinition tableDefinition, long addressToWrite)
+        {
             //this should return current next page, instead of the first page address
             //first page isn't really full
             var newDefinitionAddress = EndOfPageCheck(addressToWrite, Globals.TABLE_DEF_LENGTH);
 
-            var nextFreeDataPage = GetNextUnclaimedDataPage();
+            var nextFreeDataPage = tableDefinition.DataAddress == 0 ? GetNextUnclaimedDataPage() : tableDefinition.DataAddress;
 
             long tableDefEnd = 0;
 
@@ -161,16 +176,227 @@ namespace SharpDb.Services
                     tableDefEnd = stream.Position;
 
                     binaryWriter.Write(Globals.EndTableDefinition);
-
-                    stream.Position = nextFreeDataPage;
-                    binaryWriter.Write((short)0);
                 }
             }
 
-            UpdateObjectCount(tableDefEnd);
-
-            return new ResultMessage { Message = $"table {tableDefinition.TableName} has been added successfully" };
+            return new ResultMessage { Message = $"table {tableDefinition.TableName} has been added successfully", Address = tableDefEnd };
         }
+
+        public ResultMessage AlterTableDefinition(TableDefinition tableDefinition, ColumnDefinition newColumn)
+        {
+            int oldRowSize = tableDefinition.GetRowSizeInBytes();
+
+            tableDefinition.ColumnDefinitions.Add(newColumn);
+
+            int newRowSize = tableDefinition.GetRowSizeInBytes();
+
+            WriteTableDefinition(tableDefinition, tableDefinition.TableDefinitionAddress);
+
+            tableDefinition.ColumnDefinitions.RemoveAt(tableDefinition.ColumnDefinitions.Count - 1);
+
+            if(_reader.GetObjectCount(tableDefinition.DataAddress) > 0)
+            {
+                BackFillRows(tableDefinition, oldRowSize, newColumn);
+            }
+
+            return new ResultMessage();
+        }
+
+        /// Data for the table being edited needs to be back filled with the new column
+        /// 
+        /// Example:
+        /// 
+        /// old row structure:                     "a string value",6,false
+        /// new row structure (adds char column):  "a string value",6,false,'v'
+        /// 
+        /// Since rows are written back-to-back, they need to be pulled up into memory, edited to add the
+        /// new column value, whatever the default is, and written back to disk
+        public ResultMessage BackFillRows(TableDefinition tableDefinition, int oldRowSize, ColumnDefinition newColumn)
+        {
+            var currentPages = GetPages(tableDefinition.DataAddress); 
+
+            //get first address of data for table
+            long dataStart = tableDefinition.DataAddress;
+
+            //how many rows need to be read into buffer?
+            int uneditedBufferCount = (int)Math.Ceiling((decimal)(tableDefinition.GetRowSizeInBytes() + newColumn.ByteSize) / oldRowSize);
+
+            var newDefinition = new TableDefinition(tableDefinition);
+            newDefinition.ColumnDefinitions.Add(newColumn);
+
+            int newRowSize = newDefinition.GetRowSizeInBytes();
+
+            var proposedPages = AddNewPagesAndRowCounts(currentPages, tableDefinition.DataAddress, oldRowSize, newRowSize);
+
+            Queue<List<IComparable>> unEditedRowBufferQueue = new Queue<List<IComparable>>();
+
+            int maxNewRowsToBeWrittenToSinglePage = (Globals.PageSize - (Globals.Int64ByteLength + Globals.Int16ByteLength)) / newRowSize;
+
+            long nextAddressToWriteTo = 0L;
+
+            List<long> pageAddresses = proposedPages.Keys.OrderBy(k => k).ToList();
+
+            for (int i = 0; i < pageAddresses.Count; i++)
+            {
+                long pageAddress = pageAddresses[i];
+
+                BackfillPage backfillPage = proposedPages[pageAddress];
+
+                if(!backfillPage.NewlyAllocatedPage)
+                {
+                    using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    {
+                        using (BinaryReader binaryReader = new BinaryReader(fs))
+                        {
+                            var rows = _reader.ReadDataFromPage(pageAddress, tableDefinition.ColumnDefinitions, binaryReader);
+
+                            foreach (List<IComparable> row in rows)
+                            {
+                                unEditedRowBufferQueue.Enqueue(row);
+                            }
+                        }
+                    }
+                }
+
+                nextAddressToWriteTo = pageAddress + Globals.Int16ByteLength;
+
+                int rowCount = backfillPage.NewlyAllocatedPage ? backfillPage.NewRowCount : backfillPage.OldRowCount;
+
+                for (int j = 0; j < rowCount; j++)
+                {
+                    if (nextAddressToWriteTo + newRowSize > (pageAddress + Globals.NextPointerAddress))
+                    {
+                        SetObjectCount(pageAddress, (short)j);
+                        break;
+                    }
+
+                    List<IComparable> rowToEdit = unEditedRowBufferQueue.Dequeue();
+
+                    rowToEdit.Add(DefaultValues.GetDefaultValueForType(newColumn.Type));
+
+                    WriteRow(rowToEdit.ToArray(), newDefinition, nextAddressToWriteTo, updateCount: false);
+
+                    nextAddressToWriteTo += newRowSize;
+
+                    if (j == rowCount - 1)
+                    {
+                        SetObjectCount(pageAddress, (short)(j + 1));
+                    }
+                }
+
+                //next page is newly allocated, so need to set pointer
+                if(i != pageAddresses.Count - 1 && proposedPages[pageAddresses[i + 1]].NewlyAllocatedPage)
+                {
+                    WriteLong(pageAddress + Globals.NextPointerAddress, proposedPages[pageAddresses[i + 1]].StartAddress);
+                }
+
+                if(backfillPage.NewlyAllocatedPage)
+                {
+                    WriteLong(pageAddress + Globals.NextPointerAddress, 0L);
+                }
+
+            }
+
+            return new ResultMessage();
+        }
+
+        public Dictionary<long, BackfillPage> GetPages(long tableDataAddress)
+        {
+            var pages = new Dictionary<long, BackfillPage>();
+
+            long currentPageAddress = tableDataAddress;
+
+            do {
+                BackfillPage backfillPage = new BackfillPage();
+                backfillPage.OldRowCount = _reader.GetObjectCount(currentPageAddress);
+                backfillPage.StartAddress = currentPageAddress;
+                backfillPage.NextPagePointer = _reader.GetPointerToNextPage(currentPageAddress);
+                currentPageAddress = backfillPage.NextPagePointer;
+
+                pages[backfillPage.StartAddress] = backfillPage;
+            }
+            while (currentPageAddress != 0L);
+
+            return pages;
+        }
+
+        public Dictionary<long, BackfillPage> AddNewPagesAndRowCounts(Dictionary<long, BackfillPage> currentPages, long firstPageAddress, int oldRowSize, int newRowSize)
+        {
+            //var pages = new Dictionary<long, BackfillPage>();
+
+            int numNewRowsMax = (Globals.PageSize - (Globals.Int64ByteLength + Globals.Int16ByteLength)) / newRowSize;
+
+            int totalRows = 0;
+
+            long currentPageAddress = firstPageAddress;
+
+            //get count of rows
+            while (currentPages.ContainsKey(currentPageAddress))
+            {
+                totalRows += currentPages[currentPageAddress].OldRowCount;
+
+                currentPageAddress = currentPages[currentPageAddress].NextPagePointer;
+            }
+
+            currentPageAddress = firstPageAddress;
+
+            while (currentPages.ContainsKey(currentPageAddress))
+            {
+                var page = currentPages[currentPageAddress];
+
+                bool pageIsFull = (Globals.PageSize - (Globals.Int16ByteLength + Globals.Int64ByteLength)) / oldRowSize == page.OldRowCount;
+
+                if(pageIsFull || (page.OldRowCount * newRowSize) > Globals.PAGE_DATA_MAX)
+                {
+                    page.NewRowCount = (short)numNewRowsMax;
+                    totalRows -= page.NewRowCount;
+                }
+                else if(!pageIsFull)
+                {
+                    page.NewRowCount = page.OldRowCount;
+                    totalRows -= page.OldRowCount;
+                }
+
+                currentPageAddress = currentPages[currentPageAddress].NextPagePointer;
+
+                if (currentPageAddress == 0 && totalRows > 0)
+                {
+                    while(totalRows > 0)
+                    {
+                        //add new pages
+                        BackfillPage newPage = new BackfillPage();
+                        newPage.StartAddress = GetNextUnclaimedDataPage();
+
+                        //**update old page pointer
+                        page.NextPagePointer = newPage.StartAddress;
+
+                        newPage.OldRowCount = 0;
+                        newPage.NewlyAllocatedPage = true;
+
+                        if (totalRows > numNewRowsMax)
+                        {
+                            newPage.NewRowCount = (short)numNewRowsMax;
+                            totalRows -= numNewRowsMax;
+                        }
+                        else if (totalRows <= numNewRowsMax)
+                        {
+                            newPage.NewRowCount = (short)totalRows;
+                            totalRows = 0;
+                        }
+
+                        currentPages[newPage.StartAddress] = newPage;
+
+                        page = newPage;
+                    }
+                    
+                }
+            }
+
+            return currentPages;
+        }
+
+
+
 
         void WriteZero(long address)
         {
@@ -292,6 +518,20 @@ namespace SharpDb.Services
             }
 
         }
+
+        private void SetObjectCount(long countAddress, short objectCount)
+        {
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            {
+                using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
+                {
+                    binaryWriter.BaseStream.Position = countAddress;
+
+                    binaryWriter.Write(objectCount);
+                }
+            }
+        }
+
 
         /// <summary>
         /// Checks if current page is full. If so, writes a pointer to the end of the page and 

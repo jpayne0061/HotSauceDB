@@ -4,6 +4,7 @@ using SharpDb.Models;
 using SharpDb.Models.Transactions;
 using System;
 using System.Collections.Concurrent;
+using HotSauceDB.Models.Transactions;
 
 namespace SharpDb.Services
 {
@@ -16,12 +17,13 @@ namespace SharpDb.Services
         {
             _writer = writer;
             _reader = reader;
+            DataStore = new ConcurrentDictionary<string, object>();
         }
 
         public ConcurrentDictionary<string, ConcurrentQueue<BaseTransaction>> _queues
             = new ConcurrentDictionary<string, ConcurrentQueue<BaseTransaction>>();
 
-        public ConcurrentDictionary<string, object> DataStore = new ConcurrentDictionary<string, object>();
+        public ConcurrentDictionary<string, object> DataStore { get; set; }
 
         public void QueueQuery(UserTransaction sharpDbTransaction)
         {
@@ -85,6 +87,12 @@ namespace SharpDb.Services
                         SchemaTransaction dmlTransaction = (SchemaTransaction)sharpDbTransaction;
 
                         DataStore[sharpDbTransaction.DataRetrievalKey] = _writer.WriteTableDefinition(dmlTransaction.TableDefinition);
+                    }
+                    else if (sharpDbTransaction is AlterTableTransaction)
+                    {
+                        AlterTableTransaction dmlTransaction = (AlterTableTransaction)sharpDbTransaction;
+
+                        DataStore[sharpDbTransaction.DataRetrievalKey] = _writer.AlterTableDefinition(dmlTransaction.TableDefinition, dmlTransaction.NewColumn);
                     }
                     else if (sharpDbTransaction is InternalTransaction)
                     {

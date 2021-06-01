@@ -22,6 +22,8 @@ namespace SharpDb.Services
                 return new IndexPage();
             }
 
+            long tableDefinitionAddress = 2;
+
             bool nextPageHasTables = true;
 
             using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -37,6 +39,9 @@ namespace SharpDb.Services
                             var tableDefinition = new TableDefinition();
                             tableDefinition.DataAddress = reader.ReadInt64();
                             tableDefinition.TableName = reader.ReadString();
+                            tableDefinition.TableDefinitionAddress = tableDefinitionAddress;
+
+                            tableDefinitionAddress += Globals.TABLE_DEF_LENGTH;
 
                             while (reader.PeekChar() != '|') // | signifies end of current table defintion
                             {
@@ -59,7 +64,9 @@ namespace SharpDb.Services
 
                         short numObjectsOnNextPage = reader.ReadInt16();
 
-                        if(numObjectsOnNextPage > 0)
+                        tableDefinitionAddress = nextPageAddress + 2;
+
+                        if (numObjectsOnNextPage > 0)
                         {
                             objectCount = numObjectsOnNextPage;
                         }
@@ -165,6 +172,29 @@ namespace SharpDb.Services
         }
 
 
+        public List<List<IComparable>> ReadDataFromPage(long pageAddress, List<ColumnDefinition> columnDefinitions, BinaryReader binaryReader)
+        {
+            int rowCount = GetObjectCount(pageAddress);
+
+            var data = new List<List<IComparable>>();
+
+            binaryReader.BaseStream.Position = pageAddress + Globals.Int16ByteLength;
+
+            for (int i = 0; i < rowCount; i++)
+            {
+                List<IComparable> row = new List<IComparable>();
+
+                foreach (ColumnDefinition column in columnDefinitions)
+                {
+                    row.Add(ReadColumn(column, binaryReader));
+                }
+
+                data.Add(row);
+            }
+
+            return data;
+        }
+
 
         public long GetPointerToNextPage(long pageAddress)
         {
@@ -224,8 +254,54 @@ namespace SharpDb.Services
             }
         }
 
+        public List<IComparable> ReadRow(List<ColumnDefinition> columnDefinitions, BinaryReader binaryReader)
+        {
+            List<IComparable> data = new List<IComparable>();
+
+            foreach (var columnDefinition in columnDefinitions)
+            {
+                data.Add(ReadColumn(columnDefinition, binaryReader));
+            }
+
+            return data;
+        }
+
         public long GetFirstAvailableDataAddress(long dataStart, int objectSize)
         {
+            while (PageIsFull(dataStart, objectSize))
+            {
+                dataStart = PageLocationHelper.GetNextPagePointer(dataStart);
+            }
+
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                fileStream.Position = dataStart;
+
+                using (BinaryReader binaryReader = new BinaryReader(fileStream))
+                {
+                    short numObjects = binaryReader.ReadInt16();
+
+                    return objectSize * numObjects + 2 + dataStart;
+                }
+            }
+        }
+
+        public long GetNextEmptyPage(long dataStart, int objectSize)
+        {
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                fileStream.Position = dataStart;
+
+                using (BinaryReader binaryReader = new BinaryReader(fileStream))
+                {
+                    short numObjects = binaryReader.ReadInt16();
+
+                    return objectSize * numObjects + 2 + dataStart;
+                }
+            }
+
+
+
             while (PageIsFull(dataStart, objectSize))
             {
                 dataStart = PageLocationHelper.GetNextPagePointer(dataStart);
@@ -263,7 +339,7 @@ namespace SharpDb.Services
             }
         }
 
-
+        //this method should be in a different class. it doesnt have anything to do with data access
         public bool EvaluateRow(List<PredicateOperation> predicateOperations, List<IComparable> row)
         {
             if(predicateOperations.Count() == 0)
@@ -291,6 +367,7 @@ namespace SharpDb.Services
             return addRow;
         }
 
+        //this method should be in a different class. it doesnt have anything to do with data access
         private bool EvaluateOperator(string operation, bool delgateResult, bool willAddRow)
         {
             switch (operation.ToLower())

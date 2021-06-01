@@ -1,14 +1,9 @@
-﻿using HotSauceDB.Statics;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace SharpDb.Services.Parsers
 {
-    //need to get row locations of all rows that need updated
-    //
-
     public class UpdateParser : GeneralParser
     {
         public List<KeyValuePair<string, string>> GetUpdates(string query)

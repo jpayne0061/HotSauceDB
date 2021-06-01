@@ -1,4 +1,6 @@
 ﻿using HotSauceDB.Models;
+using HotSauceDB.Models.Transactions;
+using HotSauceDB.Services.Parsers;
 using SharpDb.Enums;
 using SharpDb.Models;
 using SharpDb.Models.Transactions;
@@ -55,9 +57,33 @@ namespace SharpDb.Services
                     return RunCreateTableStatement(sql);
                 case "update":
                     return RunUpdateStatement(sql);
+                case "alter":
+                    return RunAlterTable(sql);
             }
 
             throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
+        }
+
+        private object RunAlterTable(string sql)
+        {
+            var parser = new AlterParser();
+
+            var tableName = parser.GetTableName(sql);
+
+            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
+
+            byte newColumnIndex = tableDef.ColumnDefinitions.Select(c => c.Index).Max();
+
+            newColumnIndex++;
+
+            ColumnDefinition columnDefinition = parser.GetNewColumnDefinition(sql, newColumnIndex);
+
+            if(tableDef.ColumnDefinitions.Select(c => c.ColumnName.ToLower()).Contains(columnDefinition.ColumnName.ToLower()))
+            {
+                throw new Exception($"table {tableDef.TableName} already contains a column named {columnDefinition.ColumnName}");
+            }
+
+            return RunAlterTable(tableDef, columnDefinition);
         }
 
         private object RunUpdateStatement(string sql)
@@ -116,6 +142,7 @@ namespace SharpDb.Services
                 }
             }
 
+            //each row is updated as its own transaction - not ideal for update - not atomic
             for (int i = 0; i < selectData.Rows.Count; i++)
             {
                 var writeTransaction = new WriteTransaction
@@ -134,6 +161,7 @@ namespace SharpDb.Services
 
                 object result;
 
+                //how do we know its ready?
                 _lockManager.DataStore.TryGetValue(writeTransaction.DataRetrievalKey, out result);
 
                 InsertResult insertResult = (InsertResult)result;
@@ -526,6 +554,28 @@ namespace SharpDb.Services
             ResultMessage resultMessage = (ResultMessage)result;
 
             return resultMessage;
+        }
+
+        private ResultMessage RunAlterTable(TableDefinition tableDef, ColumnDefinition columnDefinition)
+        {
+            //check that table doesn't already contain column name
+            //get data type from query (look at create table)
+            AlterTableTransaction dmlTransaction = new AlterTableTransaction
+            {
+                TableDefinition = tableDef,
+                NewColumn = columnDefinition
+            };
+
+            _lockManager.QueueQuery(dmlTransaction);
+
+            object result;
+
+            _lockManager.DataStore.TryGetValue(dmlTransaction.DataRetrievalKey, out result);
+
+            ResultMessage resultMessage = (ResultMessage)result;
+
+            return resultMessage;
+
         }
 
         public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)

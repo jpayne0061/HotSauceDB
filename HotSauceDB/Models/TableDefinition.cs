@@ -10,6 +10,20 @@ namespace SharpDb.Models
         {
             ColumnDefinitions = new List<ColumnDefinition>();
         }
+
+        public TableDefinition(TableDefinition tableDefinition)
+        {
+            ColumnDefinitions = new List<ColumnDefinition>();
+
+            for (int i = 0; i < tableDefinition.ColumnDefinitions.Count; i++)
+            {
+                ColumnDefinitions.Add(tableDefinition.ColumnDefinitions[i]);
+            }
+            TableName = tableDefinition.TableName;
+            DataAddress = tableDefinition.DataAddress;
+            TableDefinitionAddress = tableDefinition.TableDefinitionAddress;
+        }
+
         public List<ColumnDefinition> ColumnDefinitions { get; set; }
         public string TableName //41 bytes - string length 20
         {
@@ -34,5 +48,6 @@ namespace SharpDb.Models
 
             return byteSize;
         }
+        public long TableDefinitionAddress { get; set; }
     }
 }

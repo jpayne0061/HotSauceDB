@@ -3,5 +3,6 @@
     public class ResultMessage
     {
         public string Message { get; set; }
+        public long Address { get; set; }
     }
 }

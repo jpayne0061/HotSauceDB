@@ -47,7 +47,7 @@ namespace SharpDb.Services.Parsers
 
         //refactor
         //do not manipulate object (columnDefinition) while also returning a value - seems ugly
-        private TypeEnum ParseTypeAndByteSize(string type, ColumnDefinition colDef)
+        protected TypeEnum ParseTypeAndByteSize(string type, ColumnDefinition colDef)
         {
             if(type.Length > 6 && type.Substring(0, 7) == "varchar")
             {
