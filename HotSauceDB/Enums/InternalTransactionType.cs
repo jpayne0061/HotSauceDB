@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpDb.Enums
+namespace HotSauceDb.Enums
 {
     public enum InternalTransactionType
     {

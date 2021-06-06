@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 
-namespace SharpDb.Helpers
+namespace HotSauceDb.Helpers
 {
     public static class PageLocationHelper
     {

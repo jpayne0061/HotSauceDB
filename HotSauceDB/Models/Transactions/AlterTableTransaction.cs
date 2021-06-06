@@ -1,4 +1,4 @@
-﻿using SharpDb.Models;
+﻿using HotSauceDb.Models;
 
 namespace HotSauceDB.Models.Transactions
 {

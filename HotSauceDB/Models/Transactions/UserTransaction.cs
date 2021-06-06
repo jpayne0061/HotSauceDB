@@ -1,10 +1,10 @@
-﻿using SharpDb.Enums;
-using SharpDb.Models.Transactions;
+﻿using HotSauceDb.Enums;
+using HotSauceDb.Models.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpDb.Models
+namespace HotSauceDb.Models
 {
     public class UserTransaction : BaseTransaction
     {

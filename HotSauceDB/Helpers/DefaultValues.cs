@@ -1,4 +1,4 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDb.Enums;
 using System;
 
 namespace HotSauceDB.Helpers

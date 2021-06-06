@@ -1,8 +1,7 @@
-﻿using SharpDb.Models;
-using SharpDb.Services.Parsers;
-using System;
+﻿using HotSauceDb.Models;
+using HotSauceDb.Services.Parsers;
 using System.Collections.Generic;
-using SharpDb.Helpers;
+using HotSauceDb.Helpers;
 
 namespace HotSauceDB.Services.Parsers
 {

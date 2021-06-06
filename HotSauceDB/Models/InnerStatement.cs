@@ -1,4 +1,4 @@
-﻿namespace SharpDb.Models
+﻿namespace HotSauceDb.Models
 {
     public class InnerStatement
     {

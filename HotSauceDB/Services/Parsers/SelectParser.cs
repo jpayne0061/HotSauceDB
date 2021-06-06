@@ -1,11 +1,11 @@
 ﻿using HotSauceDB.Statics;
-using SharpDb.Models;
+using HotSauceDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace SharpDb.Services.Parsers
+namespace HotSauceDb.Services.Parsers
 {
     public class SelectParser : GeneralParser
     {

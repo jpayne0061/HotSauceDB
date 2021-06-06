@@ -1,9 +1,9 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDb.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpDb.Models.Transactions
+namespace HotSauceDb.Models.Transactions
 {
     public class InternalTransaction : BaseTransaction
     {

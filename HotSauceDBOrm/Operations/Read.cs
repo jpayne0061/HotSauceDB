@@ -1,10 +1,10 @@
-﻿using SharpDb.Services;
+﻿using HotSauceDb.Services;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
-namespace SharpDbOrm.Operations
+namespace HotSauceDbOrm.Operations
 {
     public class Read
     {

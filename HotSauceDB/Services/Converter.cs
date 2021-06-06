@@ -1,7 +1,7 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDb.Enums;
 using System;
 
-namespace SharpDb.Services
+namespace HotSauceDb.Services
 {
     public class Converter
     {

@@ -1,4 +1,4 @@
-﻿namespace SharpDb.Enums
+﻿namespace HotSauceDb.Enums
 {
     public enum TypeEnum
     {

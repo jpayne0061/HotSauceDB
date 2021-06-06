@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpDb.Models
+namespace HotSauceDb.Models
 {
     public class PredicateOperation
     {

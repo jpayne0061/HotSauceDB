@@ -1,10 +1,10 @@
-﻿using SharpDb.Models;
+﻿using HotSauceDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SharpDb.Services
+namespace HotSauceDb.Services
 {
     public class SchemaFetcher
     {

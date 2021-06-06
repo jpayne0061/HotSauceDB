@@ -1,16 +1,16 @@
-﻿using SharpDb;
-using SharpDb.Enums;
-using SharpDb.Models;
-using SharpDb.Services;
-using SharpDb.Services.Parsers;
-using SharpDbOrm;
+﻿using HotSauceDb;
+using HotSauceDb.Enums;
+using HotSauceDb.Models;
+using HotSauceDb.Services;
+using HotSauceDb.Services.Parsers;
+using HotSauceDbOrm;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SharpDbConsole
+namespace HotSauceDbConsole
 {
     class Program
     {
@@ -89,7 +89,7 @@ namespace SharpDbConsole
         public static void ParallelTest()
         {
 
-            File.WriteAllText("sharpDb.hdb", null);
+            File.WriteAllText("HotSauceDb.hdb", null);
 
             var reader = new Reader();
             var writer = new Writer(reader);
@@ -162,6 +162,7 @@ namespace SharpDbConsole
 
         static void FullIntegration()
         {
+            File.WriteAllText(Globals.FILE_NAME, null);
 
             //group by currently only supported with plain sql
             var reader = new Reader();
@@ -176,9 +177,6 @@ namespace SharpDbConsole
                 new CreateParser(),
                 new LockManager(writer, reader),
                 reader);
-
-
-            File.WriteAllText(Globals.FILE_NAME, null);
 
 
             string createHousesTable = @"create table houses (

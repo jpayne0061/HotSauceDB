@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpDb.Services
+namespace HotSauceDb.Services
 {
     public class CompareDelegates
     {

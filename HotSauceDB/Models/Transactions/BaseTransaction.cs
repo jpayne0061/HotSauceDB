@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpDb.Models.Transactions
+namespace HotSauceDb.Models.Transactions
 {
     public class BaseTransaction
     {

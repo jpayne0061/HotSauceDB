@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SharpDb.Models
+namespace HotSauceDb.Models
 {
     public class TableDefinition
     {

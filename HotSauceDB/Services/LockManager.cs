@@ -1,12 +1,12 @@
 ﻿using HotSauceDB.Models;
-using SharpDb.Enums;
-using SharpDb.Models;
-using SharpDb.Models.Transactions;
+using HotSauceDb.Enums;
+using HotSauceDb.Models;
+using HotSauceDb.Models.Transactions;
 using System;
 using System.Collections.Concurrent;
 using HotSauceDB.Models.Transactions;
 
-namespace SharpDb.Services
+namespace HotSauceDb.Services
 {
     public class LockManager
     {

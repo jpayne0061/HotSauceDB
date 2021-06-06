@@ -1,15 +1,15 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SharpDb.Enums;
-using SharpDb.Models;
-using SharpDb.Services;
-using SharpDb.Services.Parsers;
+using HotSauceDb.Enums;
+using HotSauceDb.Models;
+using HotSauceDb.Services;
+using HotSauceDb.Services.Parsers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace SharpDbUnitTests
+namespace HotSauceDbUnitTests
 {
     [TestClass]
     public class UnitTest1

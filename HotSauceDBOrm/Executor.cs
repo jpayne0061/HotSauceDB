@@ -1,12 +1,12 @@
-﻿using SharpDb;
-using SharpDb.Services;
-using SharpDb.Services.Parsers;
-using SharpDbOrm.Operations;
+﻿using HotSauceDb;
+using HotSauceDb.Services;
+using HotSauceDb.Services.Parsers;
+using HotSauceDbOrm.Operations;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace SharpDbOrm
+namespace HotSauceDbOrm
 {
     public class Executor
     {
@@ -35,11 +35,13 @@ namespace SharpDbOrm
             Creator = new Create(interpreter);
             Inserter = new Insert(interpreter);
             Reader = new Read(interpreter);
+            Updater = new Update(interpreter);
         }
 
         private Create Creator { get; }
         private Insert Inserter { get; }
         private Read Reader { get; }
+        private Update Updater { get; }
 
 
         public void CreateTable<T>()
@@ -57,5 +59,10 @@ namespace SharpDbOrm
             return Reader.ReadRows<T>(query);
         }
 
+        public List<T> Update<T>(T model)
+        {
+            //need address of row to implement
+            throw new NotImplementedException();
+        }
     }
 }

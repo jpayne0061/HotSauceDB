@@ -1,13 +1,13 @@
 ﻿using HotSauceDB.Models;
-using SharpDb.Enums;
-using SharpDb.Helpers;
-using SharpDb.Models;
+using HotSauceDb.Enums;
+using HotSauceDb.Helpers;
+using HotSauceDb.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SharpDb.Services
+namespace HotSauceDb.Services
 {
     public class Reader
     {

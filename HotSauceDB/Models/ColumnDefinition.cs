@@ -1,6 +1,6 @@
-﻿using SharpDb.Enums;
+﻿using HotSauceDb.Enums;
 
-namespace SharpDb.Models
+namespace HotSauceDb.Models
 {
     public class ColumnDefinition
     {

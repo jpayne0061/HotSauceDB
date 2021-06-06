@@ -1,11 +1,11 @@
-﻿using SharpDb.Enums;
-using SharpDb.Helpers;
-using SharpDb.Models;
+﻿using HotSauceDb.Enums;
+using HotSauceDb.Helpers;
+using HotSauceDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpDb.Services.Parsers
+namespace HotSauceDb.Services.Parsers
 {
     public class CreateParser : GeneralParser
     {

@@ -1,14 +1,14 @@
-﻿using SharpDb;
-using SharpDb.Enums;
-using SharpDb.Models;
-using SharpDb.Services;
+﻿using HotSauceDb;
+using HotSauceDb.Enums;
+using HotSauceDb.Models;
+using HotSauceDb.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace SharpDbOrm.Operations
+namespace HotSauceDbOrm.Operations
 {
     public class Create
     {

@@ -1,15 +1,15 @@
 ﻿using HotSauceDB.Models;
 using HotSauceDB.Models.Transactions;
 using HotSauceDB.Services.Parsers;
-using SharpDb.Enums;
-using SharpDb.Models;
-using SharpDb.Models.Transactions;
-using SharpDb.Services.Parsers;
+using HotSauceDb.Enums;
+using HotSauceDb.Models;
+using HotSauceDb.Models.Transactions;
+using HotSauceDb.Services.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpDb.Services
+namespace HotSauceDb.Services
 {
     public class Interpreter
     {

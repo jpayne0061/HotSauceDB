@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace SharpDb
+namespace HotSauceDb
 {
     public static class Globals
     {
         public static int GLOBAL_DEBUG = 0;
-        public const string FILE_NAME = "sharpDb.hdb";
+        public const string FILE_NAME = "HotSauceDb.hdb";
         public static byte INDEX_PAGE_HEADER_LENGTH = 32;
         public const short TABLE_DEF_LENGTH = 530;
         public const int PageSize = 8000;

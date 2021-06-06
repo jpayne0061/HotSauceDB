@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpDbConsole
+namespace HotSauceDbConsole
 {
     public class Person
     {
