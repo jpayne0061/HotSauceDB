@@ -1,9 +1,6 @@
 ﻿using HotSauceDb;
-using HotSauceDb.Enums;
-using HotSauceDb.Models;
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
-using HotSauceDbOrm;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,9 +21,7 @@ namespace HotSauceDbConsole
             }
             catch (Exception ex)
             {
-                var z = Globals.GLOBAL_DEBUG;
-
-                throw;
+                var x = Globals.GLOBAL_DEBUG;
             }
         }
 
