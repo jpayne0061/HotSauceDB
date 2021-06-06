@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace HotSauceDB.Statics
 {
@@ -12,6 +10,5 @@ namespace HotSauceDB.Statics
             return query.Split(' ')
                 .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Replace("\r\n", "")).ToList();
         }
-
     }
 }
