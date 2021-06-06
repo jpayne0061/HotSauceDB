@@ -251,7 +251,7 @@ namespace SharpDbUnitTests
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             var expected = @"select truck, origin, space
@@ -294,7 +294,7 @@ namespace SharpDbUnitTests
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             var expected = @"select truck, origin, space
@@ -326,7 +326,7 @@ namespace SharpDbUnitTests
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             var insertParser = new InsertParser(schemaFetcher);

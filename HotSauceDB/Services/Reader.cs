@@ -367,6 +367,14 @@ namespace SharpDb.Services
             return addRow;
         }
 
+        public bool DatabaseEmpty()
+        {
+            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                return fileStream.Length == 0;
+            }
+        }
+
         //this method should be in a different class. it doesnt have anything to do with data access
         private bool EvaluateOperator(string operation, bool delgateResult, bool willAddRow)
         {

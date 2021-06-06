@@ -19,14 +19,14 @@ namespace SharpDb.Services
         private GeneralParser _generalParser;
         private CreateParser _createParser;
         private Reader _reader;
-        private QueryCoordinator _lockManager;
+        private LockManager _lockManager;
 
         public Interpreter(SelectParser selectParser, 
                             InsertParser insertParser, 
                             SchemaFetcher schemaFetcher,
                             GeneralParser generalParser,
                             CreateParser createParser,
-                            QueryCoordinator lockManager,
+                            LockManager lockManager,
                             Reader reader)
         {
             _selectParser = selectParser;
@@ -154,19 +154,7 @@ namespace SharpDb.Services
                     UpdateObjectCount = false
                 };
 
-                lock (_lockManager)
-                {
-                    _lockManager.QueueQuery(writeTransaction);
-                }
-
-                object result;
-
-                //how do we know its ready?
-                _lockManager.DataStore.TryGetValue(writeTransaction.DataRetrievalKey, out result);
-
-                InsertResult insertResult = (InsertResult)result;
-
-                _lockManager.DataStore.TryRemove(writeTransaction.DataRetrievalKey, out object x);
+                _lockManager.ProcessWriteTransaction(writeTransaction);
             }
 
             return new object();
@@ -184,9 +172,8 @@ namespace SharpDb.Services
 
             var orderParts = orderByClause.Split(' ');
 
-            //storing an inenumerable in a temporary list and trhen adding the "then by"
+            //storing an inenumerable in a temporary list and then adding the "then by"
             //clause does not work. changes to an ienumerable are not guaranteed to persist
-
             switch (orderParts.Count())
             {
                 case 2:
@@ -341,20 +328,7 @@ namespace SharpDb.Services
 
         public SelectData RunReadTransaction(ReadTransaction readTransaction)
         {
-
-            lock (_lockManager)
-            {
-                _lockManager.QueueQuery(readTransaction);
-            }
-
-            object data = null;
-
-            while (data == null)
-            {
-                _lockManager.DataStore.TryRemove(readTransaction.DataRetrievalKey, out data);
-            }
-
-            return (SelectData)data;
+            return _lockManager.ProcessReadTransaction(readTransaction);
         }
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
@@ -504,18 +478,7 @@ namespace SharpDb.Services
                         Query = dml
                     };
 
-                    lock(_lockManager)
-                    {
-                        _lockManager.QueueQuery(writeTransaction);
-                    }
-
-                    object result;
-
-                    _lockManager.DataStore.TryGetValue(writeTransaction.DataRetrievalKey, out result);
-
-                    InsertResult insertResult = (InsertResult)result;
-
-                    _lockManager.DataStore.TryRemove(writeTransaction.DataRetrievalKey, out object x);
+                    _lockManager.ProcessWriteTransaction(writeTransaction);
                 }
 
             }
@@ -545,15 +508,7 @@ namespace SharpDb.Services
                 TableDefinition = tableDef
             };
 
-            _lockManager.QueueQuery(dmlTransaction);
-
-            object result;
-
-            _lockManager.DataStore.TryGetValue(dmlTransaction.DataRetrievalKey, out result);
-
-            ResultMessage resultMessage = (ResultMessage)result;
-
-            return resultMessage;
+            return _lockManager.ProcessCreateTableTransaction(dmlTransaction);
         }
 
         private ResultMessage RunAlterTable(TableDefinition tableDef, ColumnDefinition columnDefinition)
@@ -566,16 +521,7 @@ namespace SharpDb.Services
                 NewColumn = columnDefinition
             };
 
-            _lockManager.QueueQuery(dmlTransaction);
-
-            object result;
-
-            _lockManager.DataStore.TryGetValue(dmlTransaction.DataRetrievalKey, out result);
-
-            ResultMessage resultMessage = (ResultMessage)result;
-
-            return resultMessage;
-
+            return _lockManager.ProcessAlterTableTransaction(dmlTransaction);
         }
 
         public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)

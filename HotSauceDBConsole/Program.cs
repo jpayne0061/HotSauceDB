@@ -44,7 +44,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
 
@@ -104,7 +104,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
 
@@ -323,7 +323,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             string query = "select ToolName, Price from tools where NumInStock = 4";
@@ -351,7 +351,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             string query = @"select ToolName, Price
@@ -384,7 +384,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             var insertParser = new InsertParser(schemaFetcher);
@@ -408,7 +408,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             string dml = @"create table Houses(
@@ -447,7 +447,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             //string insert = "insert into houses values ('123 abc street', 345000, true, 2300, 3)";
@@ -479,7 +479,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
 
@@ -504,7 +504,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             string select = @"select * from houses where price > 200000 order by price, address";
@@ -526,7 +526,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
             string createTable = @"create table houses( Price int, NumBedRooms int, NumBathrooms int )";
@@ -576,7 +576,7 @@ namespace SharpDbConsole
                 schemaFetcher,
                 new GeneralParser(),
                 new CreateParser(),
-                new QueryCoordinator(writer, reader),
+                new LockManager(writer, reader),
                 reader);
 
 

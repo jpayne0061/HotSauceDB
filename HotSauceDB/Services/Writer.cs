@@ -179,7 +179,7 @@ namespace SharpDb.Services
                 }
             }
 
-            return new ResultMessage { Message = $"table {tableDefinition.TableName} has been added successfully", Address = tableDefEnd };
+            return new ResultMessage { Message = $"table {tableDefinition.TableName} has been added successfully", Address = tableDefEnd, Data = nextFreeDataPage };
         }
 
         public ResultMessage AlterTableDefinition(TableDefinition tableDefinition, ColumnDefinition newColumn)
