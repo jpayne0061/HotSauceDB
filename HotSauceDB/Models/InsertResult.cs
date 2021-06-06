@@ -1,7 +1,4 @@
 ﻿namespace HotSauceDb.Models
 {
-    public class InsertResult : OperationResult
-    {
-
-    }
+    public class InsertResult : OperationResult { }
 }

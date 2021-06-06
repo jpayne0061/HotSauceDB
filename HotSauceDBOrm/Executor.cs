@@ -10,6 +10,7 @@ namespace HotSauceDbOrm
 {
     public class Executor
     {
+        private Interpreter _interpreter;
         public Executor(string databaseName = Globals.FILE_NAME)
         {
             if(databaseName != null)
@@ -23,7 +24,7 @@ namespace HotSauceDbOrm
 
             var schemaFetcher = new SchemaFetcher(reader);
 
-            var interpreter = new Interpreter(
+            _interpreter = new Interpreter(
                                 new SelectParser(),
                                 new InsertParser(schemaFetcher),
                                 schemaFetcher,
@@ -32,10 +33,10 @@ namespace HotSauceDbOrm
                                 lockManager,
                                 reader);
 
-            Creator = new Create(interpreter);
-            Inserter = new Insert(interpreter);
-            Reader = new Read(interpreter);
-            Updater = new Update(interpreter);
+            Creator = new Create(_interpreter);
+            Inserter = new Insert(_interpreter);
+            Reader = new Read(_interpreter);
+            Updater = new Update(_interpreter);
         }
 
         private Create Creator { get; }
@@ -63,6 +64,14 @@ namespace HotSauceDbOrm
         {
             //need address of row to implement
             throw new NotImplementedException();
+        }
+        /// <summary>
+        /// Processes any sql statement supported by HotSauceDb
+        /// </summary>
+        /// <returns>object</returns>
+        public object ProcessRawQuery(string query)
+        {
+            return _interpreter.ProcessStatement(query);
         }
     }
 }

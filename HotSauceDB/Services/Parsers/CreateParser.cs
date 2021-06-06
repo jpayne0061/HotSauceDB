@@ -45,6 +45,19 @@ namespace HotSauceDb.Services.Parsers
 
         }
 
+        public string GetTableName(string dml)
+        {
+            dml = ToLowerAndTrim(dml);
+
+            string[] parts = dml.Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+
+            string tableName = parts[2];
+
+            tableName = tableName.Split('(')[0];
+
+            return tableName;
+        }
+
         //refactor
         //do not manipulate object (columnDefinition) while also returning a value - seems ugly
         protected TypeEnum ParseTypeAndByteSize(string type, ColumnDefinition colDef)
@@ -81,25 +94,12 @@ namespace HotSauceDb.Services.Parsers
 
             }
         }
+
         private short ParseVarcharSize(string varchar)
         {
             string num = GetOuterMostParantheses(varchar).Statement;
 
             return short.Parse(num);
         }
-
-        public string GetTableName(string dml)
-        {
-            dml = ToLowerAndTrim(dml);
-
-            string[] parts = dml.Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
-
-            string tableName = parts[2];
-
-            tableName = tableName.Split('(')[0];
-
-            return tableName;
-        }
-
     }
 }

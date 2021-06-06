@@ -124,15 +124,7 @@ namespace HotSauceDb.Services
                             {
                                 IComparable val;
 
-                                try
-                                {
-                                    val = ReadColumn(select, binaryReader);
-                                }
-                                catch (Exception ex)
-                                {
-
-                                    throw;
-                                }
+                                val = ReadColumn(select, binaryReader);
 
                                 rowToEvaluate.Add(val);
 
@@ -170,7 +162,6 @@ namespace HotSauceDb.Services
 
             return selectData;
         }
-
 
         public List<List<IComparable>> ReadDataFromPage(long pageAddress, List<ColumnDefinition> columnDefinitions, BinaryReader binaryReader)
         {
@@ -268,40 +259,6 @@ namespace HotSauceDb.Services
 
         public long GetFirstAvailableDataAddress(long dataStart, int objectSize)
         {
-            while (PageIsFull(dataStart, objectSize))
-            {
-                dataStart = PageLocationHelper.GetNextPagePointer(dataStart);
-            }
-
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                fileStream.Position = dataStart;
-
-                using (BinaryReader binaryReader = new BinaryReader(fileStream))
-                {
-                    short numObjects = binaryReader.ReadInt16();
-
-                    return objectSize * numObjects + 2 + dataStart;
-                }
-            }
-        }
-
-        public long GetNextEmptyPage(long dataStart, int objectSize)
-        {
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                fileStream.Position = dataStart;
-
-                using (BinaryReader binaryReader = new BinaryReader(fileStream))
-                {
-                    short numObjects = binaryReader.ReadInt16();
-
-                    return objectSize * numObjects + 2 + dataStart;
-                }
-            }
-
-
-
             while (PageIsFull(dataStart, objectSize))
             {
                 dataStart = PageLocationHelper.GetNextPagePointer(dataStart);

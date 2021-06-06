@@ -1,8 +1,4 @@
-﻿using HotSauceDb.Enums;
-using HotSauceDb.Models.Transactions;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using HotSauceDb.Models.Transactions;
 
 namespace HotSauceDb.Models
 {

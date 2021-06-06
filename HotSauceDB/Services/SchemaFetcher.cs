@@ -1,20 +1,17 @@
 ﻿using HotSauceDb.Models;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace HotSauceDb.Services
 {
     public class SchemaFetcher
     {
+        private IndexPage _indexPage;
+        private Reader _reader;
+
         public SchemaFetcher(Reader reader)
         {
             _reader = reader;
         }
-
-        IndexPage _indexPage;
-        private Reader _reader;
 
         public IndexPage GetIndexPage(bool overrideCache = true)
         {
