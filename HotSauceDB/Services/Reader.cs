@@ -50,6 +50,7 @@ namespace HotSauceDb.Services
                                 columnDefinition.Index = reader.ReadByte();
                                 columnDefinition.Type = (TypeEnum)reader.ReadByte();
                                 columnDefinition.ByteSize = reader.ReadInt16();
+                                columnDefinition.IsIdentity = reader.ReadByte();
                                 tableDefinition.ColumnDefinitions.Add(columnDefinition);
                             }
 

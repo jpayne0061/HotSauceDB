@@ -171,6 +171,7 @@ namespace HotSauceDb.Services
                         binaryWriter.Write(col.Index);
                         binaryWriter.Write((byte)col.Type);
                         binaryWriter.Write(col.ByteSize);
+                        binaryWriter.Write((byte)0);
                     }
 
                     tableDefEnd = stream.Position;
