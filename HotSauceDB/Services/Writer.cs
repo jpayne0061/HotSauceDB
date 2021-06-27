@@ -30,15 +30,61 @@ namespace HotSauceDb.Services
 
             UpdateObjectCount(addressToWrite);
         }
-        public void WriteRow(IComparable[] row, long diskLocation, TableDefinition tableDefinition, bool isEdit)
+
+        private void WriteRow(IComparable[] row, long diskLocation, TableDefinition tableDefinition, bool isEdit)
         {
-            long addressToWriteTo = EndOfPageCheck(diskLocation, tableDefinition.GetRowSizeInBytes(), isRow: true && !isEdit);
+            int rowSize = tableDefinition.GetRowSizeInBytes();
+
+            long addressToWriteTo = diskLocation;
+
+            WritePointerIfLastObjectOnPage(diskLocation, rowSize);
+
+            bool isFirstRow = (addressToWriteTo - 2) % Globals.PageSize == 0 && !isEdit;
 
             //if first row, write pointer as zero
-            if((addressToWriteTo - 2) % Globals.PageSize == 0 && !isEdit)
+            if (isFirstRow)
             {
                 WriteZeroPointerForFirstRow(addressToWriteTo);
             }
+
+            if(tableDefinition.TableContainsIdentityColumn && row.Length == tableDefinition.ColumnDefinitions.Count())
+            {
+                throw new Exception("Too many column values provided. Do not provide values for identity columns");
+            }
+
+            if(tableDefinition.TableContainsIdentityColumn && !isFirstRow)
+            {
+                IComparable previousIdentityValue;
+
+                using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    fs.Position = addressToWriteTo - rowSize;
+
+                    using (BinaryReader binaryReader = new BinaryReader(fs))
+                    {
+                        previousIdentityValue = _reader.ReadColumn(tableDefinition.ColumnDefinitions[0], binaryReader);
+                    }
+                }
+
+                IComparable newValue = IncrementNumberValue(previousIdentityValue, tableDefinition.ColumnDefinitions[0].Type);
+
+                IComparable[] newValues = new IComparable[row.Length + 1];
+                newValues[0] = newValue;                               
+                Array.Copy(row, 0, newValues, 1, row.Length);
+
+                row = newValues;
+            }
+            else if(tableDefinition.TableContainsIdentityColumn && isFirstRow)
+            {
+                IComparable newValue = IncrementNumberValue(CastToNumberType(0, tableDefinition.ColumnDefinitions[0].Type), tableDefinition.ColumnDefinitions[0].Type);
+
+                IComparable[] newValues = new IComparable[row.Length + 1];
+                newValues[0] = newValue;
+                Array.Copy(row, 0, newValues, 1, row.Length);
+
+                row = newValues;
+            }
+
 
             using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
@@ -51,6 +97,36 @@ namespace HotSauceDb.Services
                         WriteColumnData(binaryWriter, row[i], tableDefinition.ColumnDefinitions[i]);
                     }
                 }
+            }
+        }
+
+        private IComparable IncrementNumberValue(IComparable comparable, TypeEnum typeEnum)
+        {
+            switch (typeEnum)
+            {
+                case TypeEnum.Decimal:
+                    return (decimal)comparable + 1;
+                case TypeEnum.Int32:
+                    return (int)comparable + 1;
+                case TypeEnum.Int64:
+                    return (long)comparable + 1;
+                default:
+                    throw new Exception("invalid identity column");
+            }
+        }
+
+        private IComparable CastToNumberType(IComparable comparable, TypeEnum typeEnum)
+        {
+            switch (typeEnum)
+            {
+                case TypeEnum.Decimal:
+                    return (decimal)comparable;
+                case TypeEnum.Int32:
+                    return (int)comparable;
+                case TypeEnum.Int64:
+                    return (long)comparable;
+                default:
+                    throw new Exception("invalid identity column");
             }
         }
 
@@ -150,7 +226,9 @@ namespace HotSauceDb.Services
         {
             //this should return current next page, instead of the first page address
             //first page isn't really full
-            var newDefinitionAddress = EndOfPageCheck(addressToWrite, Globals.TABLE_DEF_LENGTH);
+            var newDefinitionAddress = addressToWrite;
+
+            WritePointerIfLastObjectOnPage(addressToWrite, Globals.TABLE_DEF_LENGTH);
 
             var nextFreeDataPage = tableDefinition.DataAddress == 0 ? GetNextUnclaimedDataPage() : tableDefinition.DataAddress;
 
@@ -165,13 +243,20 @@ namespace HotSauceDb.Services
                     binaryWriter.Write(nextFreeDataPage);
                     binaryWriter.Write(tableDefinition.TableName);
 
-                    foreach (var col in tableDefinition.ColumnDefinitions)
+                    for (int i = 0; i < tableDefinition.ColumnDefinitions.Count; i++)
                     {
-                        binaryWriter.Write(col.ColumnName);
-                        binaryWriter.Write(col.Index);
-                        binaryWriter.Write((byte)col.Type);
-                        binaryWriter.Write(col.ByteSize);
-                        binaryWriter.Write((byte)0);
+                        binaryWriter.Write(tableDefinition.ColumnDefinitions[i].ColumnName);
+                        binaryWriter.Write(tableDefinition.ColumnDefinitions[i].Index);
+                        binaryWriter.Write((byte)tableDefinition.ColumnDefinitions[i].Type);
+                        binaryWriter.Write(tableDefinition.ColumnDefinitions[i].ByteSize);
+                        if(i == 0 && tableDefinition.TableContainsIdentityColumn)
+                        {
+                            binaryWriter.Write((byte)1);
+                        }
+                        else
+                        {
+                            binaryWriter.Write((byte)0);
+                        }
                     }
 
                     tableDefEnd = stream.Position;
@@ -188,8 +273,6 @@ namespace HotSauceDb.Services
             int oldRowSize = tableDefinition.GetRowSizeInBytes();
 
             tableDefinition.ColumnDefinitions.Add(newColumn);
-
-            int newRowSize = tableDefinition.GetRowSizeInBytes();
 
             WriteTableDefinition(tableDefinition, tableDefinition.TableDefinitionAddress);
 
@@ -444,11 +527,11 @@ namespace HotSauceDb.Services
             {
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
-                    reader.BaseStream.Position = 2;
+                    reader.BaseStream.Position = Globals.Int16ByteLength;
 
                     while (reader.PeekChar() != -1 && reader.PeekChar() != 0)
                     {
-                        reader.BaseStream.Position += 530;
+                        reader.BaseStream.Position += Globals.TABLE_DEF_LENGTH;
                     }
 
                     return reader.BaseStream.Position;
@@ -458,7 +541,7 @@ namespace HotSauceDb.Services
 
         private long GetNextUnclaimedDataPage(IndexPage indexPage)
         {
-            long headAddress = indexPage.TableDefinitions.Count == 0 ? 8000 :
+            long headAddress = indexPage.TableDefinitions.Count == 0 ? Globals.PageSize :
                                 indexPage.TableDefinitions.Max(x => x.DataAddress);
 
             long nextFreeAddress = headAddress;
@@ -471,7 +554,7 @@ namespace HotSauceDb.Services
 
                     while (binaryReader.PeekChar() != -1)
                     {
-                        binaryReader.BaseStream.Position += 8000;
+                        binaryReader.BaseStream.Position += Globals.PageSize;
                     }
 
                     return binaryReader.BaseStream.Position;
@@ -541,18 +624,15 @@ namespace HotSauceDb.Services
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
-        private long EndOfPageCheck(long address, int objectSize, bool isRow = false)
+        private void WritePointerIfLastObjectOnPage(long address, int objectSize)
         {
             long nextPageAddress = PageLocationHelper.GetNextDivisbleNumber(address, Globals.PageSize);
 
             long load = address + (objectSize + Globals.Int64ByteLength);
 
-            if(isRow)
-            {
-                load += objectSize;
-            }
+            bool willBeLastRowOnPage = load + objectSize  > nextPageAddress - Globals.Int64ByteLength;
 
-            if ( load > nextPageAddress - 8)
+            if(willBeLastRowOnPage)
             {
                 long nextPagePointer = GetNextUnclaimedDataPage();
 
@@ -560,27 +640,43 @@ namespace HotSauceDb.Services
                 {
                     using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                     {
-                        binaryWriter.BaseStream.Position = nextPageAddress - 8; 
+                        binaryWriter.BaseStream.Position = nextPageAddress - Globals.Int64ByteLength;
 
                         binaryWriter.Write(nextPagePointer);
 
                         binaryWriter.BaseStream.Position = nextPagePointer;
 
                         binaryWriter.Write((short)0);
-
-                        return binaryWriter.BaseStream.Position;
                     }
                 }
             }
-            else
-            {
-                return address;
-            }
-        }
 
-        public void GetPointerAddress()
-        {
 
+
+            //if ( load > nextPageAddress - Globals.Int64ByteLength)
+            //{
+            //    long nextPagePointer = GetNextUnclaimedDataPage();
+
+            //    using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            //    {
+            //        using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
+            //        {
+            //            binaryWriter.BaseStream.Position = nextPageAddress - Globals.Int64ByteLength; 
+
+            //            binaryWriter.Write(nextPagePointer);
+
+            //            binaryWriter.BaseStream.Position = nextPagePointer;
+
+            //            binaryWriter.Write((short)0);
+
+            //            return binaryWriter.BaseStream.Position;
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    return address;
+            //}
         }
 
     }

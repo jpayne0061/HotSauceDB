@@ -41,16 +41,18 @@ namespace HotSauceDb.Services.Parsers
 
             List<string> vals = csv.Split(',').Select(x => x.Trim()).ToList();
 
-            if(vals.Count != tableDefinition.ColumnDefinitions.Count)
+            if(vals.Count != tableDefinition.ColumnDefinitions.Count - (tableDefinition.TableContainsIdentityColumn ? 1 : 0))
             {
                 throw new Exception($"Table '{tableDefinition.TableName}' requires {tableDefinition.ColumnDefinitions.Count} values for an insert, but {vals.Count} was provided: {string.Join(',', vals)}");
             }
 
-            IComparable[] comparables = new IComparable[tableDefinition.ColumnDefinitions.Count()];
+            List<ColumnDefinition> nonIdentityColumns = tableDefinition.ColumnDefinitions.Where(c => c.IsIdentity != 1).ToList();
 
-            for (int i = 0; i < tableDefinition.ColumnDefinitions.Count(); i++)
+            IComparable[] comparables = new IComparable[nonIdentityColumns.Count];
+
+            for (int i = 0; i < nonIdentityColumns.Count(); i++)
             {
-                comparables[i] = converter.ConvertToType(vals[i], tableDefinition.ColumnDefinitions[i].Type);
+                comparables[i] = converter.ConvertToType(vals[i], nonIdentityColumns[i].Type);
             }
 
             return comparables;

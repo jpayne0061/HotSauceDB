@@ -6,13 +6,14 @@ namespace HotSauceDb
     {
         public static int GLOBAL_DEBUG = 0;
         public const string FILE_NAME = "HotSauceDb.hdb";
+        public const string IDENTITY_MARKER = "identity";
         public const short TABLE_DEF_LENGTH = 550;
         public const int PageSize = 8000;
         public const long NextPointerAddress = 7992;
         public const int PAGE_DATA_MAX = PageSize - (Int64ByteLength + Int16ByteLength);
         //24 bytes each column, 20 columns max = 500. + 41 bytes for name (string length 20)
         //plus 8 bytes for data location
-        //plus 1 biyte for is identity
+        //plus 1 byte for is identity
 
         public static char EndTableDefinition = '|';
 

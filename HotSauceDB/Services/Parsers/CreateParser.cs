@@ -32,17 +32,30 @@ namespace HotSauceDb.Services.Parsers
             {
                 string[] columnNameAndType = columnParts[i].Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
+                bool isIdentityColumn = IsIdentityColumn(columnNameAndType);
+
+                if (isIdentityColumn && i > 0)
+                {
+                    throw new Exception("Identity column must be first column in table definition");
+                }
+
                 ColumnDefinition columnDefinition = new ColumnDefinition();
 
                 columnDefinition.ColumnName = columnNameAndType[0].RemoveNewLines();
                 columnDefinition.Index = (byte)i;
                 columnDefinition.Type = ParseTypeAndByteSize(columnNameAndType[1].RemoveNewLines(), columnDefinition);
+                columnDefinition.IsIdentity = isIdentityColumn ? (byte)1 : (byte)0;
 
                 colDefinitions.Add(columnDefinition);
             }
 
             return colDefinitions;
 
+        }
+
+        private bool IsIdentityColumn(string[] columnPart)
+        {
+            return columnPart.Length == 3 && columnPart[2].ToLower() == Globals.IDENTITY_MARKER;
         }
 
         public string GetTableName(string dml)

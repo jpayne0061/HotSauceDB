@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace HotSauceDb.Models
 {
     public class TableDefinition
     {
         string _tableName;
+        bool _tableContainsIdentityColumn;
 
         public TableDefinition()
         {
@@ -47,6 +49,22 @@ namespace HotSauceDb.Models
             }
 
             return byteSize;
+        }
+
+        public bool TableContainsIdentityColumn {
+            get
+            {
+                if(ColumnDefinitions.Where(c => c.IsIdentity == 1).Any())
+                {
+                    return true;
+                }
+
+                return _tableContainsIdentityColumn;
+            }
+            set
+            {
+                _tableContainsIdentityColumn = value;
+            }
         }
         public long TableDefinitionAddress { get; set; }
     }

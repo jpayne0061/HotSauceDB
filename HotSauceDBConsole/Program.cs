@@ -173,22 +173,45 @@ namespace HotSauceDbConsole
                 new LockManager(writer, reader),
                 reader);
 
+            string identityTable = @"create table Skateboards (
+                                            SkateBoardId int Identity,
+                                            Name varchar(100),
+                                            Price decimal
+                                       )";
+
+            Random rd = new Random();
+
+            interpreter.ProcessStatement(identityTable);
+
+            for (int i = 0; i < 500; i++)
+            {
+                string insertIdentity = "insert into Skateboards values ('HotSauce', " + rd.Next() + ")";
+
+                interpreter.ProcessStatement(insertIdentity);
+            }
+
+
+
+            string readAllSkateboards = @"select * from Skateboards";
+
+
+            var skateboardRows = (List<List<IComparable>>)interpreter.ProcessStatement(readAllSkateboards);
+
 
             string createHousesTable = @"create table houses (
                                             Address varchar(100),
                                             Price decimal,
                                             SqFeet bigint,
                                             IsListed bool,
-                                            NumBedrooms int
+                                            NumBedrooms int,
                                        )";
 
             interpreter.ProcessStatement(createHousesTable);
 
-            Random rd = new Random();
+            
 
             for (int i = 0; i < 200; i++)
             {
-
                 string insertStatement = @"insert into houses values ('" + CreateString(10) + "',"+
                                            rd.Next().ToString() +"," + rd.Next().ToString() + "," + "true," + rd.Next().ToString() + ")";
 

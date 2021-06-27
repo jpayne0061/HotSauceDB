@@ -43,16 +43,33 @@ namespace HotSauceDb.Services
 
                             tableDefinitionAddress += Globals.TABLE_DEF_LENGTH;
 
-                            while (reader.PeekChar() != '|') // | signifies end of current table defintion
+
+                            try
                             {
-                                var columnDefinition = new ColumnDefinition();
-                                columnDefinition.ColumnName = reader.ReadString();
-                                columnDefinition.Index = reader.ReadByte();
-                                columnDefinition.Type = (TypeEnum)reader.ReadByte();
-                                columnDefinition.ByteSize = reader.ReadInt16();
-                                columnDefinition.IsIdentity = reader.ReadByte();
-                                tableDefinition.ColumnDefinitions.Add(columnDefinition);
+                                while (reader.PeekChar() != '|') // | signifies end of current table defintion
+                                {
+                                    var columnDefinition = new ColumnDefinition();
+                                    columnDefinition.ColumnName = reader.ReadString();
+                                    columnDefinition.Index = reader.ReadByte();
+                                    columnDefinition.Type = (TypeEnum)reader.ReadByte();
+                                    columnDefinition.ByteSize = reader.ReadInt16();
+                                    columnDefinition.IsIdentity = reader.ReadByte();
+
+                                    if (columnDefinition.IsIdentity == 1)
+                                    {
+                                        tableDefinition.TableContainsIdentityColumn = true;
+                                    }
+
+                                    tableDefinition.ColumnDefinitions.Add(columnDefinition);
+                                }
                             }
+                            catch (Exception ex)
+                            {
+
+                                throw;
+                            }
+
+
 
                             reader.BaseStream.Position = GetNextTableDefinitionStartAddress(reader.BaseStream.Position);
 
@@ -86,7 +103,7 @@ namespace HotSauceDb.Services
 
         public long GetNextTableDefinitionStartAddress(long currentPosition)
         {
-            while ((currentPosition - 2) % Globals.TABLE_DEF_LENGTH != 0)
+            while ((currentPosition - 2) % Globals.TABLE_DEF_LENGTH != 0)//todo: rewrite without while loop
             {
                 currentPosition += 1;
             }
@@ -273,7 +290,7 @@ namespace HotSauceDb.Services
                 {
                     short numObjects = binaryReader.ReadInt16();
 
-                    return objectSize * numObjects + 2 + dataStart;
+                    return objectSize * numObjects + 2 + dataStart;//todo: use global 2 byte integer size
                 }
             }
         }

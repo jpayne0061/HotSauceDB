@@ -26,11 +26,6 @@ namespace HotSauceDb.Helpers
             }
         }
 
-        public static long GetNextPagePointerFromCurrentPosition(long currentStreamPostition)
-        {
-            return GetNextPagePointer(GetCurrentPageAddress(currentStreamPostition));
-        }
-
         public static long GetCurrentPageAddress(long currentStreamPostition)
         {
             return currentStreamPostition - (currentStreamPostition % Globals.PageSize);
