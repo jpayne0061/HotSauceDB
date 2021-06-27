@@ -39,32 +39,24 @@ namespace HotSauceDb.Services
 
             WritePointerIfLastObjectOnPage(diskLocation, rowSize);
 
-            bool isFirstRow = (addressToWriteTo - 2) % Globals.PageSize == 0 && !isEdit;
+            bool isFirstRowOnPage = (addressToWriteTo - Globals.Int16ByteLength) % Globals.PageSize == 0 && !isEdit;
 
             //if first row, write pointer as zero
-            if (isFirstRow)
+            if (isFirstRowOnPage)
             {
                 WriteZeroPointerForFirstRow(addressToWriteTo);
             }
 
-            if(tableDefinition.TableContainsIdentityColumn && row.Length == tableDefinition.ColumnDefinitions.Count())
+            bool isFirstRowOfTable = addressToWriteTo - Globals.Int16ByteLength == tableDefinition.DataAddress;
+
+            if (tableDefinition.TableContainsIdentityColumn && row.Length == tableDefinition.ColumnDefinitions.Count())
             {
                 throw new Exception("Too many column values provided. Do not provide values for identity columns");
             }
 
-            if(tableDefinition.TableContainsIdentityColumn && !isFirstRow)
+            if(tableDefinition.TableContainsIdentityColumn && !isFirstRowOfTable)
             {
-                IComparable previousIdentityValue;
-
-                using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    fs.Position = addressToWriteTo - rowSize;
-
-                    using (BinaryReader binaryReader = new BinaryReader(fs))
-                    {
-                        previousIdentityValue = _reader.ReadColumn(tableDefinition.ColumnDefinitions[0], binaryReader);
-                    }
-                }
+                IComparable previousIdentityValue = _reader.GetLastRowFromTable(tableDefinition)[0];
 
                 IComparable newValue = IncrementNumberValue(previousIdentityValue, tableDefinition.ColumnDefinitions[0].Type);
 
@@ -74,7 +66,7 @@ namespace HotSauceDb.Services
 
                 row = newValues;
             }
-            else if(tableDefinition.TableContainsIdentityColumn && isFirstRow)
+            else if(tableDefinition.TableContainsIdentityColumn && isFirstRowOfTable)
             {
                 IComparable newValue = IncrementNumberValue(CastToNumberType(0, tableDefinition.ColumnDefinitions[0].Type), tableDefinition.ColumnDefinitions[0].Type);
 
@@ -630,9 +622,9 @@ namespace HotSauceDb.Services
 
             long load = address + (objectSize + Globals.Int64ByteLength);
 
-            bool willBeLastRowOnPage = load + objectSize  > nextPageAddress - Globals.Int64ByteLength;
+            bool willBeLastObjectOnPage = load + objectSize  > nextPageAddress - Globals.Int64ByteLength;
 
-            if(willBeLastRowOnPage)
+            if(willBeLastObjectOnPage)
             {
                 long nextPagePointer = GetNextUnclaimedDataPage();
 
@@ -650,33 +642,6 @@ namespace HotSauceDb.Services
                     }
                 }
             }
-
-
-
-            //if ( load > nextPageAddress - Globals.Int64ByteLength)
-            //{
-            //    long nextPagePointer = GetNextUnclaimedDataPage();
-
-            //    using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
-            //    {
-            //        using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
-            //        {
-            //            binaryWriter.BaseStream.Position = nextPageAddress - Globals.Int64ByteLength; 
-
-            //            binaryWriter.Write(nextPagePointer);
-
-            //            binaryWriter.BaseStream.Position = nextPagePointer;
-
-            //            binaryWriter.Write((short)0);
-
-            //            return binaryWriter.BaseStream.Position;
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    return address;
-            //}
         }
 
     }

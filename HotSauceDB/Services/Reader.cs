@@ -43,33 +43,22 @@ namespace HotSauceDb.Services
 
                             tableDefinitionAddress += Globals.TABLE_DEF_LENGTH;
 
-
-                            try
+                            while (reader.PeekChar() != Globals.EndTableDefinition)
                             {
-                                while (reader.PeekChar() != '|') // | signifies end of current table defintion
+                                var columnDefinition = new ColumnDefinition();
+                                columnDefinition.ColumnName = reader.ReadString();
+                                columnDefinition.Index = reader.ReadByte();
+                                columnDefinition.Type = (TypeEnum)reader.ReadByte();
+                                columnDefinition.ByteSize = reader.ReadInt16();
+                                columnDefinition.IsIdentity = reader.ReadByte();
+
+                                if (columnDefinition.IsIdentity == 1)
                                 {
-                                    var columnDefinition = new ColumnDefinition();
-                                    columnDefinition.ColumnName = reader.ReadString();
-                                    columnDefinition.Index = reader.ReadByte();
-                                    columnDefinition.Type = (TypeEnum)reader.ReadByte();
-                                    columnDefinition.ByteSize = reader.ReadInt16();
-                                    columnDefinition.IsIdentity = reader.ReadByte();
-
-                                    if (columnDefinition.IsIdentity == 1)
-                                    {
-                                        tableDefinition.TableContainsIdentityColumn = true;
-                                    }
-
-                                    tableDefinition.ColumnDefinitions.Add(columnDefinition);
+                                    tableDefinition.TableContainsIdentityColumn = true;
                                 }
+
+                                tableDefinition.ColumnDefinitions.Add(columnDefinition);
                             }
-                            catch (Exception ex)
-                            {
-
-                                throw;
-                            }
-
-
 
                             reader.BaseStream.Position = GetNextTableDefinitionStartAddress(reader.BaseStream.Position);
 
@@ -93,7 +82,6 @@ namespace HotSauceDb.Services
                             nextPageHasTables = false;
                         }
                     }
-
 
                     return indexPage;
                 }
@@ -159,7 +147,6 @@ namespace HotSauceDb.Services
                                 selectData.Rows.Add(row);
                                 selectData.RowLocations.Add(rowLocation);
                             }
-                                
                         }
 
                         long nextPagePointer = GetPointerToNextPage(fileStream.Position);
@@ -273,6 +260,42 @@ namespace HotSauceDb.Services
             }
 
             return data;
+        }
+
+        public List<IComparable> GetLastRowFromTable(TableDefinition tableDefinition)
+        {
+            Stack<long> pointers = new Stack<long>();
+
+            long dataPosition = tableDefinition.DataAddress;
+
+            pointers.Push(dataPosition);
+
+            while (PageIsFull(dataPosition, tableDefinition.GetRowSizeInBytes()))
+            {
+                dataPosition = PageLocationHelper.GetNextPagePointer(dataPosition);
+
+                pointers.Push(dataPosition);
+            }
+
+            using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                using (BinaryReader binaryReader = new BinaryReader(fs))
+                {
+                    List<List<IComparable>> rowsFromLastPage = ReadDataFromPage(dataPosition, tableDefinition.ColumnDefinitions, binaryReader);
+
+                    if(!rowsFromLastPage.Any())
+                    {
+                        //if there are no rows, then the last row is on the previous page
+                        pointers.Pop(); //remove last pointer, which is a pointer to an empty page
+
+                        long previousAddress = pointers.Pop();
+
+                        rowsFromLastPage = ReadDataFromPage(previousAddress, tableDefinition.ColumnDefinitions, binaryReader);
+                    }
+
+                    return rowsFromLastPage.Last();
+                }
+            }
         }
 
         public long GetFirstAvailableDataAddress(long dataStart, int objectSize)
