@@ -21,7 +21,7 @@ namespace HotSauceDb.Services.Parsers
 
             string[] columnParts = columnDefinitionStatement.Statement.Split(',').Where( x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
-            if(columnParts.Length > 100)
+            if(columnParts.Length > Globals.MaxColumns)
             {
                 throw new Exception("Column definitions exceed max count of 100. Only 100 columns allowed per table");
             }

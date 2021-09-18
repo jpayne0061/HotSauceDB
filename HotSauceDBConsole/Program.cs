@@ -65,6 +65,7 @@ namespace HotSauceDbConsole
                 interpreter.ProcessStatement(insertStatement);
             }
 
+            var housesOutBeforeAlter = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM houses");
 
             string alterTableDefinition = "Alter table houses add NumBathrooms int";
 
@@ -158,6 +159,7 @@ namespace HotSauceDbConsole
         static void FullIntegration()
         {
             File.WriteAllText(Globals.FILE_NAME, null);
+
 
             //group by currently only supported with plain sql
             var reader = new Reader();
@@ -396,11 +398,11 @@ namespace HotSauceDbConsole
             var groupedCountCorrect = groupedRows.Count() == 2;
 
             var groupedValuesCorrect = (int)groupedRows[0][0] == 300000
-                             && (int)groupedRows[0][1] == 5
-                             && (int)groupedRows[0][2] == 2
-                             && (int)groupedRows[1][0] == 330000
-                             && (int)groupedRows[1][1] == 7
-                             && (int)groupedRows[1][2] == 5;
+                                    && (int)groupedRows[0][1] == 5
+                                    && (int)groupedRows[0][2] == 2
+                                    && (int)groupedRows[1][0] == 330000
+                                    && (int)groupedRows[1][1] == 7
+                                    && (int)groupedRows[1][2] == 5;
 
 
             //parallel tests
@@ -422,6 +424,8 @@ namespace HotSauceDbConsole
                 interpreter.ProcessStatement("insert into house4 values (5,3,295000,true,'800 Wormwood Dr')");
 
                 var houses = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house4");
+
+                Globals.GLOBAL_DEBUG += 1;
 
                 allHouses.Add(houses);
             });
@@ -471,10 +475,6 @@ namespace HotSauceDbConsole
             bool updatedTwoCorrect = (int)updatedRows[4][2] == 90;
 
             bool updatedRowsCountCorrect = updatedRows.Count() == 5;
-
-            AlterTableIntegration();
-
-            //******
 
             if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
                 || !toolSubQueryCompare || !compare || !groupedCountCorrect || !groupedValuesCorrect

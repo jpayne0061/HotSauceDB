@@ -159,6 +159,11 @@ namespace HotSauceDb.Services
                         {
                             rowCount = GetObjectCount(nextPagePointer);
 
+                            if(rowCount == 0)
+                            {
+                                return selectData;
+                            }
+
                             fileStream.Position = nextPagePointer + Globals.Int16ByteLength;
                         }
                     }
@@ -219,6 +224,11 @@ namespace HotSauceDb.Services
 
                 using (BinaryReader binaryReader = new BinaryReader(fileStream))
                 {
+                    if(binaryReader.PeekChar() == -1)
+                    {
+                        return 0;
+                    }
+
                     short rowCount = binaryReader.ReadInt16();
 
                     return rowCount;

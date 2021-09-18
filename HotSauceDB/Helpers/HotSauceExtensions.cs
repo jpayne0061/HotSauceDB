@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace HotSauceDB.Statics
+namespace HotSauceDB.Helpers
 {
     public static class HotSauceExtensions
     {

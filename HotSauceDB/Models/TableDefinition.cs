@@ -39,17 +39,6 @@ namespace HotSauceDb.Models
             }
         }
         public long DataAddress { get; set; } //8 bytes
-        public int GetRowSizeInBytes()
-        {
-            int byteSize = 0;
-
-            foreach (var item in ColumnDefinitions)
-            {
-                byteSize += item.ByteSize;
-            }
-
-            return byteSize;
-        }
 
         public bool TableContainsIdentityColumn {
             get
@@ -67,5 +56,17 @@ namespace HotSauceDb.Models
             }
         }
         public long TableDefinitionAddress { get; set; }
+
+        public int GetRowSizeInBytes()
+        {
+            int byteSize = 0;
+
+            foreach (var item in ColumnDefinitions)
+            {
+                byteSize += item.ByteSize;
+            }
+
+            return byteSize;
+        }
     }
 }

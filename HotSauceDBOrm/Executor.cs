@@ -60,10 +60,10 @@ namespace HotSauceDbOrm
             return Reader.ReadRows<T>(query);
         }
 
-        public List<T> Update<T>(T model)
+        public void Update<T>(T model)
         {
             //need address of row to implement
-            throw new NotImplementedException();
+            Updater.UpdateRecord<T>(model);
         }
         /// <summary>
         /// Processes any sql statement supported by HotSauceDb

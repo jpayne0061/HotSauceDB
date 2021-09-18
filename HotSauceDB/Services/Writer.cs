@@ -13,10 +13,17 @@ namespace HotSauceDb.Services
     public class Writer
     {
         private Reader _reader;
-
+        private IndexPage _indexPage;
         public Writer(Reader reader)
         {
             _reader = reader;
+
+            if (NoTables())
+            {
+                WriteZero(0);
+            }
+
+            _indexPage = _reader.GetIndexPage();
         }
 
         public void WriteRow(IComparable[] row, TableDefinition tableDef, long addressToWrite, bool updateCount = true)
@@ -185,14 +192,6 @@ namespace HotSauceDb.Services
 
         public ResultMessage WriteTableDefinition(TableDefinition tableDefinition)
         {
-            //get first free spot to write table def
-            bool isFirstTable = IsFirstTable();
-
-            if (isFirstTable)
-            {
-                WriteZero(0);
-            }
-
             //need to pass in address of current page, not zero
             long addressToWrite = _reader.GetFirstAvailableDataAddress(0, Globals.TABLE_DEF_LENGTH);
 
@@ -256,6 +255,8 @@ namespace HotSauceDb.Services
                     binaryWriter.Write(Globals.EndTableDefinition);
                 }
             }
+
+            _indexPage = _reader.GetIndexPage();
 
             return new ResultMessage { Message = $"table {tableDefinition.TableName} has been added successfully", Address = tableDefEnd, Data = nextFreeDataPage };
         }
@@ -500,7 +501,7 @@ namespace HotSauceDb.Services
             }
         }
 
-        private bool IsFirstTable()
+        private bool NoTables()
         {
             using (FileStream stream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
@@ -557,11 +558,9 @@ namespace HotSauceDb.Services
 
         private long GetNextUnclaimedDataPage()
         {
-            var indexPage = _reader.GetIndexPage();
-
             lock(_reader)
             {
-                return GetNextUnclaimedDataPage(indexPage);
+                return GetNextUnclaimedDataPage(_indexPage);
             }
         }
 
@@ -622,7 +621,7 @@ namespace HotSauceDb.Services
 
             long load = address + (objectSize + Globals.Int64ByteLength);
 
-            bool willBeLastObjectOnPage = load + objectSize  > nextPageAddress - Globals.Int64ByteLength;
+            bool willBeLastObjectOnPage = load + objectSize  >= nextPageAddress - Globals.Int64ByteLength;
 
             if(willBeLastObjectOnPage)
             {

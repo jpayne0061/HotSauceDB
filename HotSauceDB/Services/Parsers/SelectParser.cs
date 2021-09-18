@@ -1,5 +1,5 @@
-﻿using HotSauceDB.Statics;
-using HotSauceDb.Models;
+﻿using HotSauceDb.Models;
+using HotSauceDB.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;

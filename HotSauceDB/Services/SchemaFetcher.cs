@@ -11,31 +11,20 @@ namespace HotSauceDb.Services
         public SchemaFetcher(Reader reader)
         {
             _reader = reader;
+            _indexPage = _reader.GetIndexPage();
         }
 
-        public IndexPage GetIndexPage(bool overrideCache = true)
+        public void RefreshIndexPage()
         {
-            if(!overrideCache && _indexPage != null)
-            {
-                return _indexPage;
-            }
-
-            IndexPage indexPage = _reader.GetIndexPage();
-
-            _indexPage = indexPage;
-
-            return indexPage;
+            _indexPage = _reader.GetIndexPage();
         }
 
         public TableDefinition GetTableDefinition(string tableName)
         {
             //TODO update table defintion in memory when adding table
-
             tableName = tableName.ToLower();
 
-            IndexPage index = GetIndexPage();
-
-            return index.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
+            return _indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
         }
 
     }

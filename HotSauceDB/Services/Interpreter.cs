@@ -20,6 +20,7 @@ namespace HotSauceDb.Services
         private CreateParser _createParser;
         private Reader _reader;
         private LockManager _lockManager;
+        private IndexPage _indexPage;
 
         public Interpreter(SelectParser selectParser, 
                             InsertParser insertParser, 
@@ -38,7 +39,7 @@ namespace HotSauceDb.Services
             _reader = reader;
         }
 
-        public object GetTableDefinition(string tableName)
+        public TableDefinition GetTableDefinition(string tableName)
         {
             return _schemaFetcher.GetTableDefinition(tableName);
         }
@@ -333,8 +334,6 @@ namespace HotSauceDb.Services
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
         {
-            var indexPage = _reader.GetIndexPage();
-
             var subQuery = _selectParser.GetInnerMostSelectStatement(query);
 
             if(subQuery != null)
@@ -343,7 +342,7 @@ namespace HotSauceDb.Services
 
                 IList<string> subQueryColumns = _selectParser.GetColumns(subQuery.Statement).Select(x => x.ColumnName).ToList();
 
-                var tableDef = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
+                var tableDef = _indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
                 //only support for scalar subqueries, currently
                 var subQueryColumn = tableDef.ColumnDefinitions
@@ -382,9 +381,7 @@ namespace HotSauceDb.Services
                 return new List<PredicateOperation>();
             }
 
-            var indexPage = _reader.GetIndexPage();
-
-            var tableDefinition = indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
+            var tableDefinition = _indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
             var predicateOperations = new List<PredicateOperation>();
 
@@ -508,20 +505,12 @@ namespace HotSauceDb.Services
                 TableDefinition = tableDef
             };
 
-            return _lockManager.ProcessCreateTableTransaction(dmlTransaction);
-        }
+            ResultMessage msg = _lockManager.ProcessCreateTableTransaction(dmlTransaction);
 
-        private ResultMessage RunAlterTable(TableDefinition tableDef, ColumnDefinition columnDefinition)
-        {
-            //check that table doesn't already contain column name
-            //get data type from query (look at create table)
-            AlterTableTransaction dmlTransaction = new AlterTableTransaction
-            {
-                TableDefinition = tableDef,
-                NewColumn = columnDefinition
-            };
+            _schemaFetcher.RefreshIndexPage();
+            _indexPage = _reader.GetIndexPage();
 
-            return _lockManager.ProcessAlterTableTransaction(dmlTransaction);
+            return msg;
         }
 
         public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)
@@ -559,5 +548,17 @@ namespace HotSauceDb.Services
             return convertedVal;
         }
 
+        private ResultMessage RunAlterTable(TableDefinition tableDef, ColumnDefinition columnDefinition)
+        {
+            //check that table doesn't already contain column name
+            //get data type from query (look at create table)
+            AlterTableTransaction dmlTransaction = new AlterTableTransaction
+            {
+                TableDefinition = tableDef,
+                NewColumn = columnDefinition
+            };
+
+            return _lockManager.ProcessAlterTableTransaction(dmlTransaction);
+        }
     }
 }
