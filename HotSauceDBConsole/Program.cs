@@ -1,6 +1,7 @@
 ﻿using HotSauceDb;
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
+using HotSauceDbOrm;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +16,11 @@ namespace HotSauceDbConsole
         {
 
             try
-            {                   
+            {
+
+                File.WriteAllText("HotSauceDb.hdb", null);
+
+                ORMTests();
                 FullIntegration();
 
             }
@@ -23,6 +28,32 @@ namespace HotSauceDbConsole
             {
                 var x = Globals.GLOBAL_DEBUG;
             }
+        }
+
+        private static void ORMTests()
+        {
+            House h = new House();
+
+            h.Address = "234 One St";
+            h.IsListed = true;
+            h.NumBath = 3;
+            h.NumBedrooms = 5;
+            h.Price = 430000;
+
+            Executor executor = new Executor();
+
+            //need identity attribute
+            executor.CreateTable<House>();
+
+            executor.Insert(h);
+
+            h.Price = 500000;
+
+            executor.Update(h);
+
+            var h2 = executor.Read<House>("select * from house where houseid = 1");
+
+
         }
 
         private static void AlterTableIntegration()
@@ -84,9 +115,6 @@ namespace HotSauceDbConsole
 
         public static void ParallelTest()
         {
-
-            File.WriteAllText("HotSauceDb.hdb", null);
-
             var reader = new Reader();
             var writer = new Writer(reader);
             var schemaFetcher = new SchemaFetcher(reader);

@@ -30,7 +30,7 @@ namespace HotSauceDbOrm.Operations
                 return;
             }
 
-            List<ColumnDefinition> columnDefinitions = GetColumnDefinitions(properties);
+            List<ColumnDefinition> columnDefinitions = GetColumnDefinitions(tableName, properties);
 
             TableDefinition tableDefinition = new TableDefinition
             {
@@ -51,7 +51,7 @@ namespace HotSauceDbOrm.Operations
             return _interpreter.GetTableDefinition(tableName) != null;
         }
 
-        private List<ColumnDefinition> GetColumnDefinitions(PropertyInfo[] properties)
+        private List<ColumnDefinition> GetColumnDefinitions(string tableName, PropertyInfo[] properties)
         {
             List<ColumnDefinition> colDefinitions = new List<ColumnDefinition>();
 
@@ -67,6 +67,11 @@ namespace HotSauceDbOrm.Operations
                 if (columnDefinition.Type == TypeEnum.UnsupportedType)
                 {
                     continue;
+                }
+
+                if(columnDefinition.ColumnName.ToLower() == tableName.ToLower() + "id")
+                {
+                    columnDefinition.IsIdentity = 1;
                 }
 
                 colDefinitions.Add(columnDefinition);

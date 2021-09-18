@@ -1,5 +1,8 @@
-﻿using HotSauceDb.Services;
+﻿using HotSauceDb.Models;
+using HotSauceDb.Services;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace HotSauceDbOrm.Operations
 {
@@ -12,13 +15,20 @@ namespace HotSauceDbOrm.Operations
             _interpreter = interepreter;
         }
 
-        public void InsertRow<T>(T model)
+        public void InsertRow<T>(T obj)
         {
-            IComparable[] row = GetRow(model);
+            IComparable[] row = GetRow(obj);
 
-            string tableName = model.GetType().Name;
+            string tableName = obj.GetType().Name;
 
-            _interpreter.RunInsert(row, tableName);
+            InsertResult result = _interpreter.RunInsert(row, tableName);
+
+            PropertyInfo identityProperty = GetIdentityColumn<T>();
+
+            if (identityProperty != null)
+            {
+                identityProperty.SetValue(obj, result.IdentityValue);
+            }
         }
     }
 }

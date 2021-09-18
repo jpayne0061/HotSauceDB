@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace HotSauceDbConsole
 {
     public class House
     {
+        public int HouseId { get; set; }
         public int NumBedrooms { get; set; }
         public int NumBath { get; set; }
         public decimal Price { get; set; }

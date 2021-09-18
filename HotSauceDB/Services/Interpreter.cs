@@ -475,7 +475,7 @@ namespace HotSauceDb.Services
                         Query = dml
                     };
 
-                    _lockManager.ProcessWriteTransaction(writeTransaction);
+                    return _lockManager.ProcessWriteTransaction(writeTransaction);
                 }
 
             }
@@ -484,8 +484,6 @@ namespace HotSauceDb.Services
 
                 return new InsertResult { Successful = false, ErrorMessage = ex.Message };
             }
-
-            return new InsertResult { Successful = true };
         }
 
         public ResultMessage RunCreateTableStatement(string dml)

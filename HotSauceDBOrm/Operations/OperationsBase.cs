@@ -60,5 +60,10 @@ namespace HotSauceDbOrm.Operations
 
             return row;
         }
+
+        public PropertyInfo GetIdentityColumn<T>()
+        {
+            return typeof(T).GetProperties().Where(x => x.Name.ToLower() == typeof(T).Name.ToLower() + "id" ).FirstOrDefault();
+        }
     }
 }

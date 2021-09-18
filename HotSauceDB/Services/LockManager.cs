@@ -37,9 +37,9 @@ namespace HotSauceDb.Services
         {
             lock (_tableLocks[writeTransaction.TableDefinition.DataAddress])
             {
-                _writer.WriteRow(writeTransaction.Data, writeTransaction.TableDefinition, writeTransaction.AddressToWriteTo, writeTransaction.UpdateObjectCount);
+                IComparable identity = _writer.WriteRow(writeTransaction.Data, writeTransaction.TableDefinition, writeTransaction.AddressToWriteTo, writeTransaction.UpdateObjectCount);
 
-                return new InsertResult { Successful = true };
+                return new InsertResult { Successful = true, IdentityValue = identity };
             }
         }
 
