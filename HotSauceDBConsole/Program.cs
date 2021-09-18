@@ -4,6 +4,7 @@ using HotSauceDb.Services.Parsers;
 using HotSauceDbOrm;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace HotSauceDbConsole
             {
 
                 File.WriteAllText("HotSauceDb.hdb", null);
-
+                InsertSpeedTest();
                 ORMTests();
                 FullIntegration();
 
@@ -27,6 +28,40 @@ namespace HotSauceDbConsole
             catch (Exception ex)
             {
                 var x = Globals.GLOBAL_DEBUG;
+            }
+        }
+
+        private static void InsertSpeedTest()
+        {
+            Executor executor = new Executor();
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            for (int i = 0; i < 100; i++)
+            {
+                House h = new House();
+
+                h.Address = "234 One St";
+                h.IsListed = true;
+                h.NumBath = 3;
+                h.NumBedrooms = 5;
+                h.Price = 430000;
+
+                executor.CreateTable<House>();
+
+                executor.Insert(h);
+            }
+
+            sw.Stop();
+
+            long seconds = sw.ElapsedMilliseconds / 1000;
+
+            var houses = executor.Read<House>("Select * from house");
+
+            if(houses.Count != 100)
+            {
+                throw new Exception("count inserted doesn't mathc read");
             }
         }
 

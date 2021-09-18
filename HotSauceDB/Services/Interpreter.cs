@@ -342,6 +342,11 @@ namespace HotSauceDb.Services
 
                 IList<string> subQueryColumns = _selectParser.GetColumns(subQuery.Statement).Select(x => x.ColumnName).ToList();
 
+                if(_indexPage == null)
+                {
+                    _indexPage = _reader.GetIndexPage();
+                }
+
                 var tableDef = _indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
                 //only support for scalar subqueries, currently
@@ -379,6 +384,11 @@ namespace HotSauceDb.Services
             if(predicates == null || !predicates.Any())
             {
                 return new List<PredicateOperation>();
+            }
+
+            if(_indexPage == null)
+            {
+                _indexPage = _reader.GetIndexPage();
             }
 
             var tableDefinition = _indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
@@ -481,7 +491,6 @@ namespace HotSauceDb.Services
             }
             catch (Exception ex)
             {
-
                 return new InsertResult { Successful = false, ErrorMessage = ex.Message };
             }
         }

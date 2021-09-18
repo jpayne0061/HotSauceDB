@@ -13,7 +13,6 @@ namespace HotSauceDb.Services
         private readonly Writer _writer;
         private readonly Reader _reader;
         private ConcurrentDictionary<long, object> _tableLocks;
-        private IndexPage _indexPage;
 
         public LockManager(Writer writer, Reader reader)
         {

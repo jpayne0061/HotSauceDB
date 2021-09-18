@@ -8,11 +8,8 @@ namespace HotSauceDbOrm.Operations
 {
     public class Insert : OperationsBase
     {
-        protected Interpreter _interpreter;
-
-        public Insert(Interpreter interepreter)
+        public Insert(Interpreter interepreter) : base(interepreter)
         {
-            _interpreter = interepreter;
         }
 
         public void InsertRow<T>(T obj)
