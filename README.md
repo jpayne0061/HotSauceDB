@@ -1,21 +1,34 @@
-## What is HotSauceDB?
+## About HotSauceDB
+HotsauceDB is a hobby project written in C#/.NET CORE. It is a hobby project and is not intended for production use. 
 
-HotSauceDB is a database written in C#/.NET Core 2.1. It is a hobby project and is not intended 
-for production use.
+HotsauceDB implements its own SQL dialect, which is not ANSI compliant.
+
+#### ACID Compliance
+- Atomicity - no
+- Consistency - no
+- Isolation - yes
+- Durability - no
 
 ## Getting Started
 
-HotSauceDB has a basic ORM. Here is how we would use it
+#### Create a Model
 
+Complex objects are not supported as properties. The following data types are supported:
+- Boolean
+- Char
+- Decimal
+- Int32
+- Int64
+- String
+- DateTime
 
-###### Create a Model
-
-Complex objects are not supported as properties. String proeprties must contain an attribute 
+*String properties must contain an attribute 
 indicating the maximum length of the string
 
 ```
     public class House
     {
+        public int HouseID { get; set; }
         public int NumBedrooms { get; set; }
         public decimal Price { get; set; }
         public bool IsListed { get; set; }
@@ -26,18 +39,14 @@ indicating the maximum length of the string
     }
 ```
 
-###### Create a Table
-
-Every operation will run through the executor object
-
+#### Create a Table
 ```            
-var executor = new Executor();
+Executor executor = Executor.GetInstance();
 
 executor.CreateTable<House>();
 ```
 
-###### Insert Some Data
-
+#### Insert Some Data
 ```
 	var h = new House   
 	{
@@ -52,56 +61,81 @@ executor.CreateTable<House>();
 ```
 
 
-###### Retrieve the Data
+#### Read
 
 ```
-List<House> houses = executor.Read<House>("select * FROM house where address = '7450 Calm Lane'");
+string query = "select * FROM house where address = '7450 Calm Lane'";
+List<House> houses = executor.Read<House>(query);
+```
+#### Update
+In order to perform update operations, the entity must have a property with type Int32 or Int64 with naming convention EntityNameId. So, if your entity is named House, the name would be "HouseId".
+
+```
+House house = new House();
+executor.Insert(h);
+
+house.Prce = 150000;
+executor.Update(h);
 ```
 
-## What Can HotSauceDB do?
 
-Curently, HotSauceDB supports the creation of tables with the following types:
-
-- Boolean
-- Char
-- Decimal
-- Int32
-- Int64
-- String
-- DateTime
+## Supported Queries
 
 Only inserts, reads, and updates are supported at this time. HotsauceDB supports mutlithreaded 
 applications.
 
 The following read operations are all valid for HotSauceDB
 
-`select * from house`
+```
+select * 
+from house
+```
 
-`select Address, Price from house`
+```
+select Address, Price 
+from house
+```
 
-`select * from houses where address = '450 Adams St'`
+```
+select * 
+from house 
+where address = '450 Adams St'
+```
 
-`select * 
+```
+select * 
 from houses 
  where address = '450 Adams St'
-  AND price > 315000`
+  AND price > 315000
+ ```
 
-`select * from house 
-where price = (select price from house where address = '450 Adams St' )`
+```
+select * 
+from house 
+where price = (select price from house where address = '450 Adams St' )
+```
 
-`select * from house
+```
+select * 
+from house
 where address != '98765 ABC str'
 AND Price > 269000
-order by price`
+order by price
+```
 
-`select Price, Max(NumBedRooms), Min(NumBathrooms)
+```
+select Price, Max(NumBedRooms), Min(NumBathrooms)
 from house
-GROUP BY PRICE`
+GROUP BY PRICE
+```
 
 
-`select * from house 
+```
+select * 
+from house 
 where price = (select price from house where address = '450 Adams St' )
 and NumBedrooms = (select NumBedrooms from house where address = '123 ABC St')
-OR NumBath > 5`
+OR NumBath > 5
+```
 
 
