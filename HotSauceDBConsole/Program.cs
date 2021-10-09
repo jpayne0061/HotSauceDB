@@ -24,7 +24,7 @@ namespace HotSauceDbConsole
             }
             catch (Exception ex)
             {
-                var x = Globals.GLOBAL_DEBUG;
+                Console.WriteLine($"Task failed successfully (not really): {ex.Message}. Stack trace: \n\n {ex.StackTrace}");
             }
         }
 
