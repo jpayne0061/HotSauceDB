@@ -138,4 +138,10 @@ and NumBedrooms = (select NumBedrooms from house where address = '123 ABC St')
 OR NumBath > 5
 ```
 
+```
+select * 
+from house 
+where price in (150, 170, 180)
+```
+
 
