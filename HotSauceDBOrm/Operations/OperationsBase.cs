@@ -15,6 +15,10 @@ namespace HotSauceDbOrm.Operations
         {
             _interpreter = interpreter;
         }
+        public PropertyInfo GetIdentityColumn<T>()
+        {
+            return typeof(T).GetProperties().Where(x => x.Name.ToLower() == typeof(T).Name.ToLower() + "id").FirstOrDefault();
+        }
 
         protected IComparable[] GetRow<T>(T obj)
         {
@@ -70,11 +74,6 @@ namespace HotSauceDbOrm.Operations
             }
 
             return row;
-        }
-
-        public PropertyInfo GetIdentityColumn<T>()
-        {
-            return typeof(T).GetProperties().Where(x => x.Name.ToLower() == typeof(T).Name.ToLower() + "id" ).FirstOrDefault();
         }
 
         private PropertyInfo[] OrderPropertiesByColumnIndex(TableDefinition tableDefinition, PropertyInfo[] properties)
