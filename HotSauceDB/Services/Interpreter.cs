@@ -14,6 +14,12 @@ namespace HotSauceDb.Services
 {
     public class Interpreter
     {
+        private const string _select = "select";
+        private const string _insert = "insert";
+        private const string _create = "create";
+        private const string _update = "update";
+        private const string _alter = "alter";
+
         private SelectParser _selectParser;
         private InsertParser _insertParser;
         private UpdateParser _updateParser;
@@ -57,22 +63,20 @@ namespace HotSauceDb.Services
 
             switch(sqlStatementType)
             {
-                case "select":
+                case _select:
                     return RunQueryAndSubqueries(sql);
-                case "insert":
+                case _insert:
                     return RunInsertStatement(sql);
-                case "create":
+                case _create:
                     return RunCreateTableStatement(sql);
-                case "update":
+                case _update:
                     return RunUpdateStatement(sql);
-                case "alter":
+                case _alter:
                     return RunAlterTable(sql);
             }
 
             throw new Exception(ErrorMessages.Query_Must_Start_With);
         }
-
-       
 
         public List<List<IComparable>> RunQuery(string query)
         {
@@ -158,7 +162,51 @@ namespace HotSauceDb.Services
 
         }
 
-        public string ReplaceSubqueryWithValue(string query, InnerStatement subquery, string value, TypeEnum type)
+        public ResultMessage RunCreateTable(TableDefinition tableDef)
+        {
+            SchemaTransaction dmlTransaction = new SchemaTransaction
+            {
+                TableDefinition = tableDef
+            };
+
+            ResultMessage msg = _lockManager.ProcessCreateTableTransaction(dmlTransaction);
+
+            _schemaFetcher.RefreshIndexPage();
+            _indexPage = _reader.GetIndexPage();
+
+            return msg;
+        }
+
+        public InsertResult RunInsert(IComparable[] row, string tableName, string dml = null)
+        {
+            try
+            {
+                TableDefinition tableDef = _schemaFetcher.GetTableDefinition(tableName);
+
+                long? firstAvailableAddress = null;
+                lock (_reader)
+                {
+                    firstAvailableAddress = _reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
+
+                    var writeTransaction = new WriteTransaction
+                    {
+                        Data = row,
+                        TableDefinition = tableDef,
+                        AddressToWriteTo = (long)firstAvailableAddress,
+                        Query = dml
+                    };
+
+                    return _lockManager.ProcessWriteTransaction(writeTransaction);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return new InsertResult { Successful = false, ErrorMessage = ex.Message };
+            }
+        }
+
+        internal string ReplaceSubqueryWithValue(string query, InnerStatement subquery, string value, TypeEnum type)
         {
             string subQueryWithParantheses = query.Substring(subquery.StartIndexOfOpenParantheses,
                 subquery.EndIndexOfCloseParantheses - subquery.StartIndexOfOpenParantheses + 1);
@@ -171,14 +219,68 @@ namespace HotSauceDb.Services
             return query.Replace(subQueryWithParantheses, value);
         }
 
-        public List<PredicateOperation> BuildDelagatesFromPredicates(string tableName, List<string> predicates)
+        private InsertResult RunInsertStatement(string dml)
         {
-            if(predicates == null || !predicates.Any())
+            IComparable[] row = _insertParser.GetRow(dml);
+
+            string tableName = _insertParser.ParseTableName(dml);
+
+            return RunInsert(row, tableName, dml);
+        }
+
+        private ResultMessage RunCreateTableStatement(string dml)
+        {
+            TableDefinition tableDef = new TableDefinition();
+
+            tableDef.TableName = _createParser.GetTableName(dml);
+            tableDef.ColumnDefinitions = _createParser.GetColumnDefintions(dml);
+
+            return RunCreateTable(tableDef);
+        }
+
+        private IComparable ConvertToType(ColumnDefinition columnDefinition, string val)
+        {
+            IComparable convertedVal;
+
+            switch (columnDefinition.Type)
+            {
+                case TypeEnum.Boolean:
+                    convertedVal = Convert.ToBoolean(val);
+                    break;
+                case TypeEnum.Char:
+                    convertedVal = Convert.ToChar(val);
+                    break;
+                case TypeEnum.Decimal:
+                    convertedVal = Convert.ToDecimal(val);
+                    break;
+                case TypeEnum.Int32:
+                    convertedVal = Convert.ToInt32(val);
+                    break;
+                case TypeEnum.Int64:
+                    convertedVal = Convert.ToInt64(val);
+                    break;
+                case TypeEnum.String:
+                    convertedVal = val.TrimStart('\'').TrimEnd('\'').PadRight(columnDefinition.ByteSize - 1, ' ');
+                    break;
+                case TypeEnum.DateTime:
+                    convertedVal = Convert.ToDateTime(val);
+                    break;
+                default:
+                    convertedVal = null;
+                    break;
+            }
+
+            return convertedVal;
+        }
+
+        private List<PredicateOperation> BuildDelagatesFromPredicates(string tableName, List<string> predicates)
+        {
+            if (predicates == null || !predicates.Any())
             {
                 return new List<PredicateOperation>();
             }
 
-            if(_indexPage == null)
+            if (_indexPage == null)
             {
                 _indexPage = _reader.GetIndexPage();
             }
@@ -212,7 +314,7 @@ namespace HotSauceDb.Services
                     { "in",  CompareDelegates.Contains},
                 };
 
-                if(predicateParts[2].ToLower() == "in")
+                if (predicateParts[2].ToLower() == "in")
                 {
                     string innerValue = predicateParts[3].Trim('(').Trim(')');
 
@@ -247,104 +349,6 @@ namespace HotSauceDb.Services
             }
 
             return predicateOperations;
-        }
-
-        public InsertResult RunInsertStatement(string dml)
-        {
-            IComparable[] row = _insertParser.GetRow(dml);
-
-            string tableName = _insertParser.ParseTableName(dml);
-
-            return RunInsert(row, tableName, dml);
-        }
-
-        public InsertResult RunInsert(IComparable[] row, string tableName, string dml = null)
-        {
-            try
-            {
-                TableDefinition tableDef = _schemaFetcher.GetTableDefinition(tableName);
-
-                long? firstAvailableAddress = null;
-                lock (_reader)
-                {
-                    firstAvailableAddress = _reader.GetFirstAvailableDataAddress(tableDef.DataAddress, tableDef.GetRowSizeInBytes());
-
-                    var writeTransaction = new WriteTransaction
-                    {
-                        Data = row,
-                        TableDefinition = tableDef,
-                        AddressToWriteTo = (long)firstAvailableAddress,
-                        Query = dml
-                    };
-
-                    return _lockManager.ProcessWriteTransaction(writeTransaction);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                return new InsertResult { Successful = false, ErrorMessage = ex.Message };
-            }
-        }
-
-        public ResultMessage RunCreateTableStatement(string dml)
-        {
-            TableDefinition tableDef = new TableDefinition();
-
-            tableDef.TableName = _createParser.GetTableName(dml);
-            tableDef.ColumnDefinitions = _createParser.GetColumnDefintions(dml);
-
-            return RunCreateTable(tableDef);
-        }
-
-        public ResultMessage RunCreateTable(TableDefinition tableDef)
-        {
-            SchemaTransaction dmlTransaction = new SchemaTransaction
-            {
-                TableDefinition = tableDef
-            };
-
-            ResultMessage msg = _lockManager.ProcessCreateTableTransaction(dmlTransaction);
-
-            _schemaFetcher.RefreshIndexPage();
-            _indexPage = _reader.GetIndexPage();
-
-            return msg;
-        }
-
-        public IComparable ConvertToType(ColumnDefinition columnDefinition, string val)
-        {
-            IComparable convertedVal;
-
-            switch (columnDefinition.Type)
-            {
-                case TypeEnum.Boolean:
-                    convertedVal = Convert.ToBoolean(val);
-                    break;
-                case TypeEnum.Char:
-                    convertedVal = Convert.ToChar(val);
-                    break;
-                case TypeEnum.Decimal:
-                    convertedVal = Convert.ToDecimal(val);
-                    break;
-                case TypeEnum.Int32:
-                    convertedVal = Convert.ToInt32(val);
-                    break;
-                case TypeEnum.Int64:
-                    convertedVal = Convert.ToInt64(val);
-                    break;
-                case TypeEnum.String:
-                    convertedVal = val.TrimStart('\'').TrimEnd('\'').PadRight(columnDefinition.ByteSize - 1, ' ');
-                    break;
-                case TypeEnum.DateTime:
-                    convertedVal = Convert.ToDateTime(val);
-                    break;
-                default:
-                    convertedVal = null;
-                    break;
-            }
-
-            return convertedVal;
         }
 
         private ResultMessage RunAlterTable(TableDefinition tableDef, ColumnDefinition columnDefinition)

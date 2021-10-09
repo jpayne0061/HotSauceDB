@@ -120,7 +120,7 @@ namespace HotSauceDbConsole
                                 reader);
 
 
-            File.WriteAllText(Globals.FILE_NAME, null);
+            File.WriteAllText(Constants.FILE_NAME, null);
 
 
             string createHousesTable = @"create table houses (
@@ -236,7 +236,7 @@ namespace HotSauceDbConsole
 
         static void FullIntegration()
         {
-            File.WriteAllText(Globals.FILE_NAME, null);
+            File.WriteAllText(Constants.FILE_NAME, null);
 
             var updateParser = new UpdateParser();
             var stringParser = new StringParser();
@@ -505,8 +505,6 @@ namespace HotSauceDbConsole
                 interpreter.ProcessStatement("insert into house4 values (5,3,295000,true,'800 Wormwood Dr')");
 
                 var houses = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM house4");
-
-                Globals.GLOBAL_DEBUG += 1;
 
                 allHouses.Add(houses);
             });

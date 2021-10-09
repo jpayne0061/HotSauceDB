@@ -48,7 +48,7 @@ namespace HotSauceDb.Services
 
             WritePointerIfLastObjectOnPage(diskLocation, rowSize);
 
-            bool isFirstRowOnPage = (addressToWriteTo - Globals.Int16ByteLength) % Globals.PageSize == 0 && !isEdit;
+            bool isFirstRowOnPage = (addressToWriteTo - Constants.Int16_Byte_Length) % Constants.Page_Size == 0 && !isEdit;
 
             //if first row, write pointer as zero
             if (isFirstRowOnPage)
@@ -56,7 +56,7 @@ namespace HotSauceDb.Services
                 WriteZeroPointerForFirstRow(addressToWriteTo);
             }
 
-            bool isFirstRowOfTable = addressToWriteTo - Globals.Int16ByteLength == tableDefinition.DataAddress;
+            bool isFirstRowOfTable = addressToWriteTo - Constants.Int16_Byte_Length == tableDefinition.DataAddress;
 
             if (tableDefinition.TableContainsIdentityColumn && row.Length == tableDefinition.ColumnDefinitions.Count())
             {
@@ -89,7 +89,7 @@ namespace HotSauceDb.Services
             }
 
 
-            using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (FileStream fileStream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 fileStream.Position = addressToWriteTo;
 
@@ -137,14 +137,14 @@ namespace HotSauceDb.Services
 
         public void WriteZeroPointerForFirstRow(long currentAddress)
         {
-            if((currentAddress - 2) % Globals.PageSize != 0)
+            if((currentAddress - 2) % Constants.Page_Size != 0)
             {
                 throw new Exception("Invalid address for first row: " + currentAddress);
             }
 
-            long zeroPointerAddress = currentAddress + (Globals.NextPointerAddress - 2);
+            long zeroPointerAddress = currentAddress + (Constants.Next_Pointer_Address - 2);
 
-            using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (FileStream fileStream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 fileStream.Position = zeroPointerAddress;
 
@@ -199,12 +199,12 @@ namespace HotSauceDb.Services
         public ResultMessage WriteTableDefinition(TableDefinition tableDefinition)
         {
             //need to pass in address of current page, not zero
-            long addressToWrite = _reader.GetFirstAvailableDataAddress(0, Globals.TABLE_DEF_LENGTH);
+            long addressToWrite = _reader.GetFirstAvailableDataAddress(0, Constants.TABLE_DEF_LENGTH);
 
-            if ((addressToWrite - 2) % Globals.PageSize == 0)
+            if ((addressToWrite - 2) % Constants.Page_Size == 0)
             {
                 var pointerToNextIndexRecord = GetNextUnclaimedDataPage();
-                WriteLong(addressToWrite - 2 + Globals.NextPointerAddress, pointerToNextIndexRecord);
+                WriteLong(addressToWrite - 2 + Constants.Next_Pointer_Address, pointerToNextIndexRecord);
                 WriteZero(pointerToNextIndexRecord);
             }
 
@@ -225,13 +225,13 @@ namespace HotSauceDb.Services
             //first page isn't really full
             var newDefinitionAddress = addressToWrite;
 
-            WritePointerIfLastObjectOnPage(addressToWrite, Globals.TABLE_DEF_LENGTH);
+            WritePointerIfLastObjectOnPage(addressToWrite, Constants.TABLE_DEF_LENGTH);
 
             var nextFreeDataPage = tableDefinition.DataAddress == 0 ? GetNextUnclaimedDataPage() : tableDefinition.DataAddress;
 
             long tableDefEnd = 0;
 
-            using (FileStream stream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (FileStream stream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(stream))
                 {
@@ -258,7 +258,7 @@ namespace HotSauceDb.Services
 
                     tableDefEnd = stream.Position;
 
-                    binaryWriter.Write(Globals.EndTableDefinition);
+                    binaryWriter.Write(Constants.End_Table_Definition);
                 }
             }
 
@@ -313,7 +313,7 @@ namespace HotSauceDb.Services
 
             Queue<List<IComparable>> unEditedRowBufferQueue = new Queue<List<IComparable>>();
 
-            int maxNewRowsToBeWrittenToSinglePage = (Globals.PageSize - (Globals.Int64ByteLength + Globals.Int16ByteLength)) / newRowSize;
+            int maxNewRowsToBeWrittenToSinglePage = (Constants.Page_Size - (Constants.Int64_Byte_Length + Constants.Int16_Byte_Length)) / newRowSize;
 
             long nextAddressToWriteTo = 0L;
 
@@ -327,7 +327,7 @@ namespace HotSauceDb.Services
 
                 if(!backfillPage.NewlyAllocatedPage)
                 {
-                    using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (FileStream fs = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         using (BinaryReader binaryReader = new BinaryReader(fs))
                         {
@@ -341,13 +341,13 @@ namespace HotSauceDb.Services
                     }
                 }
 
-                nextAddressToWriteTo = pageAddress + Globals.Int16ByteLength;
+                nextAddressToWriteTo = pageAddress + Constants.Int16_Byte_Length;
 
                 int rowCount = backfillPage.NewlyAllocatedPage ? backfillPage.NewRowCount : backfillPage.OldRowCount;
 
                 for (int j = 0; j < rowCount; j++)
                 {
-                    if (nextAddressToWriteTo + newRowSize > (pageAddress + Globals.NextPointerAddress))
+                    if (nextAddressToWriteTo + newRowSize > (pageAddress + Constants.Next_Pointer_Address))
                     {
                         SetObjectCount(pageAddress, (short)j);
                         break;
@@ -370,12 +370,12 @@ namespace HotSauceDb.Services
                 //next page is newly allocated, so need to set pointer
                 if(i != pageAddresses.Count - 1 && proposedPages[pageAddresses[i + 1]].NewlyAllocatedPage)
                 {
-                    WriteLong(pageAddress + Globals.NextPointerAddress, proposedPages[pageAddresses[i + 1]].StartAddress);
+                    WriteLong(pageAddress + Constants.Next_Pointer_Address, proposedPages[pageAddresses[i + 1]].StartAddress);
                 }
 
                 if(backfillPage.NewlyAllocatedPage)
                 {
-                    WriteLong(pageAddress + Globals.NextPointerAddress, 0L);
+                    WriteLong(pageAddress + Constants.Next_Pointer_Address, 0L);
                 }
 
             }
@@ -407,7 +407,7 @@ namespace HotSauceDb.Services
         {
             //var pages = new Dictionary<long, BackfillPage>();
 
-            int numNewRowsMax = (Globals.PageSize - (Globals.Int64ByteLength + Globals.Int16ByteLength)) / newRowSize;
+            int numNewRowsMax = (Constants.Page_Size - (Constants.Int64_Byte_Length + Constants.Int16_Byte_Length)) / newRowSize;
 
             int totalRows = 0;
 
@@ -427,9 +427,9 @@ namespace HotSauceDb.Services
             {
                 var page = currentPages[currentPageAddress];
 
-                bool pageIsFull = (Globals.PageSize - (Globals.Int16ByteLength + Globals.Int64ByteLength)) / oldRowSize == page.OldRowCount;
+                bool pageIsFull = (Constants.Page_Size - (Constants.Int16_Byte_Length + Constants.Int64_Byte_Length)) / oldRowSize == page.OldRowCount;
 
-                if(pageIsFull || (page.OldRowCount * newRowSize) > Globals.PAGE_DATA_MAX)
+                if(pageIsFull || (page.OldRowCount * newRowSize) > Constants.PAGE_DATA_MAX)
                 {
                     page.NewRowCount = (short)numNewRowsMax;
                     totalRows -= page.NewRowCount;
@@ -483,7 +483,7 @@ namespace HotSauceDb.Services
 
         void WriteZero(long address)
         {
-            using (FileStream stream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (FileStream stream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(stream))
                 {
@@ -496,7 +496,7 @@ namespace HotSauceDb.Services
 
         void WriteLong(long address, long num)
         {
-            using (FileStream stream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (FileStream stream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(stream))
                 {
@@ -509,7 +509,7 @@ namespace HotSauceDb.Services
 
         private bool NoTables()
         {
-            using (FileStream stream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream stream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
@@ -522,15 +522,15 @@ namespace HotSauceDb.Services
 
         private long FindSpotForNewTableDefinition()
         {
-            using (FileStream stream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream stream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
-                    reader.BaseStream.Position = Globals.Int16ByteLength;
+                    reader.BaseStream.Position = Constants.Int16_Byte_Length;
 
                     while (reader.PeekChar() != -1 && reader.PeekChar() != 0)
                     {
-                        reader.BaseStream.Position += Globals.TABLE_DEF_LENGTH;
+                        reader.BaseStream.Position += Constants.TABLE_DEF_LENGTH;
                     }
 
                     return reader.BaseStream.Position;
@@ -540,12 +540,12 @@ namespace HotSauceDb.Services
 
         private long GetNextUnclaimedDataPage(IndexPage indexPage)
         {
-            long headAddress = indexPage.TableDefinitions.Count == 0 ? Globals.PageSize :
+            long headAddress = indexPage.TableDefinitions.Count == 0 ? Constants.Page_Size :
                                 indexPage.TableDefinitions.Max(x => x.DataAddress);
 
             long nextFreeAddress = headAddress;
 
-            using (FileStream stream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream stream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(stream))
                 {
@@ -553,7 +553,7 @@ namespace HotSauceDb.Services
 
                     while (binaryReader.PeekChar() != -1)
                     {
-                        binaryReader.BaseStream.Position += Globals.PageSize;
+                        binaryReader.BaseStream.Position += Constants.Page_Size;
                     }
 
                     return binaryReader.BaseStream.Position;
@@ -572,11 +572,11 @@ namespace HotSauceDb.Services
 
         private void UpdateObjectCount(long currentAddress)
         {
-            long addressOfCount = currentAddress - (currentAddress % Globals.PageSize);
+            long addressOfCount = currentAddress - (currentAddress % Constants.Page_Size);
 
             short numRows = 0;
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(fileStream))
                 {
@@ -586,7 +586,7 @@ namespace HotSauceDb.Services
                 }
             }
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                 {
@@ -602,7 +602,7 @@ namespace HotSauceDb.Services
 
         private void SetObjectCount(long countAddress, short objectCount)
         {
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                 {
@@ -623,21 +623,21 @@ namespace HotSauceDb.Services
         /// <returns></returns>
         private void WritePointerIfLastObjectOnPage(long address, int objectSize)
         {
-            long nextPageAddress = PageLocationHelper.GetNextDivisbleNumber(address, Globals.PageSize);
+            long nextPageAddress = PageLocationHelper.GetNextDivisbleNumber(address, Constants.Page_Size);
 
-            long load = address + (objectSize + Globals.Int64ByteLength);
+            long load = address + (objectSize + Constants.Int64_Byte_Length);
 
-            bool willBeLastObjectOnPage = load + objectSize  >= nextPageAddress - Globals.Int64ByteLength;
+            bool willBeLastObjectOnPage = load + objectSize  >= nextPageAddress - Constants.Int64_Byte_Length;
 
             if(willBeLastObjectOnPage)
             {
                 long nextPagePointer = GetNextUnclaimedDataPage();
 
-                using (FileStream fileStream = File.Open(Globals.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+                using (FileStream fileStream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
                 {
                     using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
                     {
-                        binaryWriter.BaseStream.Position = nextPageAddress - Globals.Int64ByteLength;
+                        binaryWriter.BaseStream.Position = nextPageAddress - Constants.Int64_Byte_Length;
 
                         binaryWriter.Write(nextPagePointer);
 

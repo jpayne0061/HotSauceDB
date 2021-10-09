@@ -167,7 +167,7 @@ namespace HotSauceDb.Services.Parsers
 
             predicateTrailers = predicateTrailers.Select(x => x.ToLower()).ToList();
 
-            if(!Globals.PredicateTrailers.Contains(predicateTrailers[0]))
+            if(!Constants.Predicate_Trailers.Contains(predicateTrailers[0]))
             {
                 throw new Exception($"Invalid expression: {string.Join(' ', predicateTrailers)}");
             }
@@ -178,7 +178,7 @@ namespace HotSauceDb.Services.Parsers
 
             for (int i = 0; i < predicateTrailers.Count(); i++)
             {
-                if(Globals.PredicateTrailers.Contains(predicateTrailers[i]))
+                if(Constants.Predicate_Trailers.Contains(predicateTrailers[i]))
                 {
                     if(temp != "")
                     {

@@ -43,7 +43,7 @@ namespace HotSauceDbOrm.Operations
 
         public bool TableAlreadyExists(string tableName)
         {
-            if(File.ReadAllBytes(Globals.FILE_NAME).Length == 0)
+            if(File.ReadAllBytes(Constants.FILE_NAME).Length == 0)
             {
                 return false;
             }
@@ -84,27 +84,27 @@ namespace HotSauceDbOrm.Operations
         {
             if (typeEnum == TypeEnum.Boolean)
             {
-                return Globals.BooleanByteLength;
+                return Constants.Boolean_Byte_Length;
             }
             else if (typeEnum == TypeEnum.Char)
             {
-                return Globals.CharByteLength;
+                return Constants.Char_Byte_Length;
             }
             else if (typeEnum == TypeEnum.DateTime)
             {
-                return Globals.Int64ByteLength;
+                return Constants.Int64_Byte_Length;
             }
             else if (typeEnum == TypeEnum.Decimal)
             {
-                return Globals.DecimalByteLength;
+                return Constants.Decimal_Byte_Length;
             }
             else if (typeEnum == TypeEnum.Int32)
             {
-                return Globals.Int32ByteLength;
+                return Constants.Int32_Byte_Length;
             }
             else if (typeEnum == TypeEnum.DateTime)
             {
-                return Globals.Int64ByteLength;
+                return Constants.Int64_Byte_Length;
             }
             else if (typeEnum == TypeEnum.String)
             {

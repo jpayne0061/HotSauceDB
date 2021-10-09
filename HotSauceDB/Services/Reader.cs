@@ -26,7 +26,7 @@ namespace HotSauceDb.Services
 
             bool nextPageHasTables = true;
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader reader = new BinaryReader(fileStream))
                 {
@@ -41,9 +41,9 @@ namespace HotSauceDb.Services
                             tableDefinition.TableName = reader.ReadString();
                             tableDefinition.TableDefinitionAddress = tableDefinitionAddress;
 
-                            tableDefinitionAddress += Globals.TABLE_DEF_LENGTH;
+                            tableDefinitionAddress += Constants.TABLE_DEF_LENGTH;
 
-                            while (reader.PeekChar() != Globals.EndTableDefinition)
+                            while (reader.PeekChar() != Constants.End_Table_Definition)
                             {
                                 var columnDefinition = new ColumnDefinition();
                                 columnDefinition.ColumnName = reader.ReadString();
@@ -91,7 +91,7 @@ namespace HotSauceDb.Services
 
         public long GetNextTableDefinitionStartAddress(long currentPosition)
         {
-            while ((currentPosition - 2) % Globals.TABLE_DEF_LENGTH != 0)//todo: rewrite without while loop
+            while ((currentPosition - 2) % Constants.TABLE_DEF_LENGTH != 0)//todo: rewrite without while loop
             {
                 currentPosition += 1;
             }
@@ -108,7 +108,7 @@ namespace HotSauceDb.Services
 
             short rowCount = GetObjectCount(tableDefinition.DataAddress);
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(fileStream))
                 {
@@ -164,7 +164,7 @@ namespace HotSauceDb.Services
                                 return selectData;
                             }
 
-                            fileStream.Position = nextPagePointer + Globals.Int16ByteLength;
+                            fileStream.Position = nextPagePointer + Constants.Int16_Byte_Length;
                         }
                     }
                 }
@@ -179,7 +179,7 @@ namespace HotSauceDb.Services
 
             var data = new List<List<IComparable>>();
 
-            binaryReader.BaseStream.Position = pageAddress + Globals.Int16ByteLength;
+            binaryReader.BaseStream.Position = pageAddress + Constants.Int16_Byte_Length;
 
             for (int i = 0; i < rowCount; i++)
             {
@@ -199,10 +199,10 @@ namespace HotSauceDb.Services
 
         public long GetPointerToNextPage(long pageAddress)
         {
-            long pointerToNextPage = PageLocationHelper.GetNextDivisbleNumber(pageAddress, Globals.PageSize)
-                                        - Globals.Int64ByteLength;
+            long pointerToNextPage = PageLocationHelper.GetNextDivisbleNumber(pageAddress, Constants.Page_Size)
+                                        - Constants.Int64_Byte_Length;
 
-            using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fs = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(fs))
                 {
@@ -218,7 +218,7 @@ namespace HotSauceDb.Services
 
         public short GetObjectCount(long rowCountPointer)
         {
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 fileStream.Position = rowCountPointer;
 
@@ -287,7 +287,7 @@ namespace HotSauceDb.Services
                 pointers.Push(dataPosition);
             }
 
-            using (FileStream fs = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fs = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(fs))
                 {
@@ -315,7 +315,7 @@ namespace HotSauceDb.Services
                 dataStart = PageLocationHelper.GetNextPagePointer(dataStart);
             }
 
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 fileStream.Position = dataStart;
 
@@ -330,7 +330,7 @@ namespace HotSauceDb.Services
 
         public bool PageIsFull(long address, int objectSize)
         {
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 fileStream.Position = address;
 
@@ -342,7 +342,7 @@ namespace HotSauceDb.Services
                     //8 bytes for page pointer
                     //x bytes for row data
 
-                    return objectSize + (numObjects * objectSize) + Globals.Int64ByteLength  + Globals.Int16ByteLength > Globals.PageSize; 
+                    return objectSize + (numObjects * objectSize) + Constants.Int64_Byte_Length  + Constants.Int16_Byte_Length > Constants.Page_Size; 
                 }
             }
         }
@@ -377,7 +377,7 @@ namespace HotSauceDb.Services
 
         public bool DatabaseEmpty()
         {
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 return fileStream.Length == 0;
             }

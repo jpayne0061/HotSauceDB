@@ -15,9 +15,9 @@ namespace HotSauceDb.Helpers
 
         public static long GetNextPagePointer(long pageAddress)
         {
-            using (FileStream fileStream = new FileStream(Globals.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
-                fileStream.Position = pageAddress + Globals.NextPointerAddress;
+                fileStream.Position = pageAddress + Constants.Next_Pointer_Address;
 
                 using (BinaryReader binaryReader = new BinaryReader(fileStream))
                 {
@@ -28,7 +28,7 @@ namespace HotSauceDb.Helpers
 
         public static long GetCurrentPageAddress(long currentStreamPostition)
         {
-            return currentStreamPostition - (currentStreamPostition % Globals.PageSize);
+            return currentStreamPostition - (currentStreamPostition % Constants.Page_Size);
         }
 
     }

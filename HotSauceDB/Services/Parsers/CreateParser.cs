@@ -21,7 +21,7 @@ namespace HotSauceDb.Services.Parsers
 
             string[] columnParts = columnDefinitionStatement.Statement.Split(',').Where( x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
-            if(columnParts.Length > Globals.MaxColumns)
+            if(columnParts.Length > Constants.Max_Columns)
             {
                 throw new Exception("Column definitions exceed max count of 100. Only 100 columns allowed per table");
             }
@@ -55,7 +55,7 @@ namespace HotSauceDb.Services.Parsers
 
         private bool IsIdentityColumn(string[] columnPart)
         {
-            return columnPart.Length == 3 && columnPart[2].ToLower() == Globals.IDENTITY_MARKER;
+            return columnPart.Length == 3 && columnPart[2].ToLower() == Constants.IDENTITY_MARKER;
         }
 
         public string GetTableName(string dml)
@@ -85,22 +85,22 @@ namespace HotSauceDb.Services.Parsers
             switch(type)
             {
                 case "decimal":
-                    colDef.ByteSize = Globals.DecimalByteLength;
+                    colDef.ByteSize = Constants.Decimal_Byte_Length;
                     return TypeEnum.Decimal;
                 case "bool":
-                    colDef.ByteSize = Globals.BooleanByteLength;
+                    colDef.ByteSize = Constants.Boolean_Byte_Length;
                     return TypeEnum.Boolean;
                 case "char":
-                    colDef.ByteSize = Globals.CharByteLength;
+                    colDef.ByteSize = Constants.Char_Byte_Length;
                     return TypeEnum.Char;
                 case "int":
-                    colDef.ByteSize = Globals.Int32ByteLength;
+                    colDef.ByteSize = Constants.Int32_Byte_Length;
                     return TypeEnum.Int32;
                 case "bigint":
-                    colDef.ByteSize = Globals.Int64ByteLength;
+                    colDef.ByteSize = Constants.Int64_Byte_Length;
                     return TypeEnum.Int64;
                 case "datetime":
-                    colDef.ByteSize = Globals.Int64ByteLength;
+                    colDef.ByteSize = Constants.Int64_Byte_Length;
                     return TypeEnum.DateTime;
                 default:
                     throw new Exception($"{type} is not recognized as a valid type");
