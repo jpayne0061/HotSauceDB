@@ -10,59 +10,75 @@ namespace HotSauceDbOrm
     public class Executor
     {
         private Interpreter _interpreter;
-        public Executor(string databaseName = Globals.FILE_NAME)
+        private Create _creator;
+        private Insert _inserter;
+        private Read _reader;
+        private Update _updater;
+
+        private static Executor _instance;
+        private static object _lockObject = new object();
+
+        public static Executor GetInstance(string databaseName = Globals.FILE_NAME)
         {
-            if(databaseName != null)
-                if(!File.Exists(databaseName))
-                    using (File.Create(databaseName));
-                   
+            if (_instance == null)
+            {
+                lock(_lockObject)
+                {
+                    if (databaseName != null)
+                        if (!File.Exists(databaseName))
+                            using (File.Create(databaseName)) ;
 
-            var reader = new Reader();
-            var writer = new Writer(reader);
-            var lockManager = new LockManager(writer, reader);
+                    var updateParser = new UpdateParser();
+                    var stringParser = new StringParser();
+                    var reader = new Reader();
+                    var writer = new Writer(reader);
+                    var lockManager = new LockManager(writer, reader);
+                    var schemaFetcher = new SchemaFetcher(reader);
 
-            var schemaFetcher = new SchemaFetcher(reader);
+                    var interpreter = new Interpreter(
+                                        new SelectParser(),
+                                        new InsertParser(schemaFetcher),
+                                        updateParser,
+                                        schemaFetcher,
+                                        new GeneralParser(),
+                                        new CreateParser(),
+                                        stringParser,
+                                        lockManager,
+                                        reader);
 
-            _interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                schemaFetcher,
-                                new GeneralParser(),
-                                new CreateParser(),
-                                lockManager,
-                                reader);
+                    _instance = new Executor(interpreter);
+                }
+            }
 
-            Creator = new Create(_interpreter);
-            Inserter = new Insert(_interpreter);
-            Reader = new Read(_interpreter);
-            Updater = new Update(_interpreter);
+            return _instance;
         }
 
-        private Create Creator { get; }
-        private Insert Inserter { get; }
-        private Read Reader { get; }
-        private Update Updater { get; }
-
+        private Executor(Interpreter interpreter)
+        {
+            _creator = new Create(interpreter);
+            _inserter = new Insert(interpreter);
+            _reader = new Read(interpreter);
+            _updater = new Update(interpreter);
+        }
 
         public void CreateTable<T>()
         {
-            Creator.CreateTable<T>();
+            _creator.CreateTable<T>();
         }
 
         public void Insert<T>(T model)
         {
-            Inserter.InsertRow(model);
+            _inserter.InsertRow(model);
         }
 
         public List<T> Read<T>(string query) where T : new()
         {
-            return Reader.ReadRows<T>(query);
+            return _reader.ReadRows<T>(query);
         }
 
         public void Update<T>(T model)
         {
-            //need address of row to implement
-            Updater.UpdateRecord<T>(model);
+            _updater.UpdateRecord<T>(model);
         }
         /// <summary>
         /// Processes any sql statement supported by HotSauceDb

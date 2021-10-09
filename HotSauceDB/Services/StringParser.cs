@@ -3,7 +3,7 @@ using System;
 
 namespace HotSauceDb.Services
 {
-    public class Converter
+    public class StringParser
     {
         public IComparable ConvertToType(string val, TypeEnum type)
         {

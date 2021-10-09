@@ -37,7 +37,7 @@ namespace HotSauceDb.Services.Parsers
 
         public IComparable[] GetRow(string csv, TableDefinition tableDefinition)
         {
-            Converter converter = new Converter();
+            StringParser converter = new StringParser();
 
             List<string> vals = csv.Split(',').Select(x => x.Trim()).ToList();
 

@@ -15,15 +15,12 @@ namespace HotSauceDbConsole
     {
         static void Main(string[] args)
         {
-
             try
             {
-
                 File.WriteAllText("HotSauceDb.hdb", null);
                 InsertSpeedTest();
-                ORMTests();
+                UpdateORMTests();
                 FullIntegration();
-
             }
             catch (Exception ex)
             {
@@ -33,12 +30,14 @@ namespace HotSauceDbConsole
 
         private static void InsertSpeedTest()
         {
-            Executor executor = new Executor();
+            Executor executor = Executor.GetInstance();
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            for (int i = 0; i < 100; i++)
+            var count = 1000;
+
+            for (int i = 0; i < count; i++)
             {
                 House h = new House();
 
@@ -59,25 +58,28 @@ namespace HotSauceDbConsole
 
             var houses = executor.Read<House>("Select * from house");
 
-            if(houses.Count != 100)
+            if(houses.Count != 1000)
             {
-                throw new Exception("count inserted doesn't mathc read");
+                throw new Exception("count inserted doesn't match read");
             }
+
+            Console.WriteLine($"Insert speed test results. Wrote {count} records in {seconds} seconds");
         }
 
-        private static void ORMTests()
+        private static void UpdateORMTests()
         {
+            decimal initialPrice = 430000;
+
             House h = new House();
 
             h.Address = "234 One St";
             h.IsListed = true;
             h.NumBath = 3;
             h.NumBedrooms = 5;
-            h.Price = 430000;
+            h.Price = initialPrice;
 
-            Executor executor = new Executor();
+            Executor executor = Executor.GetInstance();
 
-            //need identity attribute
             executor.CreateTable<House>();
 
             executor.Insert(h);
@@ -88,24 +90,34 @@ namespace HotSauceDbConsole
 
             var h2 = executor.Read<House>("select * from house where houseid = 1");
 
+            if(h2.First().Price != 500000)
+            {
 
+            }
+
+            Console.WriteLine($"");
         }
 
         private static void AlterTableIntegration()
         {
             //group by currently only supported with plain sql
+            var updateParser = new UpdateParser();
+            var stringParser = new StringParser();
             var reader = new Reader();
             var writer = new Writer(reader);
+            var lockManager = new LockManager(writer, reader);
             var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(schemaFetcher),
-                schemaFetcher,
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(writer, reader),
-                reader);
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                updateParser,
+                                schemaFetcher,
+                                new GeneralParser(),
+                                new CreateParser(),
+                                stringParser,
+                                lockManager,
+                                reader);
 
 
             File.WriteAllText(Globals.FILE_NAME, null);
@@ -146,22 +158,25 @@ namespace HotSauceDbConsole
 
         }
 
-
-
         public static void ParallelTest()
         {
+            var updateParser = new UpdateParser();
+            var stringParser = new StringParser();
             var reader = new Reader();
             var writer = new Writer(reader);
+            var lockManager = new LockManager(writer, reader);
             var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(schemaFetcher),
-                schemaFetcher,
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(writer, reader),
-                reader);
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                updateParser,
+                                schemaFetcher,
+                                new GeneralParser(),
+                                new CreateParser(),
+                                stringParser,
+                                lockManager,
+                                reader);
 
 
             interpreter.ProcessStatement(@"create table house4 (
@@ -223,20 +238,23 @@ namespace HotSauceDbConsole
         {
             File.WriteAllText(Globals.FILE_NAME, null);
 
-
-            //group by currently only supported with plain sql
+            var updateParser = new UpdateParser();
+            var stringParser = new StringParser();
             var reader = new Reader();
             var writer = new Writer(reader);
+            var lockManager = new LockManager(writer, reader);
             var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(schemaFetcher),
-                schemaFetcher,
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(writer, reader),
-                reader);
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                updateParser,
+                                schemaFetcher,
+                                new GeneralParser(),
+                                new CreateParser(),
+                                stringParser,
+                                lockManager,
+                                reader);
 
             string identityTable = @"create table Skateboards (
                                             SkateBoardId int Identity,

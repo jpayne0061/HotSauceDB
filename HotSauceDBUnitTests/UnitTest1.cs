@@ -241,18 +241,23 @@ namespace HotSauceDbUnitTests
 
 
             //group by currently only supported with plain sql
+            var updateParser = new UpdateParser();
+            var stringParser = new StringParser();
             var reader = new Reader();
             var writer = new Writer(reader);
+            var lockManager = new LockManager(writer, reader);
             var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(schemaFetcher),
-                schemaFetcher,
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(writer, reader),
-                reader);
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                updateParser,
+                                schemaFetcher,
+                                new GeneralParser(),
+                                new CreateParser(),
+                                stringParser,
+                                lockManager,
+                                reader);
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -283,19 +288,23 @@ namespace HotSauceDbUnitTests
             InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
 
-            //group by currently only supported with plain sql
+            var updateParser = new UpdateParser();
+            var stringParser = new StringParser();
             var reader = new Reader();
             var writer = new Writer(reader);
+            var lockManager = new LockManager(writer, reader);
             var schemaFetcher = new SchemaFetcher(reader);
 
             var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(schemaFetcher),
-                schemaFetcher,
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(writer, reader),
-                reader);
+                                new SelectParser(),
+                                new InsertParser(schemaFetcher),
+                                updateParser,
+                                schemaFetcher,
+                                new GeneralParser(),
+                                new CreateParser(),
+                                stringParser,
+                                lockManager,
+                                reader);
 
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
@@ -314,21 +323,8 @@ namespace HotSauceDbUnitTests
         public void InsertParser_ParseTableName()
         {
             //arrange
-
-            //group by currently only supported with plain sql
             var reader = new Reader();
-            var writer = new Writer(reader);
             var schemaFetcher = new SchemaFetcher(reader);
-
-            var interpreter = new Interpreter(
-                new SelectParser(),
-                new InsertParser(schemaFetcher),
-                schemaFetcher,
-                new GeneralParser(),
-                new CreateParser(),
-                new LockManager(writer, reader),
-                reader);
-
             var insertParser = new InsertParser(schemaFetcher);
 
             string dml = "insert into myTable VALUES ('one', 'two', 'three')";

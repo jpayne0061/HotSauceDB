@@ -8,6 +8,7 @@ using HotSauceDb.Services.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using HotSauceDB.Statics;
 
 namespace HotSauceDb.Services
 {
@@ -15,26 +16,32 @@ namespace HotSauceDb.Services
     {
         private SelectParser _selectParser;
         private InsertParser _insertParser;
+        private UpdateParser _updateParser;
         private SchemaFetcher _schemaFetcher;
         private GeneralParser _generalParser;
         private CreateParser _createParser;
+        private StringParser _stringParser;
         private Reader _reader;
         private LockManager _lockManager;
         private IndexPage _indexPage;
 
         public Interpreter(SelectParser selectParser, 
                             InsertParser insertParser, 
+                            UpdateParser updateParser,
                             SchemaFetcher schemaFetcher,
                             GeneralParser generalParser,
                             CreateParser createParser,
+                            StringParser stringParser,
                             LockManager lockManager,
                             Reader reader)
         {
             _selectParser = selectParser;
             _insertParser = insertParser;
+            _updateParser = updateParser;
             _schemaFetcher = schemaFetcher;
             _generalParser = generalParser;
             _createParser = createParser;
+            _stringParser = stringParser;
             _lockManager = lockManager;
             _reader = reader;
         }
@@ -62,218 +69,10 @@ namespace HotSauceDb.Services
                     return RunAlterTable(sql);
             }
 
-            throw new Exception("Invalid query. Query must start with 'select' or 'insert'");
+            throw new Exception(ErrorMessages.Query_Must_Start_With);
         }
 
-        private object RunAlterTable(string sql)
-        {
-            var parser = new AlterParser();
-
-            var tableName = parser.GetTableName(sql);
-
-            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
-
-            byte newColumnIndex = tableDef.ColumnDefinitions.Select(c => c.Index).Max();
-
-            newColumnIndex++;
-
-            ColumnDefinition columnDefinition = parser.GetNewColumnDefinition(sql, newColumnIndex);
-
-            if(tableDef.ColumnDefinitions.Select(c => c.ColumnName.ToLower()).Contains(columnDefinition.ColumnName.ToLower()))
-            {
-                throw new Exception($"table {tableDef.TableName} already contains a column named {columnDefinition.ColumnName}");
-            }
-
-            return RunAlterTable(tableDef, columnDefinition);
-        }
-
-        private object RunUpdateStatement(string sql)
-        {
-            var parser = new UpdateParser();
-
-            List<KeyValuePair<string, string>> keyValuePairs = parser.GetUpdates(sql);
-
-            var tableName = parser.GetTableName(sql);
-
-            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
-
-            PredicateStep predicateStep = parser.ParsePredicates(sql);
-
-            var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
-
-            var selects = tableDef.ColumnDefinitions
-                            .Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
-
-            selects.ForEach(x => x.IsInSelect = true);
-
-            var readTransaction = new ReadTransaction
-            {
-                TableDefinition = tableDef,
-                Selects = selects,
-                PredicateOperations = predicateOperations
-            };
-
-            var selectData = RunReadTransaction(readTransaction);
-
-            var columnDefs = new List<ColumnDefinition>();
-
-            foreach (var col in keyValuePairs)
-            {
-                var colDef = tableDef.ColumnDefinitions.Where(x => x.ColumnName.ToLower() == col.Key).Single();
-
-                columnDefs.Add(colDef);
-            }
-
-            Converter converter = new Converter();
-
-            Dictionary<int, IComparable> indexToValue = new Dictionary<int, IComparable>();
-
-            foreach (var columnNameToValue in keyValuePairs)
-            {
-                var colDef = tableDef.ColumnDefinitions.Where(x => x.ColumnName.ToLower() == columnNameToValue.Key).Single();
-
-                indexToValue[colDef.Index] = converter.ConvertToType(columnNameToValue.Value, colDef.Type);
-            }
-
-            foreach (var colDef in columnDefs)
-            {
-                foreach (var row in selectData.Rows)
-                {
-                    row[colDef.Index] = indexToValue[colDef.Index];
-                }
-            }
-
-            //each row is updated as its own transaction - not ideal for update - not atomic
-            for (int i = 0; i < selectData.Rows.Count; i++)
-            {
-                var writeTransaction = new WriteTransaction
-                {
-                    Data = selectData.Rows[i].ToArray(),
-                    TableDefinition = tableDef,
-                    AddressToWriteTo = selectData.RowLocations[i],
-                    Query = sql,
-                    UpdateObjectCount = false
-                };
-
-                _lockManager.ProcessWriteTransaction(writeTransaction);
-            }
-
-            return new object();
-        }
-
-        private List<List<IComparable>> ProcessPostPredicateOrderBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
-        {
-            //first, group by
-            var orderByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("order")).FirstOrDefault();
-
-            if(orderByClause == null)
-            {
-                return rows;
-            }
-
-            var orderParts = orderByClause.Split(' ');
-
-            //storing an inenumerable in a temporary list and then adding the "then by"
-            //clause does not work. changes to an ienumerable are not guaranteed to persist
-            switch (orderParts.Count())
-            {
-                case 2:
-                    var select = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
-                    rows = rows.OrderBy(x => x[select.Index]).ToList();
-                    break;
-                case 3:
-                    var selectCase2 = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
-                    var selectCase2_2 = selects.Where(x => x.ColumnName == orderParts[2]).FirstOrDefault();
-                    rows = rows.OrderBy(x => x[selectCase2.Index]).ThenBy(x => x[selectCase2_2.Index]).ToList();
-                    break;
-                case 4:
-                    var selectCase3 = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
-                    var selectCase3_2 = selects.Where(x => x.ColumnName == orderParts[2]).FirstOrDefault();
-                    var selectCase3_3 = selects.Where(x => x.ColumnName == orderParts[3]).FirstOrDefault();
-                    rows = rows.OrderBy(x => x[selectCase3.Index]).ThenBy(x => x[selectCase3_2.Index]).
-                        ThenBy(x => x[selectCase3_3.Index]).ToList();
-                    break;
-                default:
-                    throw new Exception("There is a maximum of three columns allowed in the order by clause.");
-
-            }
-
-            return rows;
-        }
-
-        private List<IComparable> ReturnGroupedList(IComparable key, List<List<IComparable>> groupingValues,
-                                                    IEnumerable<KeyValuePair<int, Func<List<IComparable>, IComparable>>> columnIndexesToAggregate)
-        {
-
-            var aggregatedRow = new List<IComparable> { key };
-
-            foreach (var kvp in columnIndexesToAggregate)
-            {
-                if (kvp.Value == null) //column is not aggregated
-                {
-                    continue;
-                }
-
-                //select value from each list
-                var valuesToGroupFromEachList = groupingValues.Select(x => x[kvp.Key]).ToList();
-
-                var aggregateValue = kvp.Value(valuesToGroupFromEachList);
-
-                aggregatedRow.Add(aggregateValue);
-            }
-
-            return aggregatedRow;
-        }
-
-        //break grouping / order by logic into their own classes
-        private List<List<IComparable>> ProcessPostPredicateGroupBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
-        {
-            Func<IComparable, 
-                List<List<IComparable>>, 
-                IEnumerable<KeyValuePair<int, 
-                Func<List<IComparable>, IComparable>>>, 
-                List<IComparable>> processGrouping = ReturnGroupedList;
-
-
-            //first, group by
-            var groupByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("group")).FirstOrDefault();
-
-            if (groupByClause == null)
-            {
-                return rows;
-            }
-
-            var groupParts = groupByClause.Split(' ');
-
-            if(groupParts.Count() > 2)
-            {
-                throw new Exception("Only one group by column allowed");
-            }
-
-            string groupingColumn = groupParts[1].ToLower();
-
-            selects = selects.Where(x => x.IsInSelect);
-
-            int groupColumnIndex = selects.Select(x => x.ColumnName.ToLower()).ToList().IndexOf(groupingColumn);
-
-            var columnIndexToAggregateFunction = selects.Select((x, i) => new KeyValuePair<int, Func<List<IComparable>, IComparable>>(i, x.AggregateFunction)).ToList();
-
-            var groupings = rows.GroupBy(x => x[groupColumnIndex]);
-
-            var aggregatedRows = new List<List<IComparable>>();
-
-
-            foreach (var grouping in groupings)
-            {
-                List<List<IComparable>> groupingValues = grouping.Select(x => x).ToList();
-
-                List<IComparable> groupedRow = ReturnGroupedList(grouping.Key, groupingValues, columnIndexToAggregateFunction);
-
-                aggregatedRows.Add(groupedRow);
-            }
-
-            return aggregatedRows;
-        }
+       
 
         public List<List<IComparable>> RunQuery(string query)
         {
@@ -307,8 +106,6 @@ namespace HotSauceDb.Services
 
             var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
 
-            //queue transaction
-            //subscribe to event being read/finished
             var readTransaction = new ReadTransaction
             {
                 TableDefinition = tableDef,
@@ -316,7 +113,7 @@ namespace HotSauceDb.Services
                 PredicateOperations = predicateOperations
             };
 
-            var rows = RunReadTransaction(readTransaction).Rows;
+            var rows = _lockManager.ProcessReadTransaction(readTransaction).Rows;
 
             if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {
@@ -325,11 +122,6 @@ namespace HotSauceDb.Services
             }
 
             return rows;
-        }
-
-        public SelectData RunReadTransaction(ReadTransaction readTransaction)
-        {
-            return _lockManager.ProcessReadTransaction(readTransaction);
         }
 
         public List<List<IComparable>> RunQueryAndSubqueries(string query)
@@ -398,9 +190,9 @@ namespace HotSauceDb.Services
             for (int i = 0; i < predicates.Count(); i++)
             {
                 List<string> predicateParts = predicates[i].Split("'")
-                               .Select((element, index) => index % 2 == 0  // If even index
-                                   ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
-                                   : new string[] { "'" + element + "'" })  // Keep the entire item
+                               .Select((element, index) => index % 2 == 0  // If even index...
+                                   ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // then, split the item
+                                   : new string[] { "'" + element + "'" })  // otherwise, keep the entire item
                                     .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).ToList();
 
 
@@ -566,6 +358,212 @@ namespace HotSauceDb.Services
             };
 
             return _lockManager.ProcessAlterTableTransaction(dmlTransaction);
+        }
+
+        private object RunAlterTable(string sql)
+        {
+            var parser = new AlterParser();
+
+            var tableName = parser.GetTableName(sql);
+
+            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
+
+            byte newColumnIndex = tableDef.ColumnDefinitions.Select(c => c.Index).Max();
+
+            newColumnIndex++;
+
+            ColumnDefinition columnDefinition = parser.GetNewColumnDefinition(sql, newColumnIndex);
+
+            if (tableDef.ColumnDefinitions.Select(c => c.ColumnName.ToLower()).Contains(columnDefinition.ColumnName.ToLower()))
+            {
+                throw new Exception($"table {tableDef.TableName} already contains a column named {columnDefinition.ColumnName}");
+            }
+
+            return RunAlterTable(tableDef, columnDefinition);
+        }
+
+        private object RunUpdateStatement(string sql)
+        {
+            List<KeyValuePair<string, string>> columnToValue = _updateParser.GetUpdates(sql);
+
+            var tableName = _updateParser.GetTableName(sql);
+
+            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
+
+            PredicateStep predicateStep = _updateParser.ParsePredicates(sql);
+
+            var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
+
+            var selects = tableDef.ColumnDefinitions
+                            .Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
+
+            selects.ForEach(x => x.IsInSelect = true);
+
+            var readTransaction = new ReadTransaction
+            {
+                TableDefinition = tableDef,
+                Selects = selects,
+                PredicateOperations = predicateOperations
+            };
+
+            var selectData = _lockManager.ProcessReadTransaction(readTransaction);
+
+            var columnDefs = new List<ColumnDefinition>();
+
+            foreach (var col in columnToValue)
+            {
+                var colDef = tableDef.ColumnDefinitions.Where(x => x.ColumnName.ToLower() == col.Key).Single();
+
+                columnDefs.Add(colDef);
+            }
+
+            Dictionary<int, IComparable> indexToValue = new Dictionary<int, IComparable>();
+
+            foreach (var columnNameToValue in columnToValue)
+            {
+                var colDef = tableDef.ColumnDefinitions.Where(x => x.ColumnName.ToLower() == columnNameToValue.Key).Single();
+
+                indexToValue[colDef.Index] = _stringParser.ConvertToType(columnNameToValue.Value, colDef.Type);
+            }
+
+            foreach (var colDef in columnDefs)
+            {
+                foreach (var row in selectData.Rows)
+                {
+                    row[colDef.Index] = indexToValue[colDef.Index];
+                }
+            }
+
+            //each row is updated as its own transaction - not ideal for update - not atomic
+            for (int i = 0; i < selectData.Rows.Count; i++)
+            {
+                var writeTransaction = new WriteTransaction
+                {
+                    Data = selectData.Rows[i].ToArray(),
+                    TableDefinition = tableDef,
+                    AddressToWriteTo = selectData.RowLocations[i],
+                    Query = sql,
+                    UpdateObjectCount = false
+                };
+
+                _lockManager.ProcessWriteTransaction(writeTransaction);
+            }
+
+            return new object();
+        }
+
+        private List<List<IComparable>> ProcessPostPredicateOrderBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
+        {
+            //first, group by
+            var orderByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("order")).FirstOrDefault();
+
+            if (orderByClause == null)
+            {
+                return rows;
+            }
+
+            var orderParts = orderByClause.Split(' ');
+
+            //storing an inenumerable in a temporary list and then adding the "then by"
+            //clause does not work. changes to an ienumerable are not guaranteed to persist
+            switch (orderParts.Count())
+            {
+                case 2:
+                    var select = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[select.Index]).ToList();
+                    break;
+                case 3:
+                    var selectCase2 = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+                    var selectCase2_2 = selects.Where(x => x.ColumnName == orderParts[2]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[selectCase2.Index]).ThenBy(x => x[selectCase2_2.Index]).ToList();
+                    break;
+                case 4:
+                    var selectCase3 = selects.Where(x => x.ColumnName == orderParts[1]).FirstOrDefault();
+                    var selectCase3_2 = selects.Where(x => x.ColumnName == orderParts[2]).FirstOrDefault();
+                    var selectCase3_3 = selects.Where(x => x.ColumnName == orderParts[3]).FirstOrDefault();
+                    rows = rows.OrderBy(x => x[selectCase3.Index]).ThenBy(x => x[selectCase3_2.Index]).
+                        ThenBy(x => x[selectCase3_3.Index]).ToList();
+                    break;
+                default:
+                    throw new Exception(ErrorMessages.Three_Column_Max_In_Order_By);
+
+            }
+
+            return rows;
+        }
+
+        private List<IComparable> ReturnGroupedList(IComparable key, List<List<IComparable>> groupingValues,
+                                                    IEnumerable<KeyValuePair<int, Func<List<IComparable>, IComparable>>> columnIndexesToAggregate)
+        {
+
+            var aggregatedRow = new List<IComparable> { key };
+
+            foreach (var kvp in columnIndexesToAggregate)
+            {
+                if (kvp.Value == null) //column is not aggregated
+                {
+                    continue;
+                }
+
+                //select value from each list
+                var valuesToGroupFromEachList = groupingValues.Select(x => x[kvp.Key]).ToList();
+
+                var aggregateValue = kvp.Value(valuesToGroupFromEachList);
+
+                aggregatedRow.Add(aggregateValue);
+            }
+
+            return aggregatedRow;
+        }
+
+        //break grouping / order by logic into their own classes
+        private List<List<IComparable>> ProcessPostPredicateGroupBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
+        {
+            Func<IComparable,
+                List<List<IComparable>>,
+                IEnumerable<KeyValuePair<int,
+                Func<List<IComparable>, IComparable>>>,
+                List<IComparable>> processGrouping = ReturnGroupedList;
+
+
+            //first, group by
+            var groupByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("group")).FirstOrDefault();
+
+            if (groupByClause == null)
+            {
+                return rows;
+            }
+
+            var groupParts = groupByClause.Split(' ');
+
+            if (groupParts.Count() > 2)
+            {
+                throw new Exception(ErrorMessages.One_Column_Max_In_Group_By);
+            }
+
+            string groupingColumn = groupParts[1].ToLower();
+
+            selects = selects.Where(x => x.IsInSelect);
+
+            int groupColumnIndex = selects.Select(x => x.ColumnName.ToLower()).ToList().IndexOf(groupingColumn);
+
+            var columnIndexToAggregateFunction = selects.Select((x, i) => new KeyValuePair<int, Func<List<IComparable>, IComparable>>(i, x.AggregateFunction)).ToList();
+
+            var groupings = rows.GroupBy(x => x[groupColumnIndex]);
+
+            var aggregatedRows = new List<List<IComparable>>();
+
+
+            foreach (var grouping in groupings)
+            {
+                List<List<IComparable>> groupingValues = grouping.Select(x => x).ToList();
+
+                List<IComparable> groupedRow = ReturnGroupedList(grouping.Key, groupingValues, columnIndexToAggregateFunction);
+
+                aggregatedRows.Add(groupedRow);
+            }
+
+            return aggregatedRows;
         }
     }
 }
