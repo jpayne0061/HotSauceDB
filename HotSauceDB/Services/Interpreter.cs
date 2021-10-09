@@ -108,7 +108,7 @@ namespace HotSauceDb.Services
 
             predicateStep = _selectParser.GetPredicateTrailers(predicateStep, query);
 
-            var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
+            var predicateOperations = BuildPredicateOperations(tableName, predicateStep.Predicates);
 
             var readTransaction = new ReadTransaction
             {
@@ -121,7 +121,7 @@ namespace HotSauceDb.Services
 
             if (predicateStep.PredicateTrailer != null && predicateStep.PredicateTrailer.Any())
             {
-                rows = ProcessPostPredicateGroupBy(selects, predicateStep, rows);
+                rows = ApplyGroupByOperation(selects, predicateStep, rows);
                 rows = ProcessPostPredicateOrderBy(selects, predicateStep, rows);
             }
 
@@ -273,7 +273,7 @@ namespace HotSauceDb.Services
             return convertedVal;
         }
 
-        private List<PredicateOperation> BuildDelagatesFromPredicates(string tableName, List<string> predicates)
+        private List<PredicateOperation> BuildPredicateOperations(string tableName, List<string> predicates)
         {
             if (predicates == null || !predicates.Any())
             {
@@ -396,7 +396,7 @@ namespace HotSauceDb.Services
 
             PredicateStep predicateStep = _updateParser.ParsePredicates(sql);
 
-            var predicateOperations = BuildDelagatesFromPredicates(tableName, predicateStep.Predicates);
+            var predicateOperations = BuildPredicateOperations(tableName, predicateStep.Predicates);
 
             var selects = tableDef.ColumnDefinitions
                             .Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
@@ -520,8 +520,7 @@ namespace HotSauceDb.Services
             return aggregatedRow;
         }
 
-        //break grouping / order by logic into their own classes
-        private List<List<IComparable>> ProcessPostPredicateGroupBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
+        private List<List<IComparable>> ApplyGroupByOperation(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
         {
             Func<IComparable,
                 List<List<IComparable>>,
