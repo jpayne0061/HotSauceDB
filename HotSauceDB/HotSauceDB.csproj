@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
 
     <PackageId>HotSauceDb</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>Evan Payne</Authors>
     <Company>Evan Payne</Company>
     <Description>A lightweight, file based database.</Description>

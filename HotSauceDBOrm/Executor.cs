@@ -10,10 +10,10 @@ namespace HotSauceDbOrm
     public class Executor
     {
         private Interpreter _interpreter;
-        private Create _creator;
-        private Insert _inserter;
-        private Read _reader;
-        private Update _updater;
+        private Create      _creator;
+        private Insert      _inserter;
+        private Read        _reader;
+        private Update      _updater;
 
         private static Executor _instance;
         private static object _lockObject = new object();
@@ -28,20 +28,24 @@ namespace HotSauceDbOrm
                         if (!File.Exists(databaseName))
                             using (File.Create(databaseName)) ;
 
-                    var updateParser = new UpdateParser();
-                    var stringParser = new StringParser();
-                    var reader = new Reader();
-                    var writer = new Writer(reader);
-                    var lockManager = new LockManager(writer, reader);
+                    var updateParser  = new UpdateParser();
+                    var stringParser  = new StringParser();
+                    var reader        = new Reader();
+                    var writer        = new Writer(reader);
+                    var lockManager   = new LockManager(writer, reader);
                     var schemaFetcher = new SchemaFetcher(reader);
+                    var selectParser  = new SelectParser();
+                    var insertParser  = new InsertParser(schemaFetcher);
+                    var generalParser = new GeneralParser();
+                    var createParser  = new CreateParser();
 
                     var interpreter = new Interpreter(
-                                        new SelectParser(),
-                                        new InsertParser(schemaFetcher),
+                                        selectParser,
+                                        insertParser,
                                         updateParser,
                                         schemaFetcher,
-                                        new GeneralParser(),
-                                        new CreateParser(),
+                                        generalParser,
+                                        createParser,
                                         stringParser,
                                         lockManager,
                                         reader);
@@ -55,10 +59,10 @@ namespace HotSauceDbOrm
 
         private Executor(Interpreter interpreter)
         {
-            _creator = new Create(interpreter);
+            _creator  = new Create(interpreter);
             _inserter = new Insert(interpreter);
-            _reader = new Read(interpreter);
-            _updater = new Update(interpreter);
+            _reader   = new Read(interpreter);
+            _updater  = new Update(interpreter);
 
             _interpreter = interpreter;
         }
@@ -82,6 +86,12 @@ namespace HotSauceDbOrm
         {
             _updater.UpdateRecord<T>(model);
         }
+
+        public void DropDatabaseIfExists()
+        {
+            File.WriteAllText("HotSauceDb.hdb", null);
+        }
+
         /// <summary>
         /// Processes any sql statement supported by HotSauceDb
         /// </summary>

@@ -11,23 +11,16 @@ namespace HotSauceSampleCrudApp
 
         static void Main(string[] args)
         {
-            Startup();
-
             _skateboardRepo = new SkateboardRepo();
 
-            Loop();
-        }
+            //creating a table is an idempotent operation
+            Executor.GetInstance().CreateTable<Skateboard>();
 
-        static void Loop()
-        {
-            while (true)
+            int userSelection;
+
+            do
             {
-                int userSelection = Menu();
-
-                if (userSelection == 5)
-                {
-                    break;
-                }
+                userSelection = Menu();
 
                 switch (userSelection)
                 {
@@ -41,14 +34,16 @@ namespace HotSauceSampleCrudApp
                         UpdateSkateboardPrice();
                         break;
                     case 4:
+                        MarkSkateboardAsDeleted();
                         break;
                 }
             }
+            while (userSelection != 5);
         }
 
         static int Menu()
         {
-            Console.WriteLine("1: List new skateboard");
+            Console.WriteLine("1: Create new skateboard");
             Console.WriteLine("2: Show all skateboards");
             Console.WriteLine("3: Update skateboard price");
             Console.WriteLine("4: Mark skateboard as deleted");
@@ -76,31 +71,40 @@ namespace HotSauceSampleCrudApp
 
             foreach (var skateboard in skateboards)
             {
-                Console.ForegroundColor = ConsoleColor.DarkMagenta;
                 DisplaySkateboard(skateboard);
                 Console.WriteLine();
-                Console.ResetColor();
             }
         }
 
         static void UpdateSkateboardPrice()
         {
-            Console.WriteLine("Enter skateboard id");
-            int skateboardId = int.Parse(Console.ReadLine());
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Skateboard skateboard = _skateboardRepo.GetSkateboardById(skateboardId);
+            Skateboard skateboard = GetSkateboardById();
             DisplaySkateboard(skateboard);
-            Console.ResetColor();
 
             Console.WriteLine("Enter new price for skateboard");
             decimal newPrice = decimal.Parse(Console.ReadLine());
 
             _skateboardRepo.UpdateSkateboardPrice(skateboard, newPrice);
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("skateboard price has been updated!");
-            Console.ResetColor();
+            Console.WriteLine("skateboard price has been updated");
+        }
+
+        static void MarkSkateboardAsDeleted()
+        {
+            Skateboard skateboard = GetSkateboardById();
+            _skateboardRepo.MarkSkateboardAsDeleted(skateboard);
+
+            Console.WriteLine("skateboard has been marked as deleted");
+        }
+
+        static Skateboard GetSkateboardById()
+        {
+            Console.WriteLine("Enter skateboard id");
+            int skateboardId = int.Parse(Console.ReadLine());
+
+            Skateboard skateboard = _skateboardRepo.GetSkateboardById(skateboardId);
+
+            return skateboard;
         }
 
         static void DisplaySkateboard(Skateboard skateboard)
@@ -113,10 +117,7 @@ namespace HotSauceSampleCrudApp
 
         static void Startup()
         {
-            Executor executor = Executor.GetInstance();
 
-            //creating a table is an omnipotent operation
-            executor.CreateTable<Skateboard>();
         }
     }
 }
