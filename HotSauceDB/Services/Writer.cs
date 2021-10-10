@@ -58,36 +58,19 @@ namespace HotSauceDb.Services
 
             bool isFirstRowOfTable = addressToWriteTo - Constants.Int16_Byte_Length == tableDefinition.DataAddress;
 
-            if (tableDefinition.TableContainsIdentityColumn && row.Length == tableDefinition.ColumnDefinitions.Count())
-            {
-                row = row.Skip(1).ToArray();
-            }
-
             IComparable newIdentityValue = 0;
 
-            if(tableDefinition.TableContainsIdentityColumn && !isFirstRowOfTable)
+            if (!isEdit && tableDefinition.TableContainsIdentityColumn)
             {
-                IComparable previousIdentityValue = _reader.GetLastRowFromTable(tableDefinition)[0];
+                newIdentityValue = GetNewIdentityValue(tableDefinition, isFirstRowOfTable);
 
-                newIdentityValue = IncrementNumberValue(previousIdentityValue, tableDefinition.ColumnDefinitions[0].Type);
+                if (row.Length == tableDefinition.ColumnDefinitions.Count())
+                {
+                    row = row.Skip(1).ToArray();
+                }
 
-                IComparable[] newValues = new IComparable[row.Length + 1];
-                newValues[0] = newIdentityValue;                               
-                Array.Copy(row, 0, newValues, 1, row.Length);
-
-                row = newValues;
+                row = CopyArrayWithNewIdentity(row, newIdentityValue);
             }
-            else if(tableDefinition.TableContainsIdentityColumn && isFirstRowOfTable)
-            {
-                newIdentityValue = IncrementNumberValue(CastToNumberType(0, tableDefinition.ColumnDefinitions[0].Type), tableDefinition.ColumnDefinitions[0].Type);
-
-                IComparable[] newValues = new IComparable[row.Length + 1];
-                newValues[0] = newIdentityValue;
-                Array.Copy(row, 0, newValues, 1, row.Length);
-
-                row = newValues;
-            }
-
 
             using (FileStream fileStream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
             {
@@ -103,6 +86,35 @@ namespace HotSauceDb.Services
             }
 
             return newIdentityValue;
+        }
+
+        private IComparable GetNewIdentityValue(TableDefinition tableDefinition, bool isFirstRowOfTable)
+        {
+            IComparable newIdentityValue = 0;
+
+            IComparable previousIdentityValue; 
+
+            if(!isFirstRowOfTable)
+            {
+                previousIdentityValue = _reader.GetLastRowFromTable(tableDefinition)[0];
+            }
+            else
+            {
+                previousIdentityValue = CastToNumberType(0, tableDefinition.ColumnDefinitions[0].Type);
+            }
+
+            newIdentityValue = IncrementNumberValue(previousIdentityValue, tableDefinition.ColumnDefinitions[0].Type);
+
+            return newIdentityValue;
+        }
+
+        private IComparable[] CopyArrayWithNewIdentity(IComparable[] row, IComparable newIdentityValue)
+        {
+            IComparable[] newValues = new IComparable[row.Length + 1];
+            newValues[0] = newIdentityValue;
+            Array.Copy(row, 0, newValues, 1, row.Length);
+
+            return newValues;
         }
 
         private IComparable IncrementNumberValue(IComparable comparable, TypeEnum typeEnum)

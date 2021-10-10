@@ -21,6 +21,8 @@ namespace HotSauceDb.Services
                     return Int64.Parse(val);
                 case TypeEnum.String:
                     return val.Trim('\'');
+                case TypeEnum.DateTime:
+                    return DateTime.Parse(val.Trim('\''));
                 default:
                     throw new Exception($"no enum found for {type.ToString()}");
             }

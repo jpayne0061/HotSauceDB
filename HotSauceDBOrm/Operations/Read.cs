@@ -16,6 +16,8 @@ namespace HotSauceDbOrm.Operations
 
         public List<T> ReadRows<T>(string query) where T : new()
         {
+            query = query.ToLower();
+
             PropertyInfo[] properties = typeof(T).GetProperties();
 
             List<List<IComparable>> rows = _interpreter.RunQueryAndSubqueries(query);

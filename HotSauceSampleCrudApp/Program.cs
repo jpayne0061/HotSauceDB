@@ -38,6 +38,7 @@ namespace HotSauceSampleCrudApp
                         ShowAllSkateboards();
                         break;
                     case 3:
+                        UpdateSkateboardPrice();
                         break;
                     case 4:
                         break;
@@ -47,7 +48,6 @@ namespace HotSauceSampleCrudApp
 
         static int Menu()
         {
-            Console.WriteLine("Please enter an option");
             Console.WriteLine("1: List new skateboard");
             Console.WriteLine("2: Show all skateboards");
             Console.WriteLine("3: Update skateboard price");
@@ -76,11 +76,39 @@ namespace HotSauceSampleCrudApp
 
             foreach (var skateboard in skateboards)
             {
-                Console.WriteLine($"Skateboard brand: {skateboard.Brand}");
-                Console.WriteLine($"Skateboard price: {skateboard.Price}");
-                Console.WriteLine($"Skateboard date listed: {skateboard.DateListed}");
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                DisplaySkateboard(skateboard);
                 Console.WriteLine();
+                Console.ResetColor();
             }
+        }
+
+        static void UpdateSkateboardPrice()
+        {
+            Console.WriteLine("Enter skateboard id");
+            int skateboardId = int.Parse(Console.ReadLine());
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Skateboard skateboard = _skateboardRepo.GetSkateboardById(skateboardId);
+            DisplaySkateboard(skateboard);
+            Console.ResetColor();
+
+            Console.WriteLine("Enter new price for skateboard");
+            decimal newPrice = decimal.Parse(Console.ReadLine());
+
+            _skateboardRepo.UpdateSkateboardPrice(skateboard, newPrice);
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("skateboard price has been updated!");
+            Console.ResetColor();
+        }
+
+        static void DisplaySkateboard(Skateboard skateboard)
+        {
+            Console.WriteLine($"Skateboard id: {skateboard.SkateboardId}");
+            Console.WriteLine($"Skateboard brand: {skateboard.Brand}");
+            Console.WriteLine($"Skateboard price: {skateboard.Price}");
+            Console.WriteLine($"Skateboard date listed: {skateboard.DateListed}");
         }
 
         static void Startup()

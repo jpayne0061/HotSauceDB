@@ -9,10 +9,7 @@ namespace HotSauceDbOrm.Operations
 {
     public class Update : Insert
     {
-        public Update(Interpreter interpreter) : base(interpreter)
-        {
-
-        }
+        public Update(Interpreter interpreter) : base(interpreter) { }
 
         public void UpdateRecord<T>(T obj)
         {
@@ -46,7 +43,7 @@ namespace HotSauceDbOrm.Operations
 
             for (int i = 0; i < propertyInfos.Length; i++)
             {
-                if(propertyInfos[i].PropertyType == typeof(string))
+                if(propertyInfos[i].PropertyType == typeof(string) || propertyInfos[i].PropertyType == typeof(DateTime))
                 {
                     setStatement[i] = propertyInfos[i].Name + " = '" + (IComparable)propertyInfos[i].GetValue(obj) + "'";
                 }

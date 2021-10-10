@@ -8,9 +8,7 @@ namespace HotSauceDbOrm.Operations
 {
     public class Insert : OperationsBase
     {
-        public Insert(Interpreter interepreter) : base(interepreter)
-        {
-        }
+        public Insert(Interpreter interepreter) : base(interepreter) { }
 
         public void InsertRow<T>(T obj)
         {
