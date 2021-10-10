@@ -5,7 +5,7 @@ HotsauceDB implements its own SQL dialect, which is not ANSI compliant.
 
 #### ACID Compliance
 - Atomicity - X
-- Consistency - ?
+- Consistency - HotSauceDB doesn't really have rules, so...I guess?
 - Isolation - 	&#10004;
 - Durability - X
 
