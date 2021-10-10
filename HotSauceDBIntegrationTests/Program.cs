@@ -18,7 +18,7 @@ namespace HotSauceDbConsole
             try
             {
                 File.WriteAllText("HotSauceDb.hdb", null);
-                //InsertSpeedTest();
+                InsertSpeedTest();
                 UpdateORMTests();
                 FullIntegration();
             }
@@ -35,7 +35,7 @@ namespace HotSauceDbConsole
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            var count = 1000;
+            var count = 100;
 
             for (int i = 0; i < count; i++)
             {
@@ -58,7 +58,7 @@ namespace HotSauceDbConsole
 
             var houses = executor.Read<House>("Select * from house");
 
-            if(houses.Count != 1000)
+            if(houses.Count != count)
             {
                 throw new Exception("count inserted doesn't match read");
             }
@@ -367,6 +367,10 @@ namespace HotSauceDbConsole
 
                 interpreter.ProcessStatement(insertStatement);
             }
+
+            string selectInOperator = "select * from tools where name in (select name from tools)";
+
+            var selectInOperatorRows = (List<List<IComparable>>)interpreter.ProcessStatement(selectInOperator);
 
             //houses count should be: 1401
 

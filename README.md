@@ -1,13 +1,13 @@
 ## About HotSauceDB
-HotsauceDB is a hobby project written in C#/.NET CORE. It is a hobby project and is not intended for production use. 
+HotsauceDB is a file based database written in C#/.NET CORE. It is a hobby project and is not intended for production use. 
 
 HotsauceDB implements its own SQL dialect, which is not ANSI compliant.
 
 #### ACID Compliance
-- Atomicity - no
-- Consistency - no
-- Isolation - yes
-- Durability - no
+- Atomicity - X
+- Consistency - ?
+- Isolation - 	&#10004;
+- Durability - X
 
 ## Getting Started
 
@@ -77,14 +77,22 @@ executor.Insert(h);
 house.Prce = 150000;
 executor.Update(h);
 ```
+## Supported Operators
+- =
+- !=
+- <
+- <=
+- \>
+- \>=
+- IN
+- OR
+- AND
 
+## Examples of Supported Queries
 
-## Supported Queries
+Only inserts, reads, and updates are supported at this time. 
 
-Only inserts, reads, and updates are supported at this time. HotsauceDB supports mutlithreaded 
-applications.
-
-The following read operations are all valid for HotSauceDB
+The following read operations are all valid examples for HotSauceDB:
 
 ```
 select * 
