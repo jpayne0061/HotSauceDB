@@ -7,7 +7,7 @@ namespace HotSauceSampleCrudApp
 {
     class Program
     {
-        static SkateboardRepo _skateboardRepo;
+        static ISkateboardRepo _skateboardRepo;
 
         static void Main(string[] args)
         {
