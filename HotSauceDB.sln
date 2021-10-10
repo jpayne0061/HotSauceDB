@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29001.49
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDB", "HotSauceDB\HotSauceDB.csproj", "{C691F5CF-971A-4770-9A31-EB821214E3F9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDBIntegrationTests", "HotSauceDBConsole\HotSauceDBIntegrationTests.csproj", "{0EB724F7-D12D-4EB9-B28F-49E7398409ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDBIntegrationTests", "HotSauceDBIntegrationTests\HotSauceDBIntegrationTests.csproj", "{0EB724F7-D12D-4EB9-B28F-49E7398409ED}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDBUnitTests", "HotSauceDBUnitTests\HotSauceDBUnitTests.csproj", "{B69E7E7F-A57C-4FAF-BE4A-7778F215510F}"
 EndProject
