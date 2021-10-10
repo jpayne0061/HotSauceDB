@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDBUnitTests", "HotS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotSauceDbOrm", "HotSauceDBOrm\HotSauceDbOrm.csproj", "{5870861D-5EAC-4E97-8AB8-935307B7D949}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HotSauceSampleCrudApp", "HotSauceSampleCrudApp\HotSauceSampleCrudApp.csproj", "{AEB97219-FE33-4884-88CB-3F8B0785FCC4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{5870861D-5EAC-4E97-8AB8-935307B7D949}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5870861D-5EAC-4E97-8AB8-935307B7D949}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5870861D-5EAC-4E97-8AB8-935307B7D949}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEB97219-FE33-4884-88CB-3F8B0785FCC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEB97219-FE33-4884-88CB-3F8B0785FCC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEB97219-FE33-4884-88CB-3F8B0785FCC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEB97219-FE33-4884-88CB-3F8B0785FCC4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

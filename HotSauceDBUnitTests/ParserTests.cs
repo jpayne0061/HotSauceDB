@@ -3,16 +3,13 @@ using HotSauceDb.Enums;
 using HotSauceDb.Models;
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace HotSauceDbUnitTests
 {
     [TestClass]
-    public class UnitTest1
+    public class ParserTests
     {
         [TestMethod]
         public void GetColumns_Happy()

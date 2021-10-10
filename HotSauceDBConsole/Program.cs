@@ -18,7 +18,7 @@ namespace HotSauceDbConsole
             try
             {
                 File.WriteAllText("HotSauceDb.hdb", null);
-                InsertSpeedTest();
+                //InsertSpeedTest();
                 UpdateORMTests();
                 FullIntegration();
             }

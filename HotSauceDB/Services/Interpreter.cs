@@ -303,6 +303,11 @@ namespace HotSauceDb.Services
                 var colDef = tableDefinition.ColumnDefinitions
                     .Where(x => x.ColumnName == predicateParts[1].ToLower()).FirstOrDefault();
 
+                if(colDef == null)
+                {
+                    throw new Exception($"Unknown column in where clause: {predicateParts[1]}");
+                }
+
                 var operatorToDelegate = new Dictionary<string, Func<IComparable, object, bool>>
                 {
                     { ">",   CompareDelegates.IsMoreThan },
