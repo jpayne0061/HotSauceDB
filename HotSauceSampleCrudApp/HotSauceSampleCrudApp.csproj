@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HotSauceDBOrm\HotSauceDbOrm.csproj" />
+    <PackageReference Include="HotSauceDbOrm" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
