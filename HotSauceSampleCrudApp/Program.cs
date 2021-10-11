@@ -114,10 +114,5 @@ namespace HotSauceSampleCrudApp
             Console.WriteLine($"Skateboard price: {skateboard.Price}");
             Console.WriteLine($"Skateboard date listed: {skateboard.DateListed}");
         }
-
-        static void Startup()
-        {
-
-        }
     }
 }
