@@ -19,12 +19,29 @@ namespace HotSauceDbConsole
             {
                 File.WriteAllText("HotSauceDb.hdb", null);
                 InsertSpeedTest();
+                ORMTests();
                 UpdateORMTests();
                 FullIntegration();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Task failed successfully (not really): {ex.Message}. Stack trace: \n\n {ex.StackTrace}");
+            }
+        }
+
+        private static void ORMTests()
+        {
+            Executor executor = Executor.GetInstance();
+
+            executor.CreateTable<Person>();
+
+            executor.Insert(new Person { Name = "Anna", Age = 11, Height = 56 });
+
+            var rows = executor.Read<Person>("select * from Person where Name = 'Anna'");
+
+            if(rows.Count != 1)
+            {
+                throw new Exception("ORM Tests: count does not match");
             }
         }
 
@@ -281,6 +298,11 @@ namespace HotSauceDbConsole
 
 
             var skateboardRows = (List<List<IComparable>>)interpreter.ProcessStatement(readAllSkateboards);
+
+            string readSkateboardByName = @"select * from Skateboards where name = 'HotSauce'";
+
+
+            var readSkateboardByNameRows = (List<List<IComparable>>)interpreter.ProcessStatement(readSkateboardByName);
 
 
             string createHousesTable = @"create table houses (
