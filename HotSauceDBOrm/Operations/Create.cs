@@ -19,7 +19,7 @@ namespace HotSauceDbOrm.Operations
             _interpreter = interpreter;
         }
 
-        public void CreateTable<T>()
+        public void CreateTable<T>() where T : class
         {
             PropertyInfo[] properties = typeof(T).GetProperties();
 

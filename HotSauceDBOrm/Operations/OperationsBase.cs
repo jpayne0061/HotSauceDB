@@ -15,12 +15,12 @@ namespace HotSauceDbOrm.Operations
         {
             _interpreter = interpreter;
         }
-        public PropertyInfo GetIdentityColumn<T>()
+        public PropertyInfo GetIdentityColumn<T>() where T : class
         {
             return typeof(T).GetProperties().Where(x => x.Name.ToLower() == typeof(T).Name.ToLower() + "id").FirstOrDefault();
         }
 
-        protected IComparable[] GetRow<T>(T obj)
+        protected IComparable[] GetRow<T>(T obj) where T : class
         {
             HashSet<Type> types = new HashSet<Type>
             {

@@ -67,12 +67,12 @@ namespace HotSauceDbOrm
             _interpreter = interpreter;
         }
 
-        public void CreateTable<T>()
+        public void CreateTable<T>() where T : class
         {
             _creator.CreateTable<T>();
         }
 
-        public void Insert<T>(T model)
+        public void Insert<T>(T model) where T : class
         {
             _inserter.InsertRow(model);
         }
@@ -82,7 +82,7 @@ namespace HotSauceDbOrm
             return _reader.ReadRows<T>(query);
         }
 
-        public void Update<T>(T model)
+        public void Update<T>(T model) where T : class
         {
             _updater.UpdateRecord<T>(model);
         }

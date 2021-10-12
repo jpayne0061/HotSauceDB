@@ -11,7 +11,7 @@ namespace HotSauceDbOrm.Operations
     {
         public Update(Interpreter interpreter) : base(interpreter) { }
 
-        public void UpdateRecord<T>(T obj)
+        public void UpdateRecord<T>(T obj) where T : class
         {
             string tableName = typeof(T).Name;
 

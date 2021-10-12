@@ -266,6 +266,8 @@ namespace HotSauceDbConsole
 
             interpreter.ProcessStatement(identityTable);
 
+            var emptySkateboardRows = (List<List<IComparable>>)interpreter.ProcessStatement("select * from skateboards where Name = 'bob'");
+
             for (int i = 0; i < 500; i++)
             {
                 string insertIdentity = "insert into Skateboards values ('HotSauce', " + rd.Next() + ")";

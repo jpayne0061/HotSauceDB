@@ -108,6 +108,11 @@ namespace HotSauceDb.Services
 
             short rowCount = GetObjectCount(tableDefinition.DataAddress);
 
+            if(rowCount == 0)
+            {
+                return selectData;
+            }
+
             using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (BinaryReader binaryReader = new BinaryReader(fileStream))

@@ -10,7 +10,7 @@ namespace HotSauceDbOrm.Operations
     {
         public Insert(Interpreter interepreter) : base(interepreter) { }
 
-        public void InsertRow<T>(T obj)
+        public void InsertRow<T>(T obj) where T : class
         {
             IComparable[] row = GetRow(obj);
 

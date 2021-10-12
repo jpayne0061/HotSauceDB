@@ -3,14 +3,14 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <PackageId>HotSauceDbOrm</PackageId>
-    <Version>1.2.0</Version>
+    <Version>1.4.0</Version>
     <Authors>Evan Payne</Authors>
     <Company>Evan Payne</Company>
     <Description>An ORM for HotSauceDB</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HotSauceDB\HotSauceDB.csproj" />
+    <PackageReference Include="HotSauceDb" Version="1.3.0" />
   </ItemGroup>
 
 </Project>
