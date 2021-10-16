@@ -76,7 +76,7 @@ namespace HotSauceDbOrm.Operations
             return row;
         }
 
-        private PropertyInfo[] OrderPropertiesByColumnIndex(TableDefinition tableDefinition, PropertyInfo[] properties)
+        protected PropertyInfo[] OrderPropertiesByColumnIndex(TableDefinition tableDefinition, PropertyInfo[] properties)
         {
             List<ColumnDefinition> columnDefinitions = tableDefinition.ColumnDefinitions;
 

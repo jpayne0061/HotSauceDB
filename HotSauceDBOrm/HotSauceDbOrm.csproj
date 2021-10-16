@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <PackageId>HotSauceDbOrm</PackageId>
-    <Version>1.6.0</Version>
+    <Version>1.7.0</Version>
     <Authors>Evan Payne</Authors>
     <Company>Evan Payne</Company>
     <Description>An ORM for HotSauceDB</Description>
