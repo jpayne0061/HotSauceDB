@@ -583,9 +583,21 @@ namespace HotSauceDbConsole
 
             bool updatedRowsCountCorrect = updatedRows.Count() == 5;
 
+            string createTable10 = @"create table houses10( Price int, NumBedRooms int, NumBathrooms int, DateListed DateTime)";
+
+            interpreter.ProcessStatement(createTable10);
+
+            string insert60 = "insert into houses10 values (300000, 5, 4, '10/15/2021 9:03:37 pm')";
+
+            interpreter.ProcessStatement(insert60);
+
+            var housesWithDateTime = (List<List<IComparable>>)interpreter.ProcessStatement("select * from houses10 where DateListed > '10/15/2021 9:00:00 pm' ");
+
+            bool housesWithDateTimeCount = housesWithDateTime.Count == 1;
+
             if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
                 || !toolSubQueryCompare || !compare || !groupedCountCorrect || !groupedValuesCorrect
-                || !colCountCorrect || !orderIsCorrect || !insertCountCorrect || !updatedOneCorrect || !updatedTwoCorrect || !updatedRowsCountCorrect)
+                || !colCountCorrect || !orderIsCorrect || !insertCountCorrect || !updatedOneCorrect || !updatedTwoCorrect || !updatedRowsCountCorrect || !housesWithDateTimeCount)
             {
                 throw new Exception("tests failed");
             }

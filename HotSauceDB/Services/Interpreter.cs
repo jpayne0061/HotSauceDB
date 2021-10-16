@@ -263,7 +263,7 @@ namespace HotSauceDb.Services
                     convertedVal = val.TrimStart('\'').TrimEnd('\'').PadRight(columnDefinition.ByteSize - 1, ' ');
                     break;
                 case TypeEnum.DateTime:
-                    convertedVal = Convert.ToDateTime(val);
+                    convertedVal = Convert.ToDateTime(val.TrimStart('\'').TrimEnd('\''));
                     break;
                 default:
                     convertedVal = null;

@@ -32,6 +32,11 @@ namespace HotSauceDb.Services.Parsers
             {
                 string[] columnNameAndType = columnParts[i].Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
+                if(columnNameAndType.Length < 2)
+                {
+                    throw new Exception($"Column name or data type missing from table definition: '{columnNameAndType[0]}'");
+                }
+
                 bool isIdentityColumn = IsIdentityColumn(columnNameAndType);
 
                 if (isIdentityColumn && i > 0)
