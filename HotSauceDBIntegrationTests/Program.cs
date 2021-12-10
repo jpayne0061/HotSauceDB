@@ -1,6 +1,7 @@
 ﻿using HotSauceDb;
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
+using HotSauceDBIntegrationTests.TestModels;
 using HotSauceDbOrm;
 using System;
 using System.Collections.Generic;
@@ -17,16 +18,54 @@ namespace HotSauceDbConsole
         {
             try
             {
-                File.WriteAllText("HotSauceDb.hdb", null);
-                InsertSpeedTest();
-                ORMTests();
-                UpdateORMTests();
-                FullIntegration();
+                //File.WriteAllText("HotSauceDb.hdb", null);
+                Alter_Table_Tests();
+                //Expressions_Tests();
+                //InsertSpeedTest();
+                //ORMTests();
+                //UpdateORMTests();
+                //FullIntegration();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Task failed successfully (not really): {ex.Message}. Stack trace: \n\n {ex.StackTrace}");
             }
+        }
+
+        private static void Expressions_Tests()
+        {
+            Executor executor = Executor.GetInstance();
+            executor.CreateTable<Person>();
+
+            executor.Insert(new Person { Name = "Anna", Age = 11, Height = 56 });
+            executor.Insert(new Person { Name = "Bob", Age = 62, Height = 59 });
+            executor.Insert(new Person { Name = "Taylor", Age = 33, Height = 62 });
+
+            var rows = executor.Read<Person>("select * from Person where Name = 'Anna' OR Name = 'Bob'");
+
+            if (rows.Count != 2)
+            {
+                throw new Exception("ORM Tests: count does not match");
+            }
+
+            rows = executor.Read<Person>("select * from Person where Name = 'Anna' OR Name = 'Bob' AND Age > 12 OR Age = 11");
+
+            if (rows.Count != 2)
+            {
+                throw new Exception("ORM Tests: count does not match");
+            }
+        }
+
+        private static void Alter_Table_Tests()
+        {
+            Executor executor = Executor.GetInstance();
+            executor.CreateTable<Coffee>();
+
+            //executor.Insert(new Coffee { Name = "Hazelnut", Price = 12.54m, Ounces = 16, SellByDate = new DateTime(2021, 12, 1) });
+            //executor.Insert(new Coffee { Name = "Pumpkin Spice", Price = 10.54m, Ounces = 18, SellByDate = new DateTime(2021, 11, 6) });
+            //executor.Insert(new Coffee { Name = "House", Price = 8.00m, Ounces = 12, SellByDate = new DateTime(2021, 8, 5) });
+
+            var rows = executor.Read<Coffee>("select * from Coffee");
         }
 
         private static void ORMTests()

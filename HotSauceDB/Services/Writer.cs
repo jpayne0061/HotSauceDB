@@ -231,6 +231,21 @@ namespace HotSauceDb.Services
             return resultMessage;
         }
 
+        public ResultMessage RenameTable(TableDefinition tableDefinition)
+        {
+            using (FileStream stream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            {
+                using (BinaryWriter binaryWriter = new BinaryWriter(stream))
+                {
+                    binaryWriter.BaseStream.Position = tableDefinition.TableDefinitionAddress + Constants.Int64_Byte_Length;// lastTableDefAddress;
+
+                    binaryWriter.Write(tableDefinition.TableName);
+                }
+            }
+
+            return new ResultMessage { Message = $"table {tableDefinition.TableName} has been renamed"};
+        }
+
         private ResultMessage WriteTableDefinition(TableDefinition tableDefinition, long addressToWrite)
         {
             //this should return current next page, instead of the first page address

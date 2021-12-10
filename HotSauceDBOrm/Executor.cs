@@ -59,15 +59,15 @@ namespace HotSauceDbOrm
 
         private Executor(Interpreter interpreter)
         {
-            _creator  = new Create(interpreter);
             _inserter = new Insert(interpreter);
-            _reader   = new Read(interpreter);
+            _reader   = new Read  (interpreter);
+            _creator  = new Create(interpreter);
             _updater  = new Update(interpreter);
 
             _interpreter = interpreter;
         }
 
-        public void CreateTable<T>() where T : class
+        public void CreateTable<T>() where T : class, new()
         {
             _creator.CreateTable<T>();
         }
@@ -92,10 +92,6 @@ namespace HotSauceDbOrm
             File.WriteAllText("HotSauceDb.hdb", null);
         }
 
-        /// <summary>
-        /// Processes any sql statement supported by HotSauceDb
-        /// </summary>
-        /// <returns>object</returns>
         public object ProcessRawQuery(string query)
         {
             return _interpreter.ProcessStatement(query);

@@ -24,5 +24,26 @@ namespace HotSauceDB.Helpers
                     throw new Exception("Unsupported type");
             }
         }
+
+        public static IComparable GetDefaultDotNetValueForType(TypeEnum typeEnum)
+        {
+            switch (typeEnum)
+            {
+                case TypeEnum.Boolean:
+                    return false;
+                case TypeEnum.Char:
+                    return ' ';
+                case TypeEnum.DateTime:
+                    return new DateTime();
+                case TypeEnum.Decimal:
+                case TypeEnum.Int32:
+                case TypeEnum.Int64:
+                    return 0;
+                case TypeEnum.String:
+                    return "";
+                default:
+                    throw new Exception("Unsupported type");
+            }
+        }
     }
 }

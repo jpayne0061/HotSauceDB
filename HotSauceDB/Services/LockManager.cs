@@ -51,6 +51,15 @@ namespace HotSauceDb.Services
             return msg;
         }
 
+        public ResultMessage RenameTable(SchemaTransaction schemaTransaction)
+        {
+            ResultMessage msg = _writer.RenameTable(schemaTransaction.TableDefinition);
+
+            _tableLocks[msg.Data] = new object();
+
+            return msg;
+        }
+
         public ResultMessage ProcessAlterTableTransaction(AlterTableTransaction alterTableTransaction)
         {
             lock (_tableLocks[alterTableTransaction.TableDefinition.DataAddress])

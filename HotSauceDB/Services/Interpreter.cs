@@ -18,7 +18,7 @@ namespace HotSauceDb.Services
         private const string _insert = "insert";
         private const string _create = "create";
         private const string _update = "update";
-        private const string _alter = "alter";
+        private const string _alter  = "alter";
 
         private SelectParser _selectParser;
         private InsertParser _insertParser;
@@ -177,6 +177,21 @@ namespace HotSauceDb.Services
             return msg;
         }
 
+        public ResultMessage RenameTable(TableDefinition tableDef)
+        {
+            SchemaTransaction dmlTransaction = new SchemaTransaction
+            {
+                TableDefinition = tableDef
+            };
+
+            ResultMessage msg = _lockManager.RenameTable(dmlTransaction);
+
+            _schemaFetcher.RefreshIndexPage();
+            _indexPage = _reader.GetIndexPage();
+
+            return msg;
+        }
+
         public InsertResult RunInsert(IComparable[] row, string tableName, string dml = null)
         {
             try
@@ -319,37 +334,44 @@ namespace HotSauceDb.Services
                     { "in",  CompareDelegates.Contains},
                 };
 
-                if (predicateParts[2].ToLower() == "in")
+                try
                 {
-                    string innerValue = predicateParts[3].Trim('(').Trim(')');
-
-                    var list = new List<string>(innerValue.Split(','));
-
-                    var targetList = list
-                              .Select(x => ConvertToType(colDef, x))
-                              .ToHashSet();
-
-                    predicateOperations.Add(new PredicateOperation
+                    if (predicateParts[2].ToLower() == "in")
                     {
-                        Delegate = operatorToDelegate[predicateParts[2].ToLower()],
-                        Predicate = predicates[i],
-                        ColumnName = predicateParts[1],
-                        Value = targetList,
-                        Operator = predicateParts[0],
-                        ColumnIndex = colDef.Index
-                    });
+                        string innerValue = predicateParts[3].Trim('(').Trim(')');
+
+                        var list = new List<string>(innerValue.Split(','));
+
+                        var targetList = list
+                                  .Select(x => ConvertToType(colDef, x))
+                                  .ToHashSet();
+
+                        predicateOperations.Add(new PredicateOperation
+                        {
+                            Delegate = operatorToDelegate[predicateParts[2].ToLower()],
+                            Predicate = predicates[i],
+                            ColumnName = predicateParts[1],
+                            Value = targetList,
+                            Operator = predicateParts[0],
+                            ColumnIndex = colDef.Index
+                        });
+                    }
+                    else
+                    {
+                        predicateOperations.Add(new PredicateOperation
+                        {
+                            Delegate = operatorToDelegate[predicateParts[2]],
+                            Predicate = predicates[i],
+                            ColumnName = predicateParts[1],
+                            Value = ConvertToType(colDef, predicateParts[3]),
+                            Operator = predicateParts[0],
+                            ColumnIndex = colDef.Index
+                        });
+                    }
                 }
-                else
+                catch (KeyNotFoundException)
                 {
-                    predicateOperations.Add(new PredicateOperation
-                    {
-                        Delegate = operatorToDelegate[predicateParts[2]],
-                        Predicate = predicates[i],
-                        ColumnName = predicateParts[1],
-                        Value = ConvertToType(colDef, predicateParts[3]),
-                        Operator = predicateParts[0],
-                        ColumnIndex = colDef.Index
-                    });
+                    throw new Exception($"Illegal operator: {predicateParts[2]}");
                 }
             }
 
