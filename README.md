@@ -80,7 +80,7 @@ namespace TestHotSauce
 
 ```
 
-#### ACID Compliance
+### ACID Compliance
 - Atomicity - X
 - Consistency - HotSauceDB doesn't really have rules, so...I guess?
 - Isolation - 	&#10004;
@@ -88,7 +88,7 @@ namespace TestHotSauce
 
 ## Getting Started
 
-#### Create a Model
+#### The Basics
 
 Complex objects are not supported as properties. The following data types are supported:
 - Boolean
