@@ -11,10 +11,14 @@ namespace HotSauceSampleCrudApp
 
         static void Main(string[] args)
         {
-            _skateboardRepo = new SkateboardRepo();
+            Executor.GetInstance().DropDatabaseIfExists();
 
             //creating a table is an idempotent operation
-            Executor.GetInstance().CreateTable<Skateboard>();
+            var executor = Executor.GetInstance();
+
+            executor.CreateTable<Skateboard>();
+
+            _skateboardRepo = new SkateboardRepo();
 
             int userSelection;
 

@@ -94,6 +94,7 @@ namespace HotSauceDbOrm
 
         public void DropDatabaseIfExists()
         {
+            _instance = null;
             File.WriteAllText(Constants.FILE_NAME, null);
         }
 
