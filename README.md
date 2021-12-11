@@ -86,9 +86,9 @@ namespace TestHotSauce
 - Isolation - 	&#10004;
 - Durability - &#10004;
 
-## Getting Started
+## The Basics
 
-#### The Basics
+#### Create a Model
 
 Complex objects are not supported as properties. The following data types are supported:
 - Boolean
