@@ -8,9 +8,17 @@ namespace HotSauceDb.Services.Parsers
     {
         public List<KeyValuePair<string, string>> GetUpdates(string query)
         {
-            query = ToLowerAndTrim(query);
-
             List<string> queryParts = SplitOnSeparatorsExceptQuotesAndParantheses(query, new char[] { ' ', '\r', '\n', ',' });
+
+            for (int i = 0; i < queryParts.Count; i++)
+            {
+                if(IsNonEmptyStringValue(queryParts[i]))
+                {
+                    continue;
+                }
+
+                queryParts[i] = ToLowerAndTrim(queryParts[i]);
+            }
 
             int whereClauseIndex = queryParts.IndexOf("where");
 
@@ -60,5 +68,19 @@ namespace HotSauceDb.Services.Parsers
             throw new NotImplementedException();
         }
 
+        private bool IsNonEmptyStringValue(string str)
+        {
+            if(string.IsNullOrWhiteSpace(str))
+            {
+                return false;
+            }
+
+            if(str.First() == '\'' && str.Last() == '\'')
+            {
+                return true;
+            }
+
+            return false;
+        }
     }
 }

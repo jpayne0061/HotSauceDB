@@ -3,6 +3,83 @@ HotsauceDB is a file based database written in C#/.NET CORE. It is a hobby proje
 
 HotsauceDB implements its own SQL dialect, which is not ANSI compliant.
 
+Its goal is to provide the developer a file based database and ORM with the smallest amount of configuration possible.
+
+## Getting Started
+To get started, simply install the HotSauceDbOrm nuget package. Its only dependency is the HotSauceDb nuget package.
+
+Below is a small console app using HotSauceDB to create, insert, and update records.
+```
+using HotSauceDbOrm;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+
+namespace TestHotSauce
+{
+    class Book
+    {
+        //adding a property with pattern
+        //<class_name>id will designate
+        //property as an auto incrementing field
+        public int BookId { get; set; }
+        [StringLength(50)]
+        public string Name { get; set; }
+        public DateTime ReleaseDate { get; set; }
+        public int NumberOfPages { get; set; }
+        public decimal Price { get; set; }
+        public bool IsPublicDomain { get; set; }
+        [StringLength(50)]
+        public string Author { get; set; }
+
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Executor.GetInstance().DropDatabaseIfExists();
+            var executor = Executor.GetInstance();
+
+            //creating a table is an idempotent operation
+            executor.CreateTable<Book>();
+
+            executor.Insert(new Book
+            {
+                Name = "One Hundred Years of Solitude",
+                Author = "GGM",
+                IsPublicDomain = false,
+                NumberOfPages = 150,
+                Price = 15.99m,
+                ReleaseDate = new DateTime(1967, 1, 1)
+            });
+
+            executor.Insert(new Book
+            {
+                Name = "Slaghterhouse Five",
+                Author = "Vonnegut",
+                IsPublicDomain = false,
+                NumberOfPages = 150,
+                Price = 15.99m,
+                ReleaseDate = new DateTime(1969, 3, 31)
+            });
+
+            List<Book> books = executor.Read<Book>("select * from Book");
+
+            Book book = books.First();
+
+            book.NumberOfPages = 400;
+
+            executor.Update<Book>(book);
+
+            List<Book> modifiedBooks = executor.Read<Book>("select * from Book where Author = 'GGM'");
+        }
+    }
+}
+
+```
+
 #### ACID Compliance
 - Atomicity - X
 - Consistency - HotSauceDB doesn't really have rules, so...I guess?
