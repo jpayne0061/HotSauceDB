@@ -198,7 +198,7 @@ namespace HotSauceDb.Services
             {
                 if(data == null)
                 {
-                    binaryWriter.Write("".PadRight(columnDefinition.ByteSize - 1, ' '));
+                    binaryWriter.Write(string.Empty.PadRight(columnDefinition.ByteSize - 1, ' '));
                 }
                 else
                 {

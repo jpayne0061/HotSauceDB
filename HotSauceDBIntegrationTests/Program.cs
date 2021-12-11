@@ -61,9 +61,9 @@ namespace HotSauceDbConsole
             Executor executor = Executor.GetInstance();
             executor.CreateTable<Coffee>();
 
-            //executor.Insert(new Coffee { Name = "Hazelnut", Price = 12.54m, Ounces = 16, SellByDate = new DateTime(2021, 12, 1) });
-            //executor.Insert(new Coffee { Name = "Pumpkin Spice", Price = 10.54m, Ounces = 18, SellByDate = new DateTime(2021, 11, 6) });
-            //executor.Insert(new Coffee { Name = "House", Price = 8.00m, Ounces = 12, SellByDate = new DateTime(2021, 8, 5) });
+            //executor.Insert(new Coffee { Name = "Haze", Price = 12.54m, Ounces = 16, SellByDate = new DateTime(2021, 12, 1) });
+            //executor.Insert(new Coffee { Name = "Pump", Price = 10.54m, Ounces = 18, SellByDate = new DateTime(2021, 11, 6) });
+            //executor.Insert(new Coffee { Name = "Hous", Price = 8.00m, Ounces = 12, SellByDate = new DateTime(2021, 8, 5) });
 
             var rows = executor.Read<Coffee>("select * from Coffee");
         }

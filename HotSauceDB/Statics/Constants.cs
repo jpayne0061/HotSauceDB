@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using HotSauceDb.Enums;
+using System;
+using System.Collections.Generic;
 
 namespace HotSauceDb
 {
@@ -27,5 +29,16 @@ namespace HotSauceDb
 
         public static readonly HashSet<string> Predicate_Trailers = new HashSet<string> { "order", "group" };
         public static readonly HashSet<string> Aggregate_Functions = new HashSet<string> { "max", "min", "count" };
+
+        public static readonly Dictionary<Type, TypeEnum> TypeToTypeEnum = new Dictionary<Type, TypeEnum>
+        {
+            {typeof(bool),     TypeEnum.Boolean},
+            {typeof(char),     TypeEnum.Char},
+            {typeof(DateTime), TypeEnum.DateTime},
+            {typeof(decimal),  TypeEnum.Decimal},
+            {typeof(Int32),    TypeEnum.Int32},
+            {typeof(Int64),    TypeEnum.Int64},
+            {typeof(string),   TypeEnum.String}
+        };
     }
 }

@@ -40,7 +40,7 @@ namespace HotSauceDB.Helpers
                 case TypeEnum.Int64:
                     return 0;
                 case TypeEnum.String:
-                    return "";
+                    return string.Empty;
                 default:
                     throw new Exception("Unsupported type");
             }

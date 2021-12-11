@@ -1,6 +1,7 @@
 ﻿using HotSauceDb;
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
+using HotSauceDB.Services;
 using HotSauceDbOrm.Operations;
 using System.Collections.Generic;
 using System.IO;
@@ -28,16 +29,17 @@ namespace HotSauceDbOrm
                         if (!File.Exists(databaseName))
                             using (File.Create(databaseName)) ;
 
-                    var updateParser  = new UpdateParser();
-                    var stringParser  = new StringParser();
-                    var reader        = new Reader();
-                    var writer        = new Writer(reader);
-                    var lockManager   = new LockManager(writer, reader);
-                    var schemaFetcher = new SchemaFetcher(reader);
-                    var selectParser  = new SelectParser();
-                    var insertParser  = new InsertParser(schemaFetcher);
-                    var generalParser = new GeneralParser();
-                    var createParser  = new CreateParser();
+                    var updateParser   = new UpdateParser();
+                    var stringParser   = new StringParser();
+                    var reader         = new Reader();
+                    var writer         = new Writer(reader);
+                    var lockManager    = new LockManager(writer, reader);
+                    var schemaFetcher  = new SchemaFetcher(reader);
+                    var selectParser   = new SelectParser();
+                    var insertParser   = new InsertParser(schemaFetcher);
+                    var generalParser  = new GeneralParser();
+                    var createParser   = new CreateParser();
+                    
 
                     var interpreter = new Interpreter(
                                         selectParser,
@@ -61,7 +63,10 @@ namespace HotSauceDbOrm
         {
             _inserter = new Insert(interpreter);
             _reader   = new Read  (interpreter);
-            _creator  = new Create(interpreter);
+            _creator  = new Create(interpreter, 
+                                    new SchemaComparer(interpreter), 
+                                    new DataMigrator(interpreter));
+
             _updater  = new Update(interpreter);
 
             _interpreter = interpreter;
@@ -89,7 +94,7 @@ namespace HotSauceDbOrm
 
         public void DropDatabaseIfExists()
         {
-            File.WriteAllText("HotSauceDb.hdb", null);
+            File.WriteAllText(Constants.FILE_NAME, null);
         }
 
         public object ProcessRawQuery(string query)

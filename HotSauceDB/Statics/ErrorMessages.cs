@@ -8,5 +8,10 @@
         public static string Query_Must_Start_With = "Invalid query.Query must start with 'select' or 'insert'";
         public static string Three_Column_Max_In_Order_By = "There is a maximum of three columns allowed in the order by clause.";
         public static string One_Column_Max_In_Group_By = "Only one group by column allowed";
+        public static string String_Column_Attribute_Missing = @"Failed to get string length from model. String properties
+must have a StringLength attribute. Example:
+
+[StringLength(20)] 
+public string Name { get; set; }";
     }
 }

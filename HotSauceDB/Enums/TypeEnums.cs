@@ -9,6 +9,6 @@
         Int64,
         String,
         DateTime,
-        UnsupportedType
+        UnsupportedType = default
     }
 }
