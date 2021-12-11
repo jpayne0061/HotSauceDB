@@ -29,14 +29,14 @@ namespace HotSauceDB.Services
                 .ToDictionary(x => Tuple.Create(x.ColumnName.ToLower(), x.Type), x => x);
 
             Dictionary<string, ColumnDefinition> columnNameToDefinition =
-                        tableDefinition.ColumnDefinitions.ToDictionary(x => x.ColumnName, x => x);
+                        tableDefinition.ColumnDefinitions.ToDictionary(x => x.ColumnName.ToLower(), x => x);
 
             if (properties.Length != tableDefinition.ColumnDefinitions.Count)
                 return true;
 
             for (int i = 0; i < properties.Length; i++)
             {
-                string newPropertyName = properties[i].Name;
+                string newPropertyName = properties[i].Name.ToLower();
                 Type newPropertyType = properties[i].PropertyType;
 
                 Tuple<string, TypeEnum> columnKey =

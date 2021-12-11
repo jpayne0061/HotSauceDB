@@ -18,13 +18,13 @@ namespace HotSauceDbConsole
         {
             try
             {
-                //File.WriteAllText("HotSauceDb.hdb", null);
+                File.WriteAllText("HotSauceDb.hdb", null);
                 Alter_Table_Tests();
-                //Expressions_Tests();
-                //InsertSpeedTest();
-                //ORMTests();
-                //UpdateORMTests();
-                //FullIntegration();
+                Expressions_Tests();
+                InsertSpeedTest();
+                ORMTests();
+                UpdateORMTests();
+                FullIntegration();
             }
             catch (Exception ex)
             {
@@ -61,11 +61,36 @@ namespace HotSauceDbConsole
             Executor executor = Executor.GetInstance();
             executor.CreateTable<Coffee>();
 
-            //executor.Insert(new Coffee { Name = "Haze", Price = 12.54m, Ounces = 16, SellByDate = new DateTime(2021, 12, 1) });
-            //executor.Insert(new Coffee { Name = "Pump", Price = 10.54m, Ounces = 18, SellByDate = new DateTime(2021, 11, 6) });
-            //executor.Insert(new Coffee { Name = "Hous", Price = 8.00m, Ounces = 12, SellByDate = new DateTime(2021, 8, 5) });
+            executor.Insert(new Coffee { Name = "Haze", Price = 12.54m, SellByDate = new DateTime(2021, 12, 1) });
+            executor.Insert(new Coffee { Name = "Pump", Price = 10.54m, SellByDate = new DateTime(2021, 11, 6) });
+            executor.Insert(new Coffee { Name = "Hous", Price = 8.00m, SellByDate = new DateTime(2021, 8, 5) });
 
             var rows = executor.Read<Coffee>("select * from Coffee");
+
+            if(rows.Count != 3)
+            {
+                throw new Exception("Alter table tests: row count does not match");
+            }
+
+            executor.CreateTable<HotSauceDBIntegrationTests.TestNamespace.Coffee>();
+
+            executor.Insert(new HotSauceDBIntegrationTests.TestNamespace.Coffee { Name = "Haze", Price = 12.54m, SellByDate = new DateTime(2021, 12, 1), Letter = 'C' });
+            executor.Insert(new HotSauceDBIntegrationTests.TestNamespace.Coffee { Name = "Pump", Price = 10.54m, SellByDate = new DateTime(2021, 11, 6), Letter = 'D' });
+            executor.Insert(new HotSauceDBIntegrationTests.TestNamespace.Coffee { Name = "Hous", Price = 8.00m, SellByDate = new DateTime(2021, 8, 5), Letter = ' ' });
+
+            var rowAfterAlter = executor.Read<HotSauceDBIntegrationTests.TestNamespace.Coffee>("select * from Coffee");
+
+            if (rowAfterAlter.Count != 6)
+            {
+                throw new Exception("Alter table tests: row count does not match after alter");
+            }
+
+            if(rowAfterAlter[5].Letter != ' ')
+            {
+                throw new Exception("Alter table tests: data is not correct");
+            }
+            
+
         }
 
         private static void ORMTests()
@@ -78,7 +103,7 @@ namespace HotSauceDbConsole
 
             var rows = executor.Read<Person>("select * from Person where Name = 'Anna'");
 
-            if(rows.Count != 1)
+            if(rows.Count != 2)
             {
                 throw new Exception("ORM Tests: count does not match");
             }

@@ -19,7 +19,7 @@ namespace HotSauceDb
         public const int PAGE_DATA_MAX = Page_Size - (Int64_Byte_Length + Int16_Byte_Length);
 
         public const short Boolean_Byte_Length = 1;
-        public const short Char_Byte_Length = 2;
+        public const short Char_Byte_Length = 1;
         public const short Decimal_Byte_Length = 16;
         public const short Int16_Byte_Length = 2;
         public const short Int32_Byte_Length = 4;
