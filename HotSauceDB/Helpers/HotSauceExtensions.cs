@@ -1,5 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using HotSauceDb;
+using HotSauceDB.Attributes;
+using HotSauceDB.Statics;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace HotSauceDB.Helpers
 {
@@ -22,5 +27,15 @@ namespace HotSauceDB.Helpers
                 return default(T2);
             }
         }
+
+        public static PropertyInfo[] GetSupportedProperties(this Type type)
+        {
+            PropertyInfo[] properties = type.GetProperties();
+
+            var supportedTypes = Constants.TypeToTypeEnum.Keys;
+
+            return properties.Where(x => supportedTypes.Contains(x.PropertyType)).ToArray();
+        }
+
     }
 }

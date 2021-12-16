@@ -1,5 +1,6 @@
 ﻿using HotSauceDb.Models;
 using HotSauceDb.Services;
+using HotSauceDB.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace HotSauceDbOrm.Operations
         }
         public PropertyInfo GetIdentityColumn<T>() where T : class
         {
-            return typeof(T).GetProperties().Where(x => x.Name.ToLower() == typeof(T).Name.ToLower() + "id").FirstOrDefault();
+            return typeof(T).GetSupportedProperties().Where(x => x.Name.ToLower() == typeof(T).Name.ToLower() + "id").FirstOrDefault();
         }
 
         protected IComparable[] GetRow<T>(T obj) where T : class
@@ -35,7 +36,7 @@ namespace HotSauceDbOrm.Operations
 
             TableDefinition tableDef = _interpreter.GetTableDefinition(obj.GetType().Name);
 
-            PropertyInfo[] properties = OrderPropertiesByColumnIndex(tableDef, obj.GetType().GetProperties());
+            PropertyInfo[] properties = OrderPropertiesByColumnIndex(tableDef, obj.GetType().GetSupportedProperties());
 
             int count = properties.Where(x => types.Contains(x.PropertyType)).Count();
 

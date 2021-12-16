@@ -30,7 +30,7 @@ namespace HotSauceDbOrm.Operations
 
         public void CreateTable<T>() where T : class, new()
         {
-            PropertyInfo[] properties = typeof(T).GetProperties();
+            PropertyInfo[] properties = typeof(T).GetSupportedProperties();
 
             string tableName = typeof(T).Name;
 
@@ -151,7 +151,7 @@ namespace HotSauceDbOrm.Operations
                 }
                 catch
                 {
-                    throw new Exception(ErrorMessages.String_Column_Attribute_Missing);
+                    throw new Exception(ErrorMessages.String_Column_Attribute_Missing(propertyInfo.Name));
                 }
 
                 return (short)stringLength;

@@ -1,5 +1,6 @@
 ﻿using HotSauceDb.Models;
 using HotSauceDb.Services;
+using HotSauceDB.Helpers;
 using HotSauceDB.Statics;
 using System;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace HotSauceDbOrm.Operations
                 throw new Exception(ErrorMessages.Update_Missing_Identity);
             }
 
-            PropertyInfo identityProperty = typeof(T).GetProperties().Where(x => x.Name.ToLower() == identityColumn.ColumnName.ToLower()).Single();
+            PropertyInfo identityProperty = typeof(T).GetSupportedProperties().Where(x => x.Name.ToLower() == identityColumn.ColumnName.ToLower()).Single();
 
             IComparable identityValue = (IComparable)identityProperty.GetValue(obj);
 
@@ -37,7 +38,7 @@ namespace HotSauceDbOrm.Operations
         {
             string sql = $"update {tableName} set ";
 
-            PropertyInfo[] propertyInfos = typeof(T).GetProperties();
+            PropertyInfo[] propertyInfos = typeof(T).GetSupportedProperties();
 
             string[] setStatement = new string[propertyInfos.Length];
 
