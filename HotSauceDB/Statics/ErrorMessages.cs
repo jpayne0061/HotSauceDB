@@ -13,8 +13,10 @@ must have a StringLength attribute. Example:
 
 [StringLength(20)] 
 public string Name";
-        public static string NO_RELATED_ENTITY_FOUND(string x) => $@"Could not find related entity '{x}'. Make sure you have a RelatedEntity attribute on the property you'd like to join on, like so:  [RelatedEntity('${x}')]";
+        public static string NO_RELATED_ENTITY_FOUND(string x) => $@"Could not find related entity '{x}'. Make sure you have a RelatedEntity attribute on the property you'd like to join on, like so:  [RelatedEntity('{x}')]";
+        public static string RELATED_ATTRIBUTE_IS_MISSING(string x) => $@"Related Entity Attribute on property '${x}' is null or empty";
 
+        public static string IDENTITY_COLUMN_IS_MISSING(string x) => $@"Entity '${x}' is missing an identitty column, which is necessary for this operation. Add a column to this entity named {x}Id to resolve the error";
     }
     
 }

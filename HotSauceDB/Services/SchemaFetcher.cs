@@ -1,9 +1,10 @@
 ﻿using HotSauceDb.Models;
+using HotSauceDB.Interfaces;
 using System.Linq;
 
 namespace HotSauceDb.Services
 {
-    public class SchemaFetcher
+    public class SchemaFetcher : ISchemaFetcher
     {
         private IndexPage _indexPage;
         private Reader _reader;

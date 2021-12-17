@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace HotSauceDBIntegrationTests.TestModels
+namespace HotSauceIntegrationTests.TestModels
 {
     public class Coffee
     {
@@ -16,7 +16,7 @@ namespace HotSauceDBIntegrationTests.TestModels
 }
 
 
-namespace HotSauceDBIntegrationTests.TestNamespace
+namespace HotSauceIntegrationTests.TestNamespace
 {
     public class Coffee
     {

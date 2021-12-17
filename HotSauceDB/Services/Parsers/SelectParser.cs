@@ -1,4 +1,5 @@
-﻿using HotSauceDb.Models;
+﻿using HotSauceDb.Enums;
+using HotSauceDb.Models;
 using HotSauceDB.Helpers;
 using System;
 using System.Collections.Generic;
@@ -257,6 +258,19 @@ namespace HotSauceDb.Services.Parsers
             sub = sub.Replace(" ", "").Replace("\r\n", "");
 
             return sub.Length > 7 && sub.Substring(0, 7) == "(select";
+        }
+
+        internal string ReplaceSubqueryWithValue(string query, InnerStatement subquery, string value, TypeEnum type)
+        {
+            string subQueryWithParantheses = query.Substring(subquery.StartIndexOfOpenParantheses,
+                subquery.EndIndexOfCloseParantheses - subquery.StartIndexOfOpenParantheses + 1);
+
+            if (type == TypeEnum.String)
+            {
+                value = "'" + value + "'";
+            }
+
+            return query.Replace(subQueryWithParantheses, value);
         }
 
     }

@@ -151,7 +151,7 @@ namespace HotSauceDb.Services
 
                 var subQueryValue = string.Join(",", RunQuery(subQuery.Statement).Select(x => x[0]));
 
-                query = ReplaceSubqueryWithValue(query, subQuery, subQueryValue, subQueryColumn.Type);
+                query = _selectParser.ReplaceSubqueryWithValue(query, subQuery, subQueryValue, subQueryColumn.Type);
 
                return RunQueryAndSubqueries(query);
             }
@@ -221,18 +221,7 @@ namespace HotSauceDb.Services
             }
         }
 
-        internal string ReplaceSubqueryWithValue(string query, InnerStatement subquery, string value, TypeEnum type)
-        {
-            string subQueryWithParantheses = query.Substring(subquery.StartIndexOfOpenParantheses,
-                subquery.EndIndexOfCloseParantheses - subquery.StartIndexOfOpenParantheses + 1);
 
-            if(type == TypeEnum.String)
-            {
-                value = "'" + value + "'";
-            }
-
-            return query.Replace(subQueryWithParantheses, value);
-        }
 
         private InsertResult RunInsertStatement(string dml)
         {

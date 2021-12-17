@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace HotSauceDbConsole
+namespace HotSauceIntegrationTests.TestModels
 {
     public class House
     {

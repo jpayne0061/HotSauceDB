@@ -1,8 +1,9 @@
-﻿using HotSauceDb;
+using HotSauceDb;
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
-using HotSauceDBIntegrationTests.TestModels;
 using HotSauceDbOrm;
+using HotSauceIntegrationTests.TestModels;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,31 +11,90 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace HotSauceDbConsole
+namespace HotSauceIntegrationTests
 {
-    class Program
+    [TestClass]
+    public class IntegrationTests
     {
-        static void Main(string[] args)
+        public IntegrationTests()
         {
-            try
-            {
-                File.WriteAllText("HotSauceDb.hdb", null);
-                Alter_Table_Tests();
-                Expressions_Tests();
-                InsertSpeedTest();
-                ORMTests();
-                UpdateORMTests();
-                FullIntegration();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Task failed successfully (not really): {ex.Message}. Stack trace: \n\n {ex.StackTrace}");
-            }
+            Executor.GetInstance().DropDatabaseIfExists(); 
         }
 
-        private static void Expressions_Tests()
+        [TestMethod]
+        public void JoinTests()
         {
             Executor executor = Executor.GetInstance();
+
+            executor.CreateTable<Book>();
+            executor.CreateTable<Author>();
+
+            executor.Insert(new Author
+            {
+                Name = "Steinbeck",
+                BirthDate = new DateTime(1920, 8, 8)
+            });
+
+            executor.Insert(new Author
+            {
+                Name = "Marquez",
+                BirthDate = new DateTime(1915, 4, 26)
+            });
+
+            executor.Insert(new Book
+            {
+                Name = "One Hundred Years of Solitude",
+                IsPublicDomain = false,
+                NumberOfPages = 150,
+                Price = 15.99m,
+                ReleaseDate = new DateTime(1967, 1, 1),
+                AuthorId = 2
+            });
+
+            executor.Insert(new Book
+            {
+                Name = "Slaghterhouse Five",
+                IsPublicDomain = false,
+                NumberOfPages = 150,
+                Price = 15.99m,
+                ReleaseDate = new DateTime(1969, 3, 31),
+                AuthorId = 0
+            });
+
+            executor.Insert(new Book
+            {
+                Name = "Winter of Our Discontent",
+                IsPublicDomain = false,
+                NumberOfPages = 180,
+                Price = 8.99m,
+                ReleaseDate = new DateTime(1974, 12, 8),
+                AuthorId = 1
+            });
+
+            executor.Insert(new Book
+            {
+                Name = "East of Eden",
+                IsPublicDomain = false,
+                NumberOfPages = 415,
+                Price = 98.99m,
+                ReleaseDate = new DateTime(1956, 12, 8),
+                AuthorId = 1
+            });
+
+
+            List<Author> authors = executor.Read<Author>("select * from Author").Include<Author, Book>();
+
+            Assert.AreEqual(authors[0].Name, "Steinbeck".PadRight(49));
+            Assert.AreEqual(authors[1].Name, "Marquez".PadRight(49));
+            Assert.AreEqual(authors[0].Books[0].Name, "Winter of Our Discontent".PadRight(49));
+            Assert.AreEqual(authors[1].Books[0].Name, "One Hundred Years of Solitude".PadRight(49));
+        }
+
+        [TestMethod]
+        public void Expressions_Tests()
+        {
+            Executor executor = Executor.GetInstance();
+
             executor.CreateTable<Person>();
 
             executor.Insert(new Person { Name = "Anna", Age = 11, Height = 56 });
@@ -43,22 +103,18 @@ namespace HotSauceDbConsole
 
             var rows = executor.Read<Person>("select * from Person where Name = 'Anna' OR Name = 'Bob'");
 
-            if (rows.Count != 2)
-            {
-                throw new Exception("ORM Tests: count does not match");
-            }
+            Assert.AreEqual(rows.Count, 2);
 
             rows = executor.Read<Person>("select * from Person where Name = 'Anna' OR Name = 'Bob' AND Age > 12 OR Age = 11");
 
-            if (rows.Count != 2)
-            {
-                throw new Exception("ORM Tests: count does not match");
-            }
+            Assert.AreEqual(2, rows.Count);
         }
 
-        private static void Alter_Table_Tests()
+        [TestMethod]
+        public void Alter_Table_Tests()
         {
             Executor executor = Executor.GetInstance();
+
             executor.CreateTable<Coffee>();
 
             executor.Insert(new Coffee { Name = "Haze", Price = 12.54m, SellByDate = new DateTime(2021, 12, 1) });
@@ -67,33 +123,22 @@ namespace HotSauceDbConsole
 
             var rows = executor.Read<Coffee>("select * from Coffee");
 
-            if(rows.Count != 3)
-            {
-                throw new Exception("Alter table tests: row count does not match");
-            }
+            Assert.AreEqual(3, rows.Count);
 
-            executor.CreateTable<HotSauceDBIntegrationTests.TestNamespace.Coffee>();
+            executor.CreateTable<TestNamespace.Coffee>();
 
-            executor.Insert(new HotSauceDBIntegrationTests.TestNamespace.Coffee { Name = "Haze", Price = 12.54m, SellByDate = new DateTime(2021, 12, 1), Letter = 'C' });
-            executor.Insert(new HotSauceDBIntegrationTests.TestNamespace.Coffee { Name = "Pump", Price = 10.54m, SellByDate = new DateTime(2021, 11, 6), Letter = 'D' });
-            executor.Insert(new HotSauceDBIntegrationTests.TestNamespace.Coffee { Name = "Hous", Price = 8.00m, SellByDate = new DateTime(2021, 8, 5), Letter = ' ' });
+            executor.Insert(new TestNamespace.Coffee { Name = "Haze", Price = 12.54m, SellByDate = new DateTime(2021, 12, 1), Letter = 'C' });
+            executor.Insert(new TestNamespace.Coffee { Name = "Pump", Price = 10.54m, SellByDate = new DateTime(2021, 11, 6), Letter = 'D' });
+            executor.Insert(new TestNamespace.Coffee { Name = "Hous", Price = 8.00m, SellByDate = new DateTime(2021, 8, 5), Letter = ' ' });
 
-            var rowAfterAlter = executor.Read<HotSauceDBIntegrationTests.TestNamespace.Coffee>("select * from Coffee");
+            var rowAfterAlter = executor.Read<TestNamespace.Coffee>("select * from Coffee");
 
-            if (rowAfterAlter.Count != 6)
-            {
-                throw new Exception("Alter table tests: row count does not match after alter");
-            }
-
-            if(rowAfterAlter[5].Letter != ' ')
-            {
-                throw new Exception("Alter table tests: data is not correct");
-            }
-            
-
+            Assert.AreEqual(rowAfterAlter.Count, 6);
+            Assert.AreEqual(rowAfterAlter[5].Letter, ' ');
         }
 
-        private static void ORMTests()
+        [TestMethod]
+        public void ORMTests()
         {
             Executor executor = Executor.GetInstance();
 
@@ -103,13 +148,11 @@ namespace HotSauceDbConsole
 
             var rows = executor.Read<Person>("select * from Person where Name = 'Anna'");
 
-            if(rows.Count != 2)
-            {
-                throw new Exception("ORM Tests: count does not match");
-            }
+            Assert.AreEqual(1, rows.Count);
         }
 
-        private static void InsertSpeedTest()
+        [TestMethod]
+        public void InsertSpeedTest()
         {
             Executor executor = Executor.GetInstance();
 
@@ -139,16 +182,16 @@ namespace HotSauceDbConsole
 
             var houses = executor.Read<House>("Select * from house");
 
-            if(houses.Count != count)
-            {
-                throw new Exception("count inserted doesn't match read");
-            }
+            Assert.AreEqual(count, houses.Count);
 
             Console.WriteLine($"Insert speed test results. Wrote {count} records in {seconds} seconds");
         }
 
-        private static void UpdateORMTests()
+        [TestMethod]
+        public void UpdateORMTests()
         {
+            Executor executor = Executor.GetInstance();
+
             decimal initialPrice = 430000;
 
             House h = new House();
@@ -158,8 +201,6 @@ namespace HotSauceDbConsole
             h.NumBath = 3;
             h.NumBedrooms = 5;
             h.Price = initialPrice;
-
-            Executor executor = Executor.GetInstance();
 
             executor.CreateTable<House>();
 
@@ -171,75 +212,12 @@ namespace HotSauceDbConsole
 
             var h2 = executor.Read<House>("select * from house where houseid = 1");
 
-            if(h2.First().Price != 500000)
-            {
-
-            }
-
-            Console.WriteLine($"");
+            Assert.AreEqual(500000, h2.First().Price);
         }
 
-        private static void AlterTableIntegration()
-        {
-            //group by currently only supported with plain sql
-            var updateParser = new UpdateParser();
-            var stringParser = new StringParser();
-            var reader = new Reader();
-            var writer = new Writer(reader);
-            var lockManager = new LockManager(writer, reader);
-            var schemaFetcher = new SchemaFetcher(reader);
-
-            var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                updateParser,
-                                schemaFetcher,
-                                new GeneralParser(),
-                                new CreateParser(),
-                                stringParser,
-                                lockManager,
-                                reader);
-
-
-            File.WriteAllText(Constants.FILE_NAME, null);
-
-
-            string createHousesTable = @"create table houses (
-                                            Price decimal,
-                                            Price2 decimal,
-                                            Price3 decimal,
-                                            Price4 decimal
-                                       )";
-
-            interpreter.ProcessStatement(createHousesTable);
-
-            Random rd = new Random();
-
-            for (int i = 0; i < 242; i++)
-            {
-
-                string insertStatement = @"insert into houses values (" + rd.Next().ToString() + "," +
-                                           rd.Next().ToString() + "," + rd.Next().ToString() + "," + rd.Next().ToString() + ")";
-
-                interpreter.ProcessStatement(insertStatement);
-            }
-
-            var housesOutBeforeAlter = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM houses");
-
-            string alterTableDefinition = "Alter table houses add NumBathrooms int";
-
-            interpreter.ProcessStatement(alterTableDefinition);
-
-            var housesOut = (List<List<IComparable>>)interpreter.ProcessStatement("select * FROM houses");
-
-            if(housesOut.Count != 242)
-            {
-                throw new Exception("row count doesnt match after alter table command");
-            }
-
-        }
-
-        public static void ParallelTest()
+        
+        [TestMethod]
+        public void ParallelTest()
         {
             var updateParser = new UpdateParser();
             var stringParser = new StringParser();
@@ -290,32 +268,15 @@ namespace HotSauceDbConsole
 
             var insertCountCorrect = allHouses[200].Count() == 201;
 
+            Assert.AreEqual(true, allHousesCountCorrect);
 
-            if(!allHousesCountCorrect || !insertCountCorrect)
-            {
-                throw new Exception("err");
-            }
-
-        }
-
-      
-        internal static string CreateString(int stringLength)
-        {
-            Random rd = new Random();
-
-            const string allowedChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
-            char[] chars = new char[stringLength];
-
-            for (int i = 0; i < stringLength; i++)
-            {
-                chars[i] = allowedChars[rd.Next(0, allowedChars.Length)];
-            }
-
-            return new string(chars);
+            Assert.AreEqual(true, insertCountCorrect);
         }
 
 
-        static void FullIntegration()
+
+        [TestMethod]
+        public void FullIntegration()
         {
             File.WriteAllText(Constants.FILE_NAME, null);
 
@@ -379,12 +340,12 @@ namespace HotSauceDbConsole
 
             interpreter.ProcessStatement(createHousesTable);
 
-            
+
 
             for (int i = 0; i < 200; i++)
             {
-                string insertStatement = @"insert into houses values ('" + CreateString(10) + "',"+
-                                           rd.Next().ToString() +"," + rd.Next().ToString() + "," + "true," + rd.Next().ToString() + ")";
+                string insertStatement = @"insert into houses values ('" + CreateString(10) + "'," +
+                                           rd.Next().ToString() + "," + rd.Next().ToString() + "," + "true," + rd.Next().ToString() + ")";
 
                 interpreter.ProcessStatement(insertStatement);
             }
@@ -505,7 +466,7 @@ namespace HotSauceDbConsole
             var toolsSubQueryResult = (List<List<IComparable>>)interpreter.ProcessStatement(subQueryTools);
 
 
-            var toolSubQueryCompare = ((string)toolsSubQueryResult[0][0]).Trim() == "drill" && (decimal)toolsSubQueryResult[0][1] 
+            var toolSubQueryCompare = ((string)toolsSubQueryResult[0][0]).Trim() == "drill" && (decimal)toolsSubQueryResult[0][1]
                 == 45.99m && (bool)toolsSubQueryResult[0][3] == false;
 
 
@@ -659,17 +620,38 @@ namespace HotSauceDbConsole
 
             bool housesWithDateTimeCount = housesWithDateTime.Count == 1;
 
-            if (!rowCountCorrect || !columnCountCorrect || !rowCountCorrect2 || !columnCountCorrect2 || !resultCountCorrect2 || !resultCountCorrect 
-                || !toolSubQueryCompare || !compare || !groupedCountCorrect || !groupedValuesCorrect
-                || !colCountCorrect || !orderIsCorrect || !insertCountCorrect || !updatedOneCorrect || !updatedTwoCorrect || !updatedRowsCountCorrect || !housesWithDateTimeCount)
-            {
-                throw new Exception("tests failed");
-            }
-            else
-            {
-                Console.WriteLine("SUCCESS!!");
-            }
+            Assert.AreEqual(true, rowCountCorrect);
+            Assert.AreEqual(true, columnCountCorrect);
+            Assert.AreEqual(true, rowCountCorrect2);
+            Assert.AreEqual(true, columnCountCorrect2);
+            Assert.AreEqual(true, resultCountCorrect2);
+            Assert.AreEqual(true, resultCountCorrect);
+            Assert.AreEqual(true, toolSubQueryCompare);
+            Assert.AreEqual(true, compare);
+            Assert.AreEqual(true, groupedCountCorrect);
+            Assert.AreEqual(true, groupedValuesCorrect);
+            Assert.AreEqual(true, colCountCorrect);
+            Assert.AreEqual(true, orderIsCorrect);
+            Assert.AreEqual(true, insertCountCorrect);
+            Assert.AreEqual(true, updatedOneCorrect);
+            Assert.AreEqual(true, updatedTwoCorrect);
+            Assert.AreEqual(true, updatedRowsCountCorrect);
+            Assert.AreEqual(true, housesWithDateTimeCount);
         }
 
+        internal static string CreateString(int stringLength)
+        {
+            Random rd = new Random();
+
+            const string allowedChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
+            char[] chars = new char[stringLength];
+
+            for (int i = 0; i < stringLength; i++)
+            {
+                chars[i] = allowedChars[rd.Next(0, allowedChars.Length)];
+            }
+
+            return new string(chars);
+        }
     }
 }

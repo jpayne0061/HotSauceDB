@@ -5,12 +5,22 @@ using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
 using System.Collections.Generic;
 using System.Linq;
+using Moq;
+using HotSauceDB.Interfaces;
 
 namespace HotSauceDbUnitTests
 {
     [TestClass]
     public class ParserTests
     {
+        Mock<ISchemaFetcher> _mockSchemaFetcher;
+
+        [TestInitialize]
+        public void ParserTestsInit()
+        {
+            _mockSchemaFetcher = new Mock<ISchemaFetcher>();
+        }
+
         [TestMethod]
         public void GetColumns_Happy()
         {
@@ -75,21 +85,6 @@ namespace HotSauceDbUnitTests
         }
 
         [TestMethod]
-        public void ParsePredicates_One_Predicate()
-        {
-            //arrange
-            string query = "select where, origin, space, where from someTable where origin > 8";
-
-            SelectParser selectParser = new SelectParser();
-
-            //act
-            List<string> predicates = selectParser.ParsePredicates(query).Predicates;
-
-            //assert
-            Assert.AreEqual("where origin > 8", predicates[0]);
-        }
-
-        [TestMethod]
         public void ParsePredicates_Multiple_Predicates()
         {
             //arrange
@@ -143,6 +138,8 @@ namespace HotSauceDbUnitTests
 
             //act
             var predicateResults = selectParser.ParsePredicates(query);
+
+            predicateResults = selectParser.GetPredicateTrailers(predicateResults, query);
 
             var predicates = predicateResults.Predicates;
 
@@ -236,33 +233,13 @@ namespace HotSauceDbUnitTests
 
             InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
-
-            //group by currently only supported with plain sql
-            var updateParser = new UpdateParser();
-            var stringParser = new StringParser();
-            var reader = new Reader();
-            var writer = new Writer(reader);
-            var lockManager = new LockManager(writer, reader);
-            var schemaFetcher = new SchemaFetcher(reader);
-
-            var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                updateParser,
-                                schemaFetcher,
-                                new GeneralParser(),
-                                new CreateParser(),
-                                stringParser,
-                                lockManager,
-                                reader);
-
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
                             AND truck = 'F-150' 
                             OR space = 98";
 
             //act
-            var newQuery = interpreter.ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnum.String);
+            var newQuery = new SelectParser().ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnum.String);
 
 
             //assert
@@ -284,32 +261,13 @@ namespace HotSauceDbUnitTests
 
             InnerStatement subquery = selectParser.GetFirstMostInnerParantheses(query);
 
-
-            var updateParser = new UpdateParser();
-            var stringParser = new StringParser();
-            var reader = new Reader();
-            var writer = new Writer(reader);
-            var lockManager = new LockManager(writer, reader);
-            var schemaFetcher = new SchemaFetcher(reader);
-
-            var interpreter = new Interpreter(
-                                new SelectParser(),
-                                new InsertParser(schemaFetcher),
-                                updateParser,
-                                schemaFetcher,
-                                new GeneralParser(),
-                                new CreateParser(),
-                                stringParser,
-                                lockManager,
-                                reader);
-
             var expected = @"select truck, origin, space
                             from someTable where origin > 8
                             AND truck = 'F-150' 
                             OR space = 98";
 
             //act
-            var newQuery = interpreter.ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnum.String);
+            var newQuery = new SelectParser().ReplaceSubqueryWithValue(query, subquery, "F-150", TypeEnum.String);
 
 
             //assert
@@ -321,8 +279,7 @@ namespace HotSauceDbUnitTests
         {
             //arrange
             var reader = new Reader();
-            var schemaFetcher = new SchemaFetcher(reader);
-            var insertParser = new InsertParser(schemaFetcher);
+            var insertParser = new InsertParser(_mockSchemaFetcher.Object);
 
             string dml = "insert into myTable VALUES ('one', 'two', 'three')";
             string expected = "mytable";
@@ -331,7 +288,7 @@ namespace HotSauceDbUnitTests
             string tableName = insertParser.ParseTableName(dml);
 
             //assert
-            Assert.AreEqual(expected, tableName);
+            Assert.AreEqual(expected, tableName.ToLower());
         }
 
         [TestMethod]
@@ -415,10 +372,16 @@ namespace HotSauceDbUnitTests
             UpdateParser updateParser = new UpdateParser();
 
             List<KeyValuePair<string, string>> setClause = updateParser.GetUpdates(@"update houses
-Set Price = 456000, Address = 'gtggtt', Neigbs = 'gfff'
-where houseID = 908");
+                                                                                    Set Price = 456000, Address = 'gtggtt', Neigbs = 'gfff'
+                                                                                    where houseID = 908");
 
-            Assert.AreEqual("loops", "");
+            Assert.AreEqual(3, setClause.Count);
+            Assert.AreEqual("price",    setClause[0].Key.ToLower());
+            Assert.AreEqual("address",  setClause[1].Key.ToLower());
+            Assert.AreEqual("neigbs",   setClause[2].Key.ToLower());
+            Assert.AreEqual("456000",   setClause[0].Value.ToLower());
+            Assert.AreEqual("'gtggtt'", setClause[1].Value.ToLower());
+            Assert.AreEqual("'gfff'",   setClause[2].Value.ToLower());
         }
 
     }

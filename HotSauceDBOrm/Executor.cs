@@ -17,7 +17,7 @@ namespace HotSauceDbOrm
         private Update      _updater;
 
         private static Executor _instance;
-        private static object _lockObject = new object();
+        private static object   _lockObject = new object();
 
         public static Executor GetInstance(string databaseName = Constants.FILE_NAME)
         {

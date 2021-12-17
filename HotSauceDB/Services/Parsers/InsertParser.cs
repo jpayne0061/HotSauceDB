@@ -1,4 +1,5 @@
 ﻿using HotSauceDb.Models;
+using HotSauceDB.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,9 +8,9 @@ namespace HotSauceDb.Services.Parsers
 {
     public class InsertParser : GeneralParser
     {
-        SchemaFetcher _schemaFetcher;
+        ISchemaFetcher _schemaFetcher;
 
-        public InsertParser(SchemaFetcher schemaFetcher)
+        public InsertParser(ISchemaFetcher schemaFetcher)
         {
             _schemaFetcher = schemaFetcher;
         }

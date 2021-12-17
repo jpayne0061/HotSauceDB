@@ -1,5 +1,4 @@
 ﻿using HotSauceDB.Models;
-using HotSauceDb.Enums;
 using HotSauceDb.Models;
 using HotSauceDb.Models.Transactions;
 using System;
@@ -65,18 +64,6 @@ namespace HotSauceDb.Services
             lock (_tableLocks[alterTableTransaction.TableDefinition.DataAddress])
             {
                 return _writer.AlterTableDefinition(alterTableTransaction.TableDefinition, alterTableTransaction.NewColumn);
-            }
-        }
-
-        public long ProcessInternalTransaction(InternalTransaction internalTransaction)
-        {
-            switch (internalTransaction.InternalTransactionType)
-            {
-                case InternalTransactionType.GetFirstAvailableDataAddress:
-                    long address = _reader.GetFirstAvailableDataAddress((long)internalTransaction.Parameters[0], (int)internalTransaction.Parameters[1]);
-                    return address;
-                default:
-                    throw new Exception("invalid internal transaction type ");
             }
         }
 
