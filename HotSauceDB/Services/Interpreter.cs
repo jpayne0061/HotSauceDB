@@ -20,36 +20,36 @@ namespace HotSauceDb.Services
         private const string _update = "update";
         private const string _alter  = "alter";
 
-        private SelectParser _selectParser;
-        private InsertParser _insertParser;
-        private UpdateParser _updateParser;
+        private SelectParser  _selectParser;
+        private InsertParser  _insertParser;
+        private UpdateParser  _updateParser;
         private SchemaFetcher _schemaFetcher;
         private GeneralParser _generalParser;
-        private CreateParser _createParser;
-        private StringParser _stringParser;
-        private Reader _reader;
-        private LockManager _lockManager;
-        private IndexPage _indexPage;
+        private CreateParser  _createParser;
+        private StringParser  _stringParser;
+        private Reader        _reader;
+        private LockManager   _lockManager;
+        private IndexPage     _indexPage;
 
-        public Interpreter(SelectParser selectParser, 
-                            InsertParser insertParser, 
-                            UpdateParser updateParser,
+        public Interpreter(SelectParser   selectParser, 
+                            InsertParser  insertParser, 
+                            UpdateParser  updateParser,
                             SchemaFetcher schemaFetcher,
                             GeneralParser generalParser,
-                            CreateParser createParser,
-                            StringParser stringParser,
-                            LockManager lockManager,
-                            Reader reader)
+                            CreateParser  createParser,
+                            StringParser  stringParser,
+                            LockManager   lockManager,
+                            Reader        reader)
         {
-            _selectParser = selectParser;
-            _insertParser = insertParser;
-            _updateParser = updateParser;
+            _selectParser  = selectParser;
+            _insertParser  = insertParser;
+            _updateParser  = updateParser;
             _schemaFetcher = schemaFetcher;
             _generalParser = generalParser;
-            _createParser = createParser;
-            _stringParser = stringParser;
-            _lockManager = lockManager;
-            _reader = reader;
+            _createParser  = createParser;
+            _stringParser  = stringParser;
+            _lockManager   = lockManager;
+            _reader        = reader;
         }
 
         public TableDefinition GetTableDefinition(string tableName)

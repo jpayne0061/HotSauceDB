@@ -1,8 +1,11 @@
 ﻿using HotSauceDb.Models;
 using HotSauceDb.Services;
+using HotSauceDB.Helpers;
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Collections;
+using HotSauceDB.Statics;
 
 namespace HotSauceDbOrm.Operations
 {
@@ -10,7 +13,52 @@ namespace HotSauceDbOrm.Operations
     {
         public Insert(Interpreter interepreter) : base(interepreter) { }
 
-        public void InsertRow<T>(T obj) where T : class
+        public IComparable InsertRow(object obj)
+        {
+            IComparable identityValue = InsertObject(obj);
+
+            InsertChildren(obj, identityValue);
+
+            return identityValue;
+        }
+
+        public void InsertChildren(object parentObject, IComparable parentId)
+        {
+            string parentName = parentObject.GetType().Name.ToLower();
+
+            Dictionary<string, PropertyInfo> relatedEntities = HotSauceHelpers.GetRelatedEntityNames(parentObject.GetType());
+
+            foreach (KeyValuePair<string, PropertyInfo> relatedEntity in relatedEntities)
+            {
+                IEnumerable childObjects = (IEnumerable)relatedEntity.Value.GetValue(parentObject);
+
+                if(childObjects == null)
+                {
+                    continue;
+                }
+
+                foreach (object childObject in childObjects)
+                {
+                    string parentPropertyIdName = parentName + "id";
+
+                    PropertyInfo parentIdProperty = childObject.GetType().GetProperty(parentPropertyIdName, 
+                        BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                    if(parentIdProperty == null)
+                    {
+                        throw new Exception(ErrorMessages.PARENT_ID_COLUMN_MISSING(parentPropertyIdName, childObject.GetType().Name));
+                    }
+
+                    parentIdProperty.SetValue(childObject, parentId);
+
+                    IComparable identity = InsertObject(childObject);
+
+                    InsertChildren(childObject, identity);
+                }
+            }
+        }
+
+        private IComparable InsertObject(object obj)
         {
             IComparable[] row = GetRow(obj);
 
@@ -18,12 +66,14 @@ namespace HotSauceDbOrm.Operations
 
             InsertResult result = _interpreter.RunInsert(row, tableName);
 
-            PropertyInfo identityProperty = GetIdentityColumn<T>();
+            PropertyInfo identityProperty = GetIdentityColumn(obj);
 
             if (identityProperty != null)
             {
                 identityProperty.SetValue(obj, result.IdentityValue);
             }
+
+            return result.IdentityValue;
         }
     }
 }

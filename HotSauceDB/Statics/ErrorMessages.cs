@@ -17,6 +17,9 @@ public string Name";
         public static string RELATED_ATTRIBUTE_IS_MISSING(string x) => $@"Related Entity Attribute on property '${x}' is null or empty";
 
         public static string IDENTITY_COLUMN_IS_MISSING(string x) => $@"Entity '${x}' is missing an identitty column, which is necessary for this operation. Add a column to this entity named {x}Id to resolve the error";
+
+        public static string PARENT_ID_COLUMN_MISSING(string x, string y) => $"Could not find property '{x}' on class {y}, which is is required to save child entities";
+        public static string NO_TABLE_FOUND(string tableName) => $"Could not find table {tableName}. Make sure to run 'executor.CreateTable<{tableName}>()' or something like that.";
     }
     
 }

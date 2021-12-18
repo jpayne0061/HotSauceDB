@@ -35,8 +35,8 @@ namespace HotSauceDB.Services
         }
 
         public List<IComparable[]> ConvertTableDataToNewSchema(List<List<IComparable>> oldRows,
-                                                                    List<ColumnDefinition> newColumnDefinitions,
-                                                                    List<ColumnDefinition> oldColumnDefinitions)
+                                                               List<ColumnDefinition> newColumnDefinitions,
+                                                               List<ColumnDefinition> oldColumnDefinitions)
         {
             var nameAndTypeToNewColumnDefinition = newColumnDefinitions.ToDictionary(x => Tuple.Create(x.ColumnName.ToLower(), x.Type), x => x);
 

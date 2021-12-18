@@ -215,7 +215,64 @@ namespace HotSauceIntegrationTests
             Assert.AreEqual(500000, h2.First().Price);
         }
 
-        
+        [TestMethod]
+        public void SaveChildEntities()
+        {
+            Executor executor = Executor.GetInstance();
+
+            executor.CreateTable<Order>();
+            executor.CreateTable<Skateboard>();
+            executor.CreateTable<Wheel>();
+
+            Order order = new Order
+            {
+                OrderDate = new DateTime(2021, 12, 5),
+                Address = "123 abc street"
+            };
+
+            var w  = new Wheel { Name = "1" };
+            var w2 = new Wheel { Name = "2" };
+            var w3 = new Wheel { Name = "3" };
+            var w4 = new Wheel { Name = "4" };
+
+            var sk = new Skateboard
+            {
+                Brand = "Hotsauce",
+                DateCreated = new DateTime(2020, 5, 5),
+                IsColor = true,
+                Price = 45.99m,
+                Wheels = new List<Wheel> { w, w2 }
+            };
+
+            var sk2 = new Skateboard
+            {
+                Brand = "Water",
+                DateCreated = new DateTime(2021, 2, 28),
+                IsColor = false,
+                Price = 48.99m,
+                Wheels = new List<Wheel> { w3, w4 }
+            };
+
+            List<Skateboard> skateboards = new List<Skateboard>
+            {
+               sk,
+               sk2
+            };
+
+            order.Items = skateboards;
+
+            executor.Insert(order);
+
+            Assert.AreEqual(1L, order.Items[0].BoardId);
+            Assert.AreEqual(2L, order.Items[1].BoardId);
+
+            Assert.AreEqual("1", order.Items[0].Wheels[0].Name);
+            Assert.AreEqual("2", order.Items[0].Wheels[1].Name);
+            Assert.AreEqual("3", order.Items[1].Wheels[0].Name);
+            Assert.AreEqual("4", order.Items[1].Wheels[1].Name);
+        }
+
+
         [TestMethod]
         public void ParallelTest()
         {

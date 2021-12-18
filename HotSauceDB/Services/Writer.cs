@@ -100,7 +100,7 @@ namespace HotSauceDb.Services
             }
             else
             {
-                previousIdentityValue = CastToNumberType(0, tableDefinition.ColumnDefinitions[0].Type);
+                previousIdentityValue = ConvertToNumberType(newIdentityValue, tableDefinition.ColumnDefinitions[0].Type);
             }
 
             newIdentityValue = IncrementNumberValue(previousIdentityValue, tableDefinition.ColumnDefinitions[0].Type);
@@ -132,16 +132,16 @@ namespace HotSauceDb.Services
             }
         }
 
-        private IComparable CastToNumberType(IComparable comparable, TypeEnum typeEnum)
+        private IComparable ConvertToNumberType(IComparable comparable, TypeEnum typeEnum)
         {
             switch (typeEnum)
             {
                 case TypeEnum.Decimal:
-                    return (decimal)comparable;
+                    return Convert.ToDecimal(comparable);
                 case TypeEnum.Int32:
-                    return (int)comparable;
+                    return Convert.ToInt32(comparable);
                 case TypeEnum.Int64:
-                    return (long)comparable;
+                    return Convert.ToInt64(comparable);
                 default:
                     throw new Exception("invalid identity column");
             }

@@ -1,6 +1,7 @@
 ﻿using HotSauceDb.Models;
 using HotSauceDb.Services;
 using HotSauceDB.Helpers;
+using HotSauceDB.Statics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,12 +17,14 @@ namespace HotSauceDbOrm.Operations
         {
             _interpreter = interpreter;
         }
-        public PropertyInfo GetIdentityColumn<T>() where T : class
+        public PropertyInfo GetIdentityColumn(object obj)
         {
-            return typeof(T).GetSupportedProperties().Where(x => x.Name.ToLower() == typeof(T).Name.ToLower() + "id").FirstOrDefault();
+            Type objectType = obj.GetType();
+
+            return objectType.GetSupportedProperties().Where(x => x.IsIdentity(objectType)).FirstOrDefault();
         }
 
-        protected IComparable[] GetRow<T>(T obj) where T : class
+        protected IComparable[] GetRow(object obj)
         {
             HashSet<Type> types = new HashSet<Type>
             {
@@ -35,6 +38,11 @@ namespace HotSauceDbOrm.Operations
             };
 
             TableDefinition tableDef = _interpreter.GetTableDefinition(obj.GetType().Name);
+
+            if(tableDef == null)
+            {
+                throw new Exception(ErrorMessages.NO_TABLE_FOUND(obj.GetType().Name));
+            }
 
             PropertyInfo[] properties = OrderPropertiesByColumnIndex(tableDef, obj.GetType().GetSupportedProperties());
 

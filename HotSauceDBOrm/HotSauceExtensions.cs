@@ -1,4 +1,6 @@
-﻿using HotSauceDB.Attributes;
+﻿using HotSauceDb.Models;
+using HotSauceDB.Attributes;
+using HotSauceDB.Helpers;
 using HotSauceDB.Statics;
 using System;
 using System.Collections.Generic;
@@ -31,7 +33,7 @@ namespace HotSauceDbOrm
 
                 List<T1> includedObject = Executor.GetInstance().Read<T1>(query);
 
-                Dictionary<string, PropertyInfo> relatedEntityMapping = GetRelatedEntityNames(typeof(T));
+                Dictionary<string, PropertyInfo> relatedEntityMapping = HotSauceHelpers.GetRelatedEntityNames(typeof(T));
 
                 PropertyInfo pi = relatedEntityMapping[relatedManyEntityName];
 
@@ -41,28 +43,25 @@ namespace HotSauceDbOrm
             return parentObjectList;
         }
 
-        private static Dictionary<string, PropertyInfo> GetRelatedEntityNames(Type type)
+        public static bool IsIdentity<T>(this PropertyInfo propertyInfo)
         {
-            var relatedEntityNames = new Dictionary<string, PropertyInfo>();
+            bool hasIdentityAttribute = propertyInfo.CustomAttributes.Any(x => x.AttributeType == typeof(Identity));
+            bool usesIdentityConvention = propertyInfo.Name.ToLower() == typeof(T).Name.ToLower() + "id";
 
-            foreach (PropertyInfo propertyInfo in type.GetProperties())
-            {
-                if (propertyInfo.CustomAttributes.Any(x => x.AttributeType == typeof(RelatedEntity)))
-                {
-                    Attribute relatedAttribute = propertyInfo.GetCustomAttribute(typeof(RelatedEntity));
+            return hasIdentityAttribute || usesIdentityConvention;
+        }
 
-                    string relatedEntityName = ((RelatedEntity)relatedAttribute).EntityName;
+        public static bool IsIdentity(this PropertyInfo propertyInfo, Type type)
+        {
+            bool hasIdentityAttribute = propertyInfo.CustomAttributes.Any(x => x.AttributeType == typeof(Identity));
+            bool usesIdentityConvention = propertyInfo.Name.ToLower() == type.Name.ToLower() + "id";
 
-                    if (string.IsNullOrWhiteSpace(relatedEntityName))
-                    {
-                        throw new Exception(ErrorMessages.RELATED_ATTRIBUTE_IS_MISSING(propertyInfo.Name));
-                    }
+            return hasIdentityAttribute || usesIdentityConvention;
+        }
 
-                    relatedEntityNames[relatedEntityName] = propertyInfo;
-                }
-            }
-
-            return relatedEntityNames;
+        public static bool IsIdentity(this ColumnDefinition columnDefinition, string tableName)
+        {
+            return columnDefinition.ColumnName.ToLower() == tableName.ToLower() + "id";
         }
     }
 }

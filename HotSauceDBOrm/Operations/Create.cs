@@ -19,13 +19,13 @@ namespace HotSauceDbOrm.Operations
         private SchemaComparer        _schemaComparer;
         private readonly DataMigrator _dataMigrator;
 
-        public Create(Interpreter interpreter, 
+        public Create(Interpreter    interpreter, 
                       SchemaComparer schemaComparer, 
                       DataMigrator   dataMigrator)
         {
-            _interpreter =    interpreter;
+            _interpreter    = interpreter;
             _schemaComparer = schemaComparer;
-            _dataMigrator =   dataMigrator;
+            _dataMigrator   = dataMigrator;
         }
 
         public void CreateTable<T>() where T : class, new()
@@ -69,7 +69,7 @@ namespace HotSauceDbOrm.Operations
 
         private TableDefinition CreateTable<T>(string tableName, PropertyInfo[] properties) where T : class, new()
         {
-            List<ColumnDefinition> columnDefinitions = CreateColumnDefinitions(tableName, properties);
+            List<ColumnDefinition> columnDefinitions = CreateColumnDefinitions<T>(tableName, properties);
 
             TableDefinition tableDefinition = new TableDefinition
             {
@@ -83,7 +83,7 @@ namespace HotSauceDbOrm.Operations
         }
 
        
-        private List<ColumnDefinition> CreateColumnDefinitions(string tableName, PropertyInfo[] properties)
+        private List<ColumnDefinition> CreateColumnDefinitions<T>(string tableName, PropertyInfo[] properties)
         {
             List<ColumnDefinition> colDefinitions = new List<ColumnDefinition>();
 
@@ -101,7 +101,7 @@ namespace HotSauceDbOrm.Operations
                     continue;
                 }
 
-                if(columnDefinition.ColumnName.ToLower() == tableName.ToLower() + "id")
+                if(columnDefinition.IsIdentity(tableName) || properties[i].IsIdentity<T>())
                 {
                     columnDefinition.IsIdentity = 1;
                 }

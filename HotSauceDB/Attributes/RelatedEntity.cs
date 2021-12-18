@@ -12,6 +12,11 @@ namespace HotSauceDB.Attributes
             _entityName = entityName;
         }
 
+        public RelatedEntity(Type type)
+        {
+            _entityName = type.Name;
+        }
+
         public string EntityName 
         { 
             get

@@ -3,6 +3,7 @@ using HotSauceDb.Services;
 using HotSauceDB.Helpers;
 using HotSauceDB.Statics;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -25,7 +26,7 @@ namespace HotSauceDbOrm.Operations
                 throw new Exception(ErrorMessages.Update_Missing_Identity);
             }
 
-            PropertyInfo identityProperty = typeof(T).GetSupportedProperties().Where(x => x.Name.ToLower() == identityColumn.ColumnName.ToLower()).Single();
+            PropertyInfo identityProperty = typeof(T).GetSupportedProperties().Where(x => x.IsIdentity<T>()).Single();
 
             IComparable identityValue = (IComparable)identityProperty.GetValue(obj);
 
