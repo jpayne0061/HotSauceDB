@@ -41,8 +41,9 @@ namespace HotSauceDbOrm.Operations
                 {
                     string parentPropertyIdName = parentName + "id";
 
-                    PropertyInfo parentIdProperty = childObject.GetType().GetProperty(parentPropertyIdName, 
-                        BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    BindingFlags bindingFlags = BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance;
+
+                    PropertyInfo parentIdProperty = childObject.GetType().GetProperty(parentPropertyIdName, bindingFlags);
 
                     if(parentIdProperty == null)
                     {
