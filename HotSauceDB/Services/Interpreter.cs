@@ -1,14 +1,11 @@
-﻿using HotSauceDB.Models;
-using HotSauceDB.Models.Transactions;
-using HotSauceDB.Services.Parsers;
-using HotSauceDb.Enums;
-using HotSauceDb.Models;
+﻿using HotSauceDb.Models;
 using HotSauceDb.Models.Transactions;
 using HotSauceDb.Services.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using HotSauceDB.Statics;
+using HotSauceDB.Services.Parsers;
 
 namespace HotSauceDb.Services
 {
@@ -19,26 +16,28 @@ namespace HotSauceDb.Services
         private const string _create = "create";
         private const string _update = "update";
 
-        private readonly SelectParser  _selectParser;
-        private readonly InsertParser  _insertParser;
-        private readonly UpdateParser  _updateParser;
-        private readonly SchemaFetcher _schemaFetcher;
-        private readonly GeneralParser _generalParser;
-        private readonly CreateParser  _createParser;
-        private readonly StringParser  _stringParser;
-        private readonly Reader        _reader;
-        private readonly LockManager   _lockManager;
-        private          IndexPage     _indexPage;
+        private readonly SelectParser    _selectParser;
+        private readonly InsertParser    _insertParser;
+        private readonly UpdateParser    _updateParser;
+        private readonly SchemaFetcher   _schemaFetcher;
+        private readonly GeneralParser   _generalParser;
+        private readonly CreateParser    _createParser;
+        private readonly StringParser    _stringParser;
+        private readonly Reader          _reader;
+        private readonly LockManager     _lockManager;
+        private readonly PredicateParser _predicateParser;
+        private          IndexPage       _indexPage;
 
-        public Interpreter(SelectParser   selectParser, 
-                            InsertParser  insertParser, 
-                            UpdateParser  updateParser,
-                            SchemaFetcher schemaFetcher,
-                            GeneralParser generalParser,
-                            CreateParser  createParser,
-                            StringParser  stringParser,
-                            LockManager   lockManager,
-                            Reader        reader)
+        public Interpreter(SelectParser     selectParser, 
+                            InsertParser    insertParser, 
+                            UpdateParser    updateParser,
+                            SchemaFetcher   schemaFetcher,
+                            GeneralParser   generalParser,
+                            CreateParser    createParser,
+                            StringParser    stringParser,
+                            LockManager     lockManager,
+                            Reader          reader,
+                            PredicateParser predicateParser)
         {
             _selectParser  = selectParser;
             _insertParser  = insertParser;
@@ -49,6 +48,7 @@ namespace HotSauceDb.Services
             _stringParser  = stringParser;
             _lockManager   = lockManager;
             _reader        = reader;
+            _predicateParser = predicateParser;
         }
 
         public TableDefinition GetTableDefinition(string tableName)
@@ -92,7 +92,7 @@ namespace HotSauceDb.Services
                 {
                     select.IsInSelect = true;
 
-                    SelectColumnDto firstMatchingColumn = columns.Where(x => x.ColumnName == select.ColumnName).FirstOrDefault();
+                    SelectColumnDto firstMatchingColumn = columns.FirstOrDefault(x => x.ColumnName == select.ColumnName);
 
                     if (firstMatchingColumn != null)
                     {
@@ -105,7 +105,7 @@ namespace HotSauceDb.Services
 
             predicateStep = _selectParser.GetPredicateTrailers(predicateStep, query);
 
-            var predicateOperations = BuildPredicateOperations(tableName, predicateStep.Predicates);
+            var predicateOperations = _predicateParser.BuildPredicateOperations(tableDef, predicateStep.Predicates);
 
             var readTransaction = new ReadTransaction
             {
@@ -239,144 +239,8 @@ namespace HotSauceDb.Services
             return RunCreateTable(tableDef);
         }
 
-        private IComparable ConvertToType(ColumnDefinition columnDefinition, string val)
-        {
-            IComparable convertedVal;
-
-            switch (columnDefinition.Type)
-            {
-                case TypeEnum.Boolean:
-                    convertedVal = Convert.ToBoolean(val);
-                    break;
-                case TypeEnum.Char:
-                    convertedVal = Convert.ToChar(val);
-                    break;
-                case TypeEnum.Decimal:
-                    convertedVal = Convert.ToDecimal(val);
-                    break;
-                case TypeEnum.Int32:
-                    convertedVal = Convert.ToInt32(val);
-                    break;
-                case TypeEnum.Int64:
-                    convertedVal = Convert.ToInt64(val);
-                    break;
-                case TypeEnum.String:
-                    convertedVal = val.TrimStart('\'').TrimEnd('\'').PadRight(columnDefinition.ByteSize - 1, ' ');
-                    break;
-                case TypeEnum.DateTime:
-                    convertedVal = Convert.ToDateTime(val.TrimStart('\'').TrimEnd('\''));
-                    break;
-                default:
-                    convertedVal = null;
-                    break;
-            }
-
-            return convertedVal;
-        }
-
-        private List<PredicateOperation> BuildPredicateOperations(string tableName, List<string> predicates)
-        {
-            if (predicates == null || !predicates.Any())
-            {
-                return new List<PredicateOperation>();
-            }
-
-            if (_indexPage == null)
-            {
-                _indexPage = _reader.GetIndexPage();
-            }
-
-            var tableDefinition = _indexPage.TableDefinitions.FirstOrDefault(x => x.TableName == tableName);
-
-            var predicateOperations = new List<PredicateOperation>();
-
-            var operatorToDelegate = new Dictionary<string, Func<IComparable, object, bool>>
-                {
-                    { ">",   CompareDelegates.IsMoreThan },
-                    { "<",   CompareDelegates.IsLessThan},
-                    { "=",   CompareDelegates.IsEqualTo},
-                    { ">=",  CompareDelegates.MoreThanOrEqualTo},
-                    { "<=",  CompareDelegates.LessThanOrEqualTo},
-                    { "!=",  CompareDelegates.NotEqualTo},
-                    { "in",  CompareDelegates.Contains},
-                };
-
-
-            int operatorIndex = 0;
-            int delegateIndex = 2;
-            int innerValueIndex = 3;
-            object comparingValue = null;
-
-            for (int i = 0; i < predicates.Count(); i++)
-            {
-                List<string> predicateParts = GetPredicateParts(predicates[i]);
-
-                predicateParts = _generalParser.CombineValuesInParantheses(predicateParts);
-
-                var columnDefintion = tableDefinition.ColumnDefinitions.FirstOrDefault(x => x.ColumnName == predicateParts[1].ToLower());
-
-                if(columnDefintion == null)
-                {
-                    throw new Exception($"Unknown column in where clause: {predicateParts[1]}");
-                }
-
-                try
-                {
-                    if (string.Equals(predicateParts[delegateIndex], "in", StringComparison.OrdinalIgnoreCase))
-                    {
-                        comparingValue = GetInStatementValue(predicateParts, columnDefintion);
-                    }
-                    else
-                    {
-                        comparingValue = ConvertToType(columnDefintion, predicateParts[innerValueIndex]);
-                    }
-
-                    predicateOperations.Add(new PredicateOperation
-                    {
-                        Delegate = operatorToDelegate[predicateParts[delegateIndex].ToLower()],
-                        Value = comparingValue,
-                        Operator = predicateParts[operatorIndex],
-                        ColumnIndex = columnDefintion.Index
-                    });
-                }
-                catch (KeyNotFoundException)
-                {
-                    throw new Exception($"Illegal operator: {predicateParts[2]}");
-                }
-            }
-
-            return predicateOperations;
-        }
-
-        private List<string> GetPredicateParts(string predicatePart)
-        {
-            string[] predicateSplitOnTicks = predicatePart.Split("'");
-
-            List<string[]> pieces = new List<string[]>();
-
-            for (int i = 0; i < predicateSplitOnTicks.Length; i++)
-            {
-                if(i % 2 == 0)
-                {
-                    pieces.Add(predicateSplitOnTicks[i].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
-                }
-                else
-                {
-                    pieces.Add(new string[] { "'" + predicateSplitOnTicks[i] + "'" });
-                }
-            }
-
-            return pieces.SelectMany(element => element).Select(x => x.Replace("\r\n", string.Empty)).ToList();
-        }
-
-        private object GetInStatementValue(List<string> predicateParts, ColumnDefinition colDef)
-        {
-            string innerValue = predicateParts[3].Trim(new char[] { '(', ')' });
-
-            var list = new List<string>(innerValue.Split(','));
-
-            return list.Select(x => ConvertToType(colDef, x)).ToHashSet();
-        }
+        
+        
 
         private object RunUpdateStatement(string sql)
         {
@@ -388,7 +252,7 @@ namespace HotSauceDb.Services
 
             PredicateStep predicateStep = _updateParser.ParsePredicates(sql);
 
-            var predicateOperations = BuildPredicateOperations(tableName, predicateStep.Predicates);
+            var predicateOperations = _predicateParser.BuildPredicateOperations(tableDef, predicateStep.Predicates);
 
             var selects = tableDef.ColumnDefinitions
                             .Select(x => new SelectColumnDto(x)).OrderBy(x => x.Index).ToList();
@@ -417,7 +281,7 @@ namespace HotSauceDb.Services
 
             foreach (var columnNameToValue in columnToValue)
             {
-                var colDef = tableDef.ColumnDefinitions.Where(x => x.ColumnName.ToLower() == columnNameToValue.Key).Single();
+                var colDef = tableDef.ColumnDefinitions.Single(x => x.ColumnName.ToLower() == columnNameToValue.Key);
 
                 indexToValue[colDef.Index] = _stringParser.ConvertToType(columnNameToValue.Value, colDef.Type);
             }
@@ -451,7 +315,7 @@ namespace HotSauceDb.Services
         private List<List<IComparable>> ProcessPostPredicateOrderBy(IEnumerable<SelectColumnDto> selects, PredicateStep predicateStep, List<List<IComparable>> rows)
         {
             //first, group by
-            var orderByClause = predicateStep.PredicateTrailer.Where(x => x.Contains("order")).FirstOrDefault();
+            var orderByClause = predicateStep.PredicateTrailer.FirstOrDefault(x => x.Contains("order"));
 
             if (orderByClause == null)
             {

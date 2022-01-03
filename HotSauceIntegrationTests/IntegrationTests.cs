@@ -1,6 +1,7 @@
 using HotSauceDb;
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
+using HotSauceDB.Services.Parsers;
 using HotSauceDbOrm;
 using HotSauceIntegrationTests.TestModels;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -294,7 +295,8 @@ namespace HotSauceIntegrationTests
                                 new CreateParser(),
                                 stringParser,
                                 lockManager,
-                                reader);
+                                reader,
+                                new PredicateParser());
 
 
             interpreter.ProcessStatement(@"create table house4 (
@@ -355,7 +357,8 @@ namespace HotSauceIntegrationTests
                                 new CreateParser(),
                                 stringParser,
                                 lockManager,
-                                reader);
+                                reader,
+                                new PredicateParser());
 
             string identityTable = @"create table Skateboards (
                                             SkateBoardId int Identity,

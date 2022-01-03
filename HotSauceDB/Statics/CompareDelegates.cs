@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace HotSauceDb.Services
+namespace HotSauceDb.Statics
 {
     public class CompareDelegates
     {

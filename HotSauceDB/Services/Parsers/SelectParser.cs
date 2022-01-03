@@ -1,5 +1,6 @@
 ﻿using HotSauceDb.Enums;
 using HotSauceDb.Models;
+using HotSauceDb.Statics;
 using HotSauceDB.Helpers;
 using System;
 using System.Collections.Generic;

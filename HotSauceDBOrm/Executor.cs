@@ -2,6 +2,7 @@
 using HotSauceDb.Services;
 using HotSauceDb.Services.Parsers;
 using HotSauceDB.Services;
+using HotSauceDB.Services.Parsers;
 using HotSauceDbOrm.Operations;
 using System.Collections.Generic;
 using System.IO;
@@ -29,17 +30,17 @@ namespace HotSauceDbOrm
                         if (!File.Exists(databaseName))
                             using (File.Create(databaseName)) ;
 
-                    var updateParser   = new UpdateParser();
-                    var stringParser   = new StringParser();
-                    var reader         = new Reader();
-                    var writer         = new Writer(reader);
-                    var lockManager    = new LockManager(writer, reader);
-                    var schemaFetcher  = new SchemaFetcher(reader);
-                    var selectParser   = new SelectParser();
-                    var insertParser   = new InsertParser(schemaFetcher);
-                    var generalParser  = new GeneralParser();
-                    var createParser   = new CreateParser();
-                    
+                    var updateParser    = new UpdateParser();
+                    var stringParser    = new StringParser();
+                    var reader          = new Reader();
+                    var writer          = new Writer(reader);
+                    var lockManager     = new LockManager(writer, reader);
+                    var schemaFetcher   = new SchemaFetcher(reader);
+                    var selectParser    = new SelectParser();
+                    var insertParser    = new InsertParser(schemaFetcher);
+                    var generalParser   = new GeneralParser();
+                    var createParser    = new CreateParser();
+                    var predicateParser = new PredicateParser();
 
                     var interpreter = new Interpreter(
                                         selectParser,
@@ -50,7 +51,8 @@ namespace HotSauceDbOrm
                                         createParser,
                                         stringParser,
                                         lockManager,
-                                        reader);
+                                        reader,
+                                        predicateParser);
 
                     _instance = new Executor(interpreter);
                 }
