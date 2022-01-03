@@ -289,7 +289,7 @@ namespace HotSauceDb.Services
                 _indexPage = _reader.GetIndexPage();
             }
 
-            var tableDefinition = _indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
+            var tableDefinition = _indexPage.TableDefinitions.FirstOrDefault(x => x.TableName == tableName);
 
             var predicateOperations = new List<PredicateOperation>();
 
@@ -299,7 +299,7 @@ namespace HotSauceDb.Services
                                .Select((element, index) => index % 2 == 0  // If even index...
                                    ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // then, split the item
                                    : new string[] { "'" + element + "'" })  // otherwise, keep the entire item
-                                    .SelectMany(element => element).Select(x => x.Replace("\r\n", "")).ToList();
+                                    .SelectMany(element => element).Select(x => x.Replace("\r\n", string.Empty)).ToList();
 
 
                 predicateParts = _generalParser.CombineValuesInParantheses(predicateParts);
@@ -323,11 +323,15 @@ namespace HotSauceDb.Services
                     { "in",  CompareDelegates.Contains},
                 };
 
+                int operatorIndex = 0;
+                int delegateIndex = 2;
+                int innerValueIndex = 3;
+
                 try
                 {
-                    if (predicateParts[2].ToLower() == "in")
+                    if (predicateParts[delegateIndex].ToLower() == "in")
                     {
-                        string innerValue = predicateParts[3].Trim('(').Trim(')');
+                        string innerValue = predicateParts[innerValueIndex].Trim('(').Trim(')');
 
                         var list = new List<string>(innerValue.Split(','));
 
@@ -337,11 +341,9 @@ namespace HotSauceDb.Services
 
                         predicateOperations.Add(new PredicateOperation
                         {
-                            Delegate = operatorToDelegate[predicateParts[2].ToLower()],
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
+                            Delegate = operatorToDelegate[predicateParts[delegateIndex].ToLower()],
                             Value = targetList,
-                            Operator = predicateParts[0],
+                            Operator = predicateParts[operatorIndex],
                             ColumnIndex = colDef.Index
                         });
                     }
@@ -349,11 +351,9 @@ namespace HotSauceDb.Services
                     {
                         predicateOperations.Add(new PredicateOperation
                         {
-                            Delegate = operatorToDelegate[predicateParts[2]],
-                            Predicate = predicates[i],
-                            ColumnName = predicateParts[1],
-                            Value = ConvertToType(colDef, predicateParts[3]),
-                            Operator = predicateParts[0],
+                            Delegate = operatorToDelegate[predicateParts[delegateIndex]],
+                            Value = ConvertToType(colDef, predicateParts[innerValueIndex]),
+                            Operator = predicateParts[operatorIndex],
                             ColumnIndex = colDef.Index
                         });
                     }

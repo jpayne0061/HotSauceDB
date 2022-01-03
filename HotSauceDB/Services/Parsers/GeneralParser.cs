@@ -67,7 +67,7 @@ namespace HotSauceDb.Services.Parsers
             };
         }
 
-        public List<string> CombineValuesInParantheses(List<string> parts)
+        public List<string> CombineValuesInParantheses(IEnumerable<string> parts)
         {
             string valuesInParantheses = "";
 
