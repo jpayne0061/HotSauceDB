@@ -213,7 +213,7 @@ namespace HotSauceDb.Services
             //need to pass in address of current page, not zero
             long addressToWrite = _reader.GetFirstAvailableDataAddress(0, Constants.TABLE_DEF_LENGTH);
 
-            if ((addressToWrite - 2) % Constants.Page_Size == 0)
+            if (IsFirstRow(addressToWrite))
             {
                 var pointerToNextIndexRecord = GetNextUnclaimedDataPage();
                 WriteLong(addressToWrite - 2 + Constants.Next_Pointer_Address, pointerToNextIndexRecord);
@@ -244,6 +244,11 @@ namespace HotSauceDb.Services
             }
 
             return new ResultMessage { Message = $"table {tableDefinition.TableName} has been renamed"};
+        }
+        
+        private bool IsFirstRow(long addressToWrite)
+        {
+            return (addressToWrite - 2) % Constants.Page_Size == 0;
         }
 
         private ResultMessage WriteTableDefinition(TableDefinition tableDefinition, long addressToWrite)
