@@ -44,10 +44,11 @@ namespace HotSauceDb.Services.Parsers
                     throw new Exception("Identity column must be first column in table definition");
                 }
 
-                ColumnDefinition columnDefinition = new ColumnDefinition();
-
-                columnDefinition.ColumnName = columnNameAndType[0].RemoveNewLines();
-                columnDefinition.Index = (byte)i;
+                ColumnDefinition columnDefinition = new ColumnDefinition
+                {
+                    ColumnName = columnNameAndType[0].RemoveNewLines(),
+                    Index = (byte)i
+                };
                 columnDefinition.Type = ParseTypeAndByteSize(columnNameAndType[1].RemoveNewLines(), columnDefinition);
                 columnDefinition.IsIdentity = isIdentityColumn ? (byte)1 : (byte)0;
 

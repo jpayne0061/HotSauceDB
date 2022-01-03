@@ -8,7 +8,7 @@ namespace HotSauceDb.Services.Parsers
 {
     public class InsertParser : GeneralParser
     {
-        ISchemaFetcher _schemaFetcher;
+        readonly ISchemaFetcher _schemaFetcher;
 
         public InsertParser(ISchemaFetcher schemaFetcher)
         {

@@ -12,7 +12,7 @@ namespace HotSauceDb.Services
 {
     public class Writer
     {
-        private Reader _reader;
+        private readonly Reader _reader;
         private IndexPage _indexPage;
         public Writer(Reader reader)
         {
@@ -298,221 +298,7 @@ namespace HotSauceDb.Services
 
             return new ResultMessage { Message = $"table {tableDefinition.TableName} has been added successfully", Address = tableDefEnd, Data = nextFreeDataPage };
         }
-
-        public ResultMessage AlterTableDefinition(TableDefinition tableDefinition, ColumnDefinition newColumn)
-        {
-            int oldRowSize = tableDefinition.GetRowSizeInBytes();
-
-            tableDefinition.ColumnDefinitions.Add(newColumn);
-
-            WriteTableDefinition(tableDefinition, tableDefinition.TableDefinitionAddress);
-
-            tableDefinition.ColumnDefinitions.RemoveAt(tableDefinition.ColumnDefinitions.Count - 1);
-
-            if(_reader.GetObjectCount(tableDefinition.DataAddress) > 0)
-            {
-                BackFillRows(tableDefinition, oldRowSize, newColumn);
-            }
-
-            return new ResultMessage();
-        }
-
-        /// Data for the table being edited needs to be back filled with the new column
-        /// 
-        /// Example:
-        /// 
-        /// old row structure:                     "a string value",6,false
-        /// new row structure (adds char column):  "a string value",6,false,'v'
-        /// 
-        /// Since rows are written back-to-back, they need to be pulled up into memory, edited to add the
-        /// new column value, whatever the default is, and written back to disk
-        public ResultMessage BackFillRows(TableDefinition tableDefinition, int oldRowSize, ColumnDefinition newColumn)
-        {
-            var currentPages = GetPages(tableDefinition.DataAddress); 
-
-            //get first address of data for table
-            long dataStart = tableDefinition.DataAddress;
-
-            //how many rows need to be read into buffer?
-            int uneditedBufferCount = (int)Math.Ceiling((decimal)(tableDefinition.GetRowSizeInBytes() + newColumn.ByteSize) / oldRowSize);
-
-            var newDefinition = new TableDefinition(tableDefinition);
-            newDefinition.ColumnDefinitions.Add(newColumn);
-
-            int newRowSize = newDefinition.GetRowSizeInBytes();
-
-            var proposedPages = AddNewPagesAndRowCounts(currentPages, tableDefinition.DataAddress, oldRowSize, newRowSize);
-
-            Queue<List<IComparable>> unEditedRowBufferQueue = new Queue<List<IComparable>>();
-
-            int maxNewRowsToBeWrittenToSinglePage = (Constants.Page_Size - (Constants.Int64_Byte_Length + Constants.Int16_Byte_Length)) / newRowSize;
-
-            long nextAddressToWriteTo = 0L;
-
-            List<long> pageAddresses = proposedPages.Keys.OrderBy(k => k).ToList();
-
-            for (int i = 0; i < pageAddresses.Count; i++)
-            {
-                long pageAddress = pageAddresses[i];
-
-                BackfillPage backfillPage = proposedPages[pageAddress];
-
-                if(!backfillPage.NewlyAllocatedPage)
-                {
-                    using (FileStream fs = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    {
-                        using (BinaryReader binaryReader = new BinaryReader(fs))
-                        {
-                            var rows = _reader.ReadDataFromPage(pageAddress, tableDefinition.ColumnDefinitions, binaryReader);
-
-                            foreach (List<IComparable> row in rows)
-                            {
-                                unEditedRowBufferQueue.Enqueue(row);
-                            }
-                        }
-                    }
-                }
-
-                nextAddressToWriteTo = pageAddress + Constants.Int16_Byte_Length;
-
-                int rowCount = backfillPage.NewlyAllocatedPage ? backfillPage.NewRowCount : backfillPage.OldRowCount;
-
-                for (int j = 0; j < rowCount; j++)
-                {
-                    if (nextAddressToWriteTo + newRowSize > (pageAddress + Constants.Next_Pointer_Address))
-                    {
-                        SetObjectCount(pageAddress, (short)j);
-                        break;
-                    }
-
-                    List<IComparable> rowToEdit = unEditedRowBufferQueue.Dequeue();
-
-                    rowToEdit.Add(DefaultValues.GetDefaultValueForType(newColumn.Type));
-
-                    WriteRow(rowToEdit.ToArray(), newDefinition, nextAddressToWriteTo, updateCount: false);
-
-                    nextAddressToWriteTo += newRowSize;
-
-                    if (j == rowCount - 1)
-                    {
-                        SetObjectCount(pageAddress, (short)(j + 1));
-                    }
-                }
-
-                //next page is newly allocated, so need to set pointer
-                if(i != pageAddresses.Count - 1 && proposedPages[pageAddresses[i + 1]].NewlyAllocatedPage)
-                {
-                    WriteLong(pageAddress + Constants.Next_Pointer_Address, proposedPages[pageAddresses[i + 1]].StartAddress);
-                }
-
-                if(backfillPage.NewlyAllocatedPage)
-                {
-                    WriteLong(pageAddress + Constants.Next_Pointer_Address, 0L);
-                }
-
-            }
-
-            return new ResultMessage();
-        }
-
-        public Dictionary<long, BackfillPage> GetPages(long tableDataAddress)
-        {
-            var pages = new Dictionary<long, BackfillPage>();
-
-            long currentPageAddress = tableDataAddress;
-
-            do {
-                BackfillPage backfillPage = new BackfillPage();
-                backfillPage.OldRowCount = _reader.GetObjectCount(currentPageAddress);
-                backfillPage.StartAddress = currentPageAddress;
-                backfillPage.NextPagePointer = _reader.GetPointerToNextPage(currentPageAddress);
-                currentPageAddress = backfillPage.NextPagePointer;
-
-                pages[backfillPage.StartAddress] = backfillPage;
-            }
-            while (currentPageAddress != 0L);
-
-            return pages;
-        }
-
-        public Dictionary<long, BackfillPage> AddNewPagesAndRowCounts(Dictionary<long, BackfillPage> currentPages, long firstPageAddress, int oldRowSize, int newRowSize)
-        {
-            //var pages = new Dictionary<long, BackfillPage>();
-
-            int numNewRowsMax = (Constants.Page_Size - (Constants.Int64_Byte_Length + Constants.Int16_Byte_Length)) / newRowSize;
-
-            int totalRows = 0;
-
-            long currentPageAddress = firstPageAddress;
-
-            //get count of rows
-            while (currentPages.ContainsKey(currentPageAddress))
-            {
-                totalRows += currentPages[currentPageAddress].OldRowCount;
-
-                currentPageAddress = currentPages[currentPageAddress].NextPagePointer;
-            }
-
-            currentPageAddress = firstPageAddress;
-
-            while (currentPages.ContainsKey(currentPageAddress))
-            {
-                var page = currentPages[currentPageAddress];
-
-                bool pageIsFull = (Constants.Page_Size - (Constants.Int16_Byte_Length + Constants.Int64_Byte_Length)) / oldRowSize == page.OldRowCount;
-
-                if(pageIsFull || (page.OldRowCount * newRowSize) > Constants.PAGE_DATA_MAX)
-                {
-                    page.NewRowCount = (short)numNewRowsMax;
-                    totalRows -= page.NewRowCount;
-                }
-                else if(!pageIsFull)
-                {
-                    page.NewRowCount = page.OldRowCount;
-                    totalRows -= page.OldRowCount;
-                }
-
-                currentPageAddress = currentPages[currentPageAddress].NextPagePointer;
-
-                if (currentPageAddress == 0 && totalRows > 0)
-                {
-                    while(totalRows > 0)
-                    {
-                        //add new pages
-                        BackfillPage newPage = new BackfillPage();
-                        newPage.StartAddress = GetNextUnclaimedDataPage();
-
-                        //**update old page pointer
-                        page.NextPagePointer = newPage.StartAddress;
-
-                        newPage.OldRowCount = 0;
-                        newPage.NewlyAllocatedPage = true;
-
-                        if (totalRows > numNewRowsMax)
-                        {
-                            newPage.NewRowCount = (short)numNewRowsMax;
-                            totalRows -= numNewRowsMax;
-                        }
-                        else if (totalRows <= numNewRowsMax)
-                        {
-                            newPage.NewRowCount = (short)totalRows;
-                            totalRows = 0;
-                        }
-
-                        currentPages[newPage.StartAddress] = newPage;
-
-                        page = newPage;
-                    }
-                    
-                }
-            }
-
-            return currentPages;
-        }
-
-
-
-
+        
         void WriteZero(long address)
         {
             using (FileStream stream = File.Open(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
@@ -548,24 +334,6 @@ namespace HotSauceDb.Services
                     reader.BaseStream.Position = 0;
 
                     return reader.PeekChar() == -1;
-                }
-            }
-        }
-
-        private long FindSpotForNewTableDefinition()
-        {
-            using (FileStream stream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (BinaryReader reader = new BinaryReader(stream))
-                {
-                    reader.BaseStream.Position = Constants.Int16_Byte_Length;
-
-                    while (reader.PeekChar() != -1 && reader.PeekChar() != 0)
-                    {
-                        reader.BaseStream.Position += Constants.TABLE_DEF_LENGTH;
-                    }
-
-                    return reader.BaseStream.Position;
                 }
             }
         }
@@ -631,20 +399,6 @@ namespace HotSauceDb.Services
             }
 
         }
-
-        private void SetObjectCount(long countAddress, short objectCount)
-        {
-            using (FileStream fileStream = new FileStream(Constants.FILE_NAME, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
-            {
-                using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
-                {
-                    binaryWriter.BaseStream.Position = countAddress;
-
-                    binaryWriter.Write(objectCount);
-                }
-            }
-        }
-
 
         /// <summary>
         /// Checks if current page is full. If so, writes a pointer to the end of the page and 

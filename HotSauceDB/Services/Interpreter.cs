@@ -18,18 +18,17 @@ namespace HotSauceDb.Services
         private const string _insert = "insert";
         private const string _create = "create";
         private const string _update = "update";
-        private const string _alter  = "alter";
 
-        private SelectParser  _selectParser;
-        private InsertParser  _insertParser;
-        private UpdateParser  _updateParser;
-        private SchemaFetcher _schemaFetcher;
-        private GeneralParser _generalParser;
-        private CreateParser  _createParser;
-        private StringParser  _stringParser;
-        private Reader        _reader;
-        private LockManager   _lockManager;
-        private IndexPage     _indexPage;
+        private readonly SelectParser  _selectParser;
+        private readonly InsertParser  _insertParser;
+        private readonly UpdateParser  _updateParser;
+        private readonly SchemaFetcher _schemaFetcher;
+        private readonly GeneralParser _generalParser;
+        private readonly CreateParser  _createParser;
+        private readonly StringParser  _stringParser;
+        private readonly Reader        _reader;
+        private readonly LockManager   _lockManager;
+        private          IndexPage     _indexPage;
 
         public Interpreter(SelectParser   selectParser, 
                             InsertParser  insertParser, 
@@ -71,8 +70,6 @@ namespace HotSauceDb.Services
                     return RunCreateTableStatement(sql);
                 case _update:
                     return RunUpdateStatement(sql);
-                case _alter:
-                    return RunAlterTable(sql);
             }
 
             throw new Exception(ErrorMessages.Query_Must_Start_With);
@@ -138,7 +135,7 @@ namespace HotSauceDb.Services
 
                 IList<string> subQueryColumns = _selectParser.GetColumns(subQuery.Statement).Select(x => x.ColumnName).ToList();
 
-                if(_indexPage == null)
+                if (_indexPage == null)
                 {
                     _indexPage = _reader.GetIndexPage();
                 }
@@ -146,8 +143,7 @@ namespace HotSauceDb.Services
                 var tableDef = _indexPage.TableDefinitions.Where(x => x.TableName == tableName).FirstOrDefault();
 
                 //only support for scalar subqueries, currently
-                var subQueryColumn = tableDef.ColumnDefinitions
-                    .Where(x => x.ColumnName == subQueryColumns[0].ToLower() || subQueryColumns[0] == "*").First();
+                var subQueryColumn = tableDef.ColumnDefinitions.First(x => x.ColumnName == subQueryColumns[0].ToLower() || subQueryColumns[0] == "*");
 
                 var subQueryValue = string.Join(",", RunQuery(subQuery.Statement).Select(x => x[0]));
 
@@ -234,10 +230,11 @@ namespace HotSauceDb.Services
 
         private ResultMessage RunCreateTableStatement(string dml)
         {
-            TableDefinition tableDef = new TableDefinition();
-
-            tableDef.TableName = _createParser.GetTableName(dml);
-            tableDef.ColumnDefinitions = _createParser.GetColumnDefintions(dml);
+            TableDefinition tableDef = new TableDefinition
+            {
+                TableName = _createParser.GetTableName(dml),
+                ColumnDefinitions = _createParser.GetColumnDefintions(dml)
+            };
 
             return RunCreateTable(tableDef);
         }
@@ -293,26 +290,7 @@ namespace HotSauceDb.Services
 
             var predicateOperations = new List<PredicateOperation>();
 
-            for (int i = 0; i < predicates.Count(); i++)
-            {
-                List<string> predicateParts = predicates[i].Split("'")
-                               .Select((element, index) => index % 2 == 0  // If even index...
-                                   ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // then, split the item
-                                   : new string[] { "'" + element + "'" })  // otherwise, keep the entire item
-                                    .SelectMany(element => element).Select(x => x.Replace("\r\n", string.Empty)).ToList();
-
-
-                predicateParts = _generalParser.CombineValuesInParantheses(predicateParts);
-
-                var colDef = tableDefinition.ColumnDefinitions
-                    .Where(x => x.ColumnName == predicateParts[1].ToLower()).FirstOrDefault();
-
-                if(colDef == null)
-                {
-                    throw new Exception($"Unknown column in where clause: {predicateParts[1]}");
-                }
-
-                var operatorToDelegate = new Dictionary<string, Func<IComparable, object, bool>>
+            var operatorToDelegate = new Dictionary<string, Func<IComparable, object, bool>>
                 {
                     { ">",   CompareDelegates.IsMoreThan },
                     { "<",   CompareDelegates.IsLessThan},
@@ -323,40 +301,43 @@ namespace HotSauceDb.Services
                     { "in",  CompareDelegates.Contains},
                 };
 
-                int operatorIndex = 0;
-                int delegateIndex = 2;
-                int innerValueIndex = 3;
+
+            int operatorIndex = 0;
+            int delegateIndex = 2;
+            int innerValueIndex = 3;
+            object comparingValue = null;
+
+            for (int i = 0; i < predicates.Count(); i++)
+            {
+                List<string> predicateParts = GetPredicateParts(predicates[i]);
+
+                predicateParts = _generalParser.CombineValuesInParantheses(predicateParts);
+
+                var columnDefintion = tableDefinition.ColumnDefinitions.FirstOrDefault(x => x.ColumnName == predicateParts[1].ToLower());
+
+                if(columnDefintion == null)
+                {
+                    throw new Exception($"Unknown column in where clause: {predicateParts[1]}");
+                }
 
                 try
                 {
-                    if (predicateParts[delegateIndex].ToLower() == "in")
+                    if (string.Equals(predicateParts[delegateIndex], "in", StringComparison.OrdinalIgnoreCase))
                     {
-                        string innerValue = predicateParts[innerValueIndex].Trim('(').Trim(')');
-
-                        var list = new List<string>(innerValue.Split(','));
-
-                        var targetList = list
-                                  .Select(x => ConvertToType(colDef, x))
-                                  .ToHashSet();
-
-                        predicateOperations.Add(new PredicateOperation
-                        {
-                            Delegate = operatorToDelegate[predicateParts[delegateIndex].ToLower()],
-                            Value = targetList,
-                            Operator = predicateParts[operatorIndex],
-                            ColumnIndex = colDef.Index
-                        });
+                        comparingValue = GetInStatementValue(predicateParts, columnDefintion);
                     }
                     else
                     {
-                        predicateOperations.Add(new PredicateOperation
-                        {
-                            Delegate = operatorToDelegate[predicateParts[delegateIndex]],
-                            Value = ConvertToType(colDef, predicateParts[innerValueIndex]),
-                            Operator = predicateParts[operatorIndex],
-                            ColumnIndex = colDef.Index
-                        });
+                        comparingValue = ConvertToType(columnDefintion, predicateParts[innerValueIndex]);
                     }
+
+                    predicateOperations.Add(new PredicateOperation
+                    {
+                        Delegate = operatorToDelegate[predicateParts[delegateIndex].ToLower()],
+                        Value = comparingValue,
+                        Operator = predicateParts[operatorIndex],
+                        ColumnIndex = columnDefintion.Index
+                    });
                 }
                 catch (KeyNotFoundException)
                 {
@@ -367,39 +348,34 @@ namespace HotSauceDb.Services
             return predicateOperations;
         }
 
-        private ResultMessage RunAlterTable(TableDefinition tableDef, ColumnDefinition columnDefinition)
+        private List<string> GetPredicateParts(string predicatePart)
         {
-            //check that table doesn't already contain column name
-            //get data type from query (look at create table)
-            AlterTableTransaction dmlTransaction = new AlterTableTransaction
+            string[] predicateSplitOnTicks = predicatePart.Split("'");
+
+            List<string[]> pieces = new List<string[]>();
+
+            for (int i = 0; i < predicateSplitOnTicks.Length; i++)
             {
-                TableDefinition = tableDef,
-                NewColumn = columnDefinition
-            };
-
-            return _lockManager.ProcessAlterTableTransaction(dmlTransaction);
-        }
-
-        private object RunAlterTable(string sql)
-        {
-            var parser = new AlterParser();
-
-            var tableName = parser.GetTableName(sql);
-
-            var tableDef = _schemaFetcher.GetTableDefinition(tableName);
-
-            byte newColumnIndex = tableDef.ColumnDefinitions.Select(c => c.Index).Max();
-
-            newColumnIndex++;
-
-            ColumnDefinition columnDefinition = parser.GetNewColumnDefinition(sql, newColumnIndex);
-
-            if (tableDef.ColumnDefinitions.Select(c => c.ColumnName.ToLower()).Contains(columnDefinition.ColumnName.ToLower()))
-            {
-                throw new Exception($"table {tableDef.TableName} already contains a column named {columnDefinition.ColumnName}");
+                if(i % 2 == 0)
+                {
+                    pieces.Add(predicateSplitOnTicks[i].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+                }
+                else
+                {
+                    pieces.Add(new string[] { "'" + predicateSplitOnTicks[i] + "'" });
+                }
             }
 
-            return RunAlterTable(tableDef, columnDefinition);
+            return pieces.SelectMany(element => element).Select(x => x.Replace("\r\n", string.Empty)).ToList();
+        }
+
+        private object GetInStatementValue(List<string> predicateParts, ColumnDefinition colDef)
+        {
+            string innerValue = predicateParts[3].Trim(new char[] { '(', ')' });
+
+            var list = new List<string>(innerValue.Split(','));
+
+            return list.Select(x => ConvertToType(colDef, x)).ToHashSet();
         }
 
         private object RunUpdateStatement(string sql)

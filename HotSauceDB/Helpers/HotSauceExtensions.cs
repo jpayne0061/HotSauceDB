@@ -24,7 +24,7 @@ namespace HotSauceDB.Helpers
             }
             else
             {
-                return default(T2);
+                return default;
             }
         }
 

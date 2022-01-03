@@ -24,7 +24,7 @@ namespace HotSauceDb.Services
                 case TypeEnum.DateTime:
                     return DateTime.Parse(val.Trim('\''));
                 default:
-                    throw new Exception($"no enum found for {type.ToString()}");
+                    throw new Exception($"no enum found for {type}");
             }
         }
     }

@@ -22,10 +22,11 @@ namespace HotSauceDB.Services.Parsers
 
             List<string> parts = SplitOnSeparatorsExceptQuotesAndParantheses(sql, new char[] { ' ', '\r', '\n' });
 
-            ColumnDefinition columnDefinition = new ColumnDefinition();
-
-            columnDefinition.ColumnName = parts[4];
-            columnDefinition.Index = newColumnIndex;
+            ColumnDefinition columnDefinition = new ColumnDefinition
+            {
+                ColumnName = parts[4],
+                Index = newColumnIndex
+            };
             columnDefinition.Type = ParseTypeAndByteSize(parts[5].RemoveNewLines(), columnDefinition);
 
             return columnDefinition;

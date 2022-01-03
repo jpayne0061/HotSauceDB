@@ -3,7 +3,6 @@ using HotSauceDb.Models;
 using HotSauceDb.Models.Transactions;
 using System;
 using System.Collections.Concurrent;
-using HotSauceDB.Models.Transactions;
 
 namespace HotSauceDb.Services
 {
@@ -11,7 +10,7 @@ namespace HotSauceDb.Services
     {
         private readonly Writer _writer;
         private readonly Reader _reader;
-        private ConcurrentDictionary<long, object> _tableLocks;
+        private readonly ConcurrentDictionary<long, object> _tableLocks;
 
         public LockManager(Writer writer, Reader reader)
         {
@@ -57,14 +56,6 @@ namespace HotSauceDb.Services
             _tableLocks[msg.Data] = new object();
 
             return msg;
-        }
-
-        public ResultMessage ProcessAlterTableTransaction(AlterTableTransaction alterTableTransaction)
-        {
-            lock (_tableLocks[alterTableTransaction.TableDefinition.DataAddress])
-            {
-                return _writer.AlterTableDefinition(alterTableTransaction.TableDefinition, alterTableTransaction.NewColumn);
-            }
         }
 
         private void SetupTableLocks()

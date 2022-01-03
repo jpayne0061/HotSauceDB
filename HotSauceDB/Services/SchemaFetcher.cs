@@ -7,7 +7,7 @@ namespace HotSauceDb.Services
     public class SchemaFetcher : ISchemaFetcher
     {
         private IndexPage _indexPage;
-        private Reader _reader;
+        private readonly Reader _reader;
 
         public SchemaFetcher(Reader reader)
         {

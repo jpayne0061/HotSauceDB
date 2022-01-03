@@ -36,21 +36,25 @@ namespace HotSauceDb.Services
                     {
                         for (int i = 0; i < objectCount; i++)
                         {
-                            var tableDefinition = new TableDefinition();
-                            tableDefinition.DataAddress = reader.ReadInt64();
-                            tableDefinition.TableName = reader.ReadString();
-                            tableDefinition.TableDefinitionAddress = tableDefinitionAddress;
+                            var tableDefinition = new TableDefinition
+                            {
+                                DataAddress = reader.ReadInt64(),
+                                TableName = reader.ReadString(),
+                                TableDefinitionAddress = tableDefinitionAddress
+                            };
 
                             tableDefinitionAddress += Constants.TABLE_DEF_LENGTH;
 
                             while (reader.PeekChar() != Constants.End_Table_Definition)
                             {
-                                var columnDefinition = new ColumnDefinition();
-                                columnDefinition.ColumnName = reader.ReadString();
-                                columnDefinition.Index = reader.ReadByte();
-                                columnDefinition.Type = (TypeEnum)reader.ReadByte();
-                                columnDefinition.ByteSize = reader.ReadInt16();
-                                columnDefinition.IsIdentity = reader.ReadByte();
+                                var columnDefinition = new ColumnDefinition
+                                {
+                                    ColumnName = reader.ReadString(),
+                                    Index = reader.ReadByte(),
+                                    Type = (TypeEnum)reader.ReadByte(),
+                                    ByteSize = reader.ReadInt16(),
+                                    IsIdentity = reader.ReadByte()
+                                };
 
                                 if (columnDefinition.IsIdentity == 1)
                                 {
@@ -101,10 +105,11 @@ namespace HotSauceDb.Services
 
         public SelectData GetRows(TableDefinition tableDefinition, IEnumerable<SelectColumnDto> selects, List<PredicateOperation> predicateOperations)
         {
-            var selectData = new SelectData();
-
-            selectData.Rows = new List<List<IComparable>>();
-            selectData.RowLocations = new List<long>();
+            var selectData = new SelectData
+            {
+                Rows = new List<List<IComparable>>(),
+                RowLocations = new List<long>()
+            };
 
             short rowCount = GetObjectCount(tableDefinition.DataAddress);
 

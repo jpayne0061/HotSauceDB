@@ -10,7 +10,7 @@ namespace HotSauceDB.Services
 {
     public class DataMigrator
     {
-        private Interpreter _interpreter;
+        private readonly Interpreter _interpreter;
 
         public DataMigrator(Interpreter interpreter)
         {

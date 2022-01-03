@@ -10,14 +10,14 @@ namespace HotSauceDbOrm
 {
     public class Executor
     {
-        private Interpreter _interpreter;
-        private Create      _creator;
-        private Insert      _inserter;
-        private Read        _reader;
-        private Update      _updater;
+        private readonly Interpreter _interpreter;
+        private readonly Create      _creator;
+        private readonly Insert      _inserter;
+        private readonly Read        _reader;
+        private readonly Update      _updater;
 
         private static Executor _instance;
-        private static object   _lockObject = new object();
+        private static readonly object   _lockObject = new object();
 
         public static Executor GetInstance(string databaseName = Constants.FILE_NAME)
         {

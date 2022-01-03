@@ -278,7 +278,6 @@ namespace HotSauceDbUnitTests
         public void InsertParser_ParseTableName()
         {
             //arrange
-            var reader = new Reader();
             var insertParser = new InsertParser(_mockSchemaFetcher.Object);
 
             string dml = "insert into myTable VALUES ('one', 'two', 'three')";

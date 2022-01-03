@@ -199,12 +199,13 @@ namespace HotSauceDb.Services.Parsers
                 }
             }
 
-            PredicateStep predicateStep = new PredicateStep();
-
-            predicateStep.Predicates = predicates;
-            predicateStep.HasPredicates = true;
-            predicateStep.OperatorIndex = operatorIndex;
-            predicateStep.QueryParts = queryParts;
+            PredicateStep predicateStep = new PredicateStep
+            {
+                Predicates = predicates,
+                HasPredicates = true,
+                OperatorIndex = operatorIndex,
+                QueryParts = queryParts
+            };
 
             return predicateStep;
         }

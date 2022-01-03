@@ -15,8 +15,8 @@ namespace HotSauceDbOrm.Operations
 {
     public class Create
     {
-        private Interpreter           _interpreter;
-        private SchemaComparer        _schemaComparer;
+        private readonly Interpreter           _interpreter;
+        private readonly SchemaComparer        _schemaComparer;
         private readonly DataMigrator _dataMigrator;
 
         public Create(Interpreter    interpreter, 
@@ -89,11 +89,12 @@ namespace HotSauceDbOrm.Operations
 
             for (int i = 0; i < properties.Length; i++)
             {
-                ColumnDefinition columnDefinition = new ColumnDefinition();
-
-                columnDefinition.ColumnName = properties[i].Name;
-                columnDefinition.Index = (byte)i;
-                columnDefinition.Type = Constants.TypeToTypeEnum.GetValueIfKeyExists(properties[i].PropertyType);
+                ColumnDefinition columnDefinition = new ColumnDefinition
+                {
+                    ColumnName = properties[i].Name,
+                    Index = (byte)i,
+                    Type = Constants.TypeToTypeEnum.GetValueIfKeyExists(properties[i].PropertyType)
+                };
                 columnDefinition.ByteSize = GetByteSize(columnDefinition.Type, properties[i]);
 
                 if (columnDefinition.Type == TypeEnum.UnsupportedType)

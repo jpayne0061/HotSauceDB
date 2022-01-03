@@ -221,8 +221,7 @@ namespace HotSauceDb.Services.Parsers
                     }
                    
                 }
-
-                if (query[i] == ')')
+                else if (query[i] == ')')
                 {
                     if(endParanthesesToSkip == 0)
                     {

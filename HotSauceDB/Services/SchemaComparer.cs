@@ -12,7 +12,7 @@ namespace HotSauceDB.Services
 {
     public class SchemaComparer
     {
-        private Interpreter _interpreter;
+        private readonly Interpreter _interpreter;
 
         public SchemaComparer(Interpreter interpreter)
         {

@@ -163,13 +163,14 @@ namespace HotSauceIntegrationTests
 
             for (int i = 0; i < count; i++)
             {
-                House h = new House();
-
-                h.Address = "234 One St";
-                h.IsListed = true;
-                h.NumBath = 3;
-                h.NumBedrooms = 5;
-                h.Price = 430000;
+                House h = new House
+                {
+                    Address = "234 One St",
+                    IsListed = true,
+                    NumBath = 3,
+                    NumBedrooms = 5,
+                    Price = 430000
+                };
 
                 executor.CreateTable<House>();
 
@@ -194,13 +195,14 @@ namespace HotSauceIntegrationTests
 
             decimal initialPrice = 430000;
 
-            House h = new House();
-
-            h.Address = "234 One St";
-            h.IsListed = true;
-            h.NumBath = 3;
-            h.NumBedrooms = 5;
-            h.Price = initialPrice;
+            House h = new House
+            {
+                Address = "234 One St",
+                IsListed = true,
+                NumBath = 3,
+                NumBedrooms = 5,
+                Price = initialPrice
+            };
 
             executor.CreateTable<House>();
 
